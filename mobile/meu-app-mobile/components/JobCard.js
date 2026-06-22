@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
 export default function JobCard({ vaga }) {
@@ -6,7 +7,9 @@ export default function JobCard({ vaga }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.empresaContainer}>
-          <View style={styles.avatarSmall} />
+          <View style={styles.avatarSmall}>
+            <Ionicons name="business" size={16} color="#666" />
+          </View>
           <View>
             <Text style={styles.empresaNome}>{vaga.empresa}</Text>
             <Text style={styles.empresaSegmento}>{vaga.segmento}</Text>
@@ -19,7 +22,10 @@ export default function JobCard({ vaga }) {
       <Text style={styles.descricao}>{vaga.desc}</Text>
 
       <View style={styles.footer}>
-        <Text style={styles.qtdVagas}>👥 3 vagas</Text>
+        <View style={styles.vagasInfo}>
+          <Ionicons name="people-outline" size={16} color="#666" />
+          <Text style={styles.qtdVagas}>3 vagas</Text>
+        </View>
         <View style={styles.footerRight}>
           <Text style={styles.valor}>{vaga.valor}</Text>
           <TouchableOpacity style={styles.interesseButton}>
@@ -50,10 +56,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarSmall: {
-    backgroundColor: '#ddd',
+    backgroundColor: '#eee',
     borderRadius: 15,
     width: 30,
     height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8,
   },
   empresaNome: {
@@ -86,6 +94,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  vagasInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   qtdVagas: {
     fontSize: 12,
     color: '#666',
@@ -105,7 +118,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 15,
   },
   interesseButtonText: {

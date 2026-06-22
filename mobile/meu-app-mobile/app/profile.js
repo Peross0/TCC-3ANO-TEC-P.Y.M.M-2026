@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
 export default function ProfileScreen() {
@@ -8,20 +9,29 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
         <View style={styles.headerBadge}>
           <Text style={styles.headerBadgeText}>Perfil</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ fontSize: 20, marginRight: 15 }}>🔔</Text>
-          <Text style={{ fontSize: 20, marginRight: 15 }}>⚙️</Text>
-          <Text style={{ fontSize: 20, color: colors.primary }}>✏️</Text>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="notifications-outline" size={22} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="settings-outline" size={22} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="create-outline" size={22} color={colors.primary} />
+          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={{ alignItems: 'center', padding: 20 }}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
-            <Text style={{ fontSize: 60 }}>👤</Text>
+            <Ionicons name="person" size={60} color="#999" />
           </View>
         </View>
         <TouchableOpacity>
@@ -47,12 +57,14 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.curriculoBox}>
-          <Text style={styles.curriculoText}>Curriculo</Text>
-          <Text style={{ fontSize: 22 }}>📎</Text>
+          <Text style={styles.curriculoText}>Currículo</Text>
+          <Ionicons name="document-attach-outline" size={24} color="#666" />
         </View>
 
         <View style={styles.uploadBox}>
-          <Text style={{ color: '#aaa', fontSize: 12 }}>Arraste arquivos para fazer upload ou selecione</Text>
+          <Text style={{ color: '#aaa', fontSize: 12, textAlign: 'center' }}>
+            Arraste arquivos para fazer upload ou selecione
+          </Text>
           <View style={styles.uploadButton}>
             <Text style={{ color: '#fff', fontSize: 12 }}>Procurar</Text>
           </View>
@@ -75,6 +87,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 20,
   },
+  backButton: {
+    padding: 4,
+  },
   headerBadge: {
     backgroundColor: '#eee',
     paddingHorizontal: 30,
@@ -84,6 +99,10 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  headerIcon: {
+    padding: 4,
+    marginLeft: 10,
   },
   avatarContainer: {
     borderWidth: 2,

@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
 export default function ChatScreen() {
@@ -8,18 +9,20 @@ export default function ChatScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>←</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.avatarSmall} />
-        <View style={{ marginLeft: 10 }}>
+        <View style={{ marginLeft: 10, flex: 1 }}>
           <Text style={styles.headerTitle}>Pinheirão</Text>
           <Text style={styles.headerSubtitle}>Online há 23 min</Text>
         </View>
-        <View style={styles.headerIcons}>
-          <Text style={{ fontSize: 20, marginRight: 15 }}>📞</Text>
-          <Text style={{ fontSize: 20 }}>📹</Text>
-        </View>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="call-outline" size={22} color="#333" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="videocam-outline" size={22} color="#333" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.messagesContainer}>
@@ -28,11 +31,15 @@ export default function ChatScreen() {
 
       <View style={styles.inputContainer}>
         <TouchableOpacity style={styles.cameraButton}>
-          <Text style={{ fontSize: 20, color: '#fff' }}>📷</Text>
+          <Ionicons name="camera" size={20} color="#fff" />
         </TouchableOpacity>
         <TextInput placeholder="Mensagem" style={styles.input} placeholderTextColor="#888" />
-        <Text style={{ fontSize: 20, marginRight: 10 }}>🎙️</Text>
-        <Text style={{ fontSize: 20 }}>📄</Text>
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="mic-outline" size={22} color="#666" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="attach-outline" size={22} color="#666" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -53,15 +60,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   backButton: {
-    fontSize: 24,
-    color: '#000',
+    padding: 4,
+    marginRight: 10,
   },
   avatarSmall: {
     width: 35,
     height: 35,
     borderRadius: 17.5,
     backgroundColor: '#ddd',
-    marginLeft: 15,
     marginRight: 10,
   },
   headerTitle: {
@@ -72,10 +78,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888',
   },
-  headerIcons: {
-    flexDirection: 'row',
-    position: 'absolute',
-    right: 15,
+  headerIcon: {
+    padding: 4,
+    marginLeft: 10,
   },
   messagesContainer: {
     flex: 1,
@@ -105,5 +110,8 @@ const styles = StyleSheet.create({
     height: 36,
     marginRight: 10,
     fontSize: 14,
+  },
+  iconButton: {
+    padding: 6,
   },
 });

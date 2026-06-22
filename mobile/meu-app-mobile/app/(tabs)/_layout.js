@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
 
 export default function TabsLayout() {
@@ -17,9 +18,11 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Text style={{ fontSize: 20 }}>🏠</Text>
-            </View>
+            <Ionicons 
+              name={focused ? 'home' : 'home-outline'} 
+              size={24} 
+              color={focused ? colors.primary : '#777'} 
+            />
           ),
         }} 
       />
@@ -28,9 +31,11 @@ export default function TabsLayout() {
         options={{
           title: 'Mensagens',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Text style={{ fontSize: 20 }}>✉️</Text>
-            </View>
+            <Ionicons 
+              name={focused ? 'chatbubbles' : 'chatbubbles-outline'} 
+              size={24} 
+              color={focused ? colors.primary : '#777'} 
+            />
           ),
         }} 
       />
@@ -39,9 +44,11 @@ export default function TabsLayout() {
         options={{
           title: 'Empresas',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Text style={{ fontSize: 20 }}>🏢</Text>
-            </View>
+            <Ionicons 
+              name={focused ? 'briefcase' : 'briefcase-outline'} 
+              size={24} 
+              color={focused ? colors.primary : '#777'} 
+            />
           ),
         }} 
       />
@@ -50,9 +57,11 @@ export default function TabsLayout() {
         options={{
           title: 'Sobre',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Text style={{ fontSize: 20 }}>ℹ️</Text>
-            </View>
+            <Ionicons 
+              name={focused ? 'information-circle' : 'information-circle-outline'} 
+              size={24} 
+              color={focused ? colors.primary : '#777'} 
+            />
           ),
         }} 
       />
@@ -66,12 +75,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',
-  },
-  iconContainer: {
-    padding: 6,
-    borderRadius: 12,
-  },
-  iconContainerActive: {
-    backgroundColor: '#e3f2fd',
   },
 });

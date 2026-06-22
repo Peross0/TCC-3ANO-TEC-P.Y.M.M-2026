@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../../components/CustomHeader';
 import JobCard from '../../components/JobCard';
 import { vagas } from '../../constants/mockData';
@@ -17,7 +18,11 @@ export default function HomeScreen() {
         onSettingsPress={() => router.push('/settings')} 
       />
       
-      <View style={styles.filtrosContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filtrosContainer}
+      >
         {['Para você', 'Recentes', 'Remotos'].map((item) => (
           <TouchableOpacity 
             key={item} 
@@ -29,11 +34,12 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}>
         {filtro === 'Remotos' ? (
           <View style={styles.noJobsCard}>
+            <Ionicons name="folder-open-outline" size={48} color="#777" />
             <Text style={styles.noJobsText}>Nenhuma vaga encontrada</Text>
           </View>
         ) : (
@@ -53,13 +59,12 @@ const styles = StyleSheet.create({
     paddingTop: 30,
   },
   filtrosContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 15,
     marginVertical: 10,
   },
   filtroPill: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 15,
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
   noJobsCard: {
     backgroundColor: '#f0f0f0',
     borderRadius: 20,
-    padding: 30,
+    padding: 40,
     alignItems: 'center',
     marginTop: 20,
     borderWidth: 1,
@@ -92,5 +97,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#777',
     fontWeight: '500',
+    marginTop: 15,
   },
 });

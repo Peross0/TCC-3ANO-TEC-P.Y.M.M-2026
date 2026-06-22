@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CompanyCard({ nome }) {
   return (
     <View style={styles.container}>
-      <View style={styles.avatar} />
+      <View style={styles.avatar}>
+        <Ionicons name="business" size={22} color="#666" />
+      </View>
       <Text style={styles.nome}>{nome}</Text>
     </View>
   );
@@ -25,6 +28,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 15,
   },
   nome: {
