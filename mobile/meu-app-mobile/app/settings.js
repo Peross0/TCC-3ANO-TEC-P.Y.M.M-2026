@@ -3,17 +3,19 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/CustomHeader';
 import { itensMenuConfiguracoes } from '../constants/mockData';
-import { colors } from '../constants/colors';
 
 export default function SettingsScreen() {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      <CustomHeader 
-        onProfilePress={() => router.push('/profile')} 
-        onSettingsPress={() => {}} 
-      />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Configurações</Text>
+        <View style={{ width: 24 }} />
+      </View>
       
       <View style={{ paddingVertical: 10 }}>
         {itensMenuConfiguracoes.map((item, idx) => (
@@ -22,32 +24,16 @@ export default function SettingsScreen() {
             style={styles.menuItem}
             onPress={() => item.label === 'Sobre' ? router.push('/(tabs)/about') : null}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={styles.menuIcon}>
-                {getIcon(item.icon)}
-              </View>
+            <View style={styles.menuLeft}>
+              <Ionicons name={item.icon} size={22} color="#333" />
               <Text style={styles.menuLabel}>{item.label}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#000" />
+            <Ionicons name="chevron-forward" size={20} color="#aaa" />
           </TouchableOpacity>
         ))}
       </View>
     </View>
   );
-}
-
-function getIcon(iconName) {
-  const iconMap = {
-    '🔖': 'bookmark-outline',
-    '🎛️': 'options-outline',
-    '🖌️': 'color-palette-outline',
-    '♿': 'accessibility-outline',
-    '❓': 'help-circle-outline',
-    'ℹ️': 'information-circle-outline',
-  };
-  
-  const ioniconName = iconMap[iconName] || 'information-circle-outline';
-  return <Ionicons name={ioniconName} size={22} color="#333" />;
 }
 
 const styles = StyleSheet.create({
@@ -56,18 +42,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 30,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  menuIcon: {
-    width: 32,
-    marginRight: 15,
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
   },
   menuLabel: {
     fontSize: 16,

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import CustomHeader from '../../components/CustomHeader';
 import ChatRow from '../../components/ChatRow';
@@ -35,5 +35,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#555',
     marginBottom: 20,
+    fontWeight: '600',
   },
 });

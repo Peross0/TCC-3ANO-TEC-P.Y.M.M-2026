@@ -39,7 +39,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}>
         {filtro === 'Remotos' ? (
           <View style={styles.noJobsCard}>
-            <Ionicons name="folder-open-outline" size={48} color="#777" />
+            <Ionicons name="folder-open-outline" size={48} color="#999" />
             <Text style={styles.noJobsText}>Nenhuma vaga encontrada</Text>
           </View>
         ) : (
@@ -60,43 +60,59 @@ const styles = StyleSheet.create({
   },
   filtrosContainer: {
     paddingHorizontal: 15,
-    marginVertical: 10,
+    marginVertical: 15,
+    gap: 10,
   },
   filtroPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 15,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginRight: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#f8f8f8',
+    borderWidth: 0,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filtroPillActive: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   filtroText: {
     color: '#666',
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
   },
   filtroTextActive: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   noJobsCard: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    justifyContent: 'center',
+    marginHorizontal: 15,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   noJobsText: {
     fontSize: 16,
-    color: '#777',
+    color: '#999',
     fontWeight: '500',
-    marginTop: 15,
+    marginTop: 12,
   },
 });
