@@ -26,21 +26,36 @@ export default function HomeScreen() {
         {['Para você', 'Recentes', 'Remotos'].map((item) => (
           <TouchableOpacity 
             key={item} 
-            style={[styles.filtroPill, filtro === item && styles.filtroPillActive]}
+            style={[
+              styles.filtroPill, 
+              filtro === item && styles.filtroPillActive
+            ]}
             onPress={() => setFiltro(item)}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.filtroText, filtro === item && styles.filtroTextActive]}>
+            <Text style={[
+              styles.filtroText, 
+              filtro === item && styles.filtroTextActive
+            ]}>
               {item}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {filtro === 'Remotos' ? (
           <View style={styles.noJobsCard}>
-            <Ionicons name="folder-open-outline" size={48} color="#999" />
-            <Text style={styles.noJobsText}>Nenhuma vaga encontrada</Text>
+            <View style={styles.iconContainer}>
+              <Ionicons name="folder-open-outline" size={56} color="#bbb" />
+            </View>
+            <Text style={styles.noJobsTitle}>Nenhuma vaga encontrada</Text>
+            <Text style={styles.noJobsSubtitle}>
+              Tente mudar os filtros para ver mais oportunidades
+            </Text>
           </View>
         ) : (
           vagas.map((vaga) => (
@@ -55,36 +70,25 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     paddingTop: 30,
   },
   filtrosContainer: {
-    paddingHorizontal: 15,
-    marginVertical: 15,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
   },
   filtroPill: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 17,
+    paddingVertical: 2,
     borderRadius: 20,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f0f0f0',
     borderWidth: 0,
-    minWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   filtroPillActive: {
     backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
   filtroText: {
     color: '#666',
@@ -95,24 +99,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+  },
   noJobsCard: {
     backgroundColor: '#fafafa',
-    borderRadius: 20,
-    padding: 40,
+    borderRadius: 24,
+    paddingVertical: 185,
+    paddingHorizontal: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 15,
+    marginTop: 20,
     borderWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  noJobsText: {
-    fontSize: 16,
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  noJobsTitle: {
+    fontSize: 18,
+    color: '#666',
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noJobsSubtitle: {
+    fontSize: 14,
     color: '#999',
-    fontWeight: '500',
-    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
