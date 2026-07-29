@@ -1,127 +1,328 @@
-import { StyleSheet, Text, View, Image, StatusBar } from "react-native";
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-const CN_COLORS = {
-  PRIMARY_BLUE: "#00B0FF", 
-  SECONDARY_PURPLE: "#8E24AA", 
-  ACCENT_YELLOW: "#FFD700",
-  OUTLINE_BLACK: "#000000", 
-  TEXT_DARK: "#212121", 
-  TEXT_LIGHT: "#FFFFFF", 
-  BRIGHT_WHITE: "#FAFAFA",
-  BACKGROUND_LIGHT: "#E0F7FA",
-};
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState('candidato');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-export default function Home() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Image
+          source={require('./assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <ActivityIndicator
+          size="large"
+          color="#5A7FFF"
+          style={styles.loader}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={CN_COLORS.BACKGROUND_LIGHT} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Bloco Superior: Título + Toggle */}
+        <View style={styles.topSection}>
+          <Text style={styles.mainTitle}>Encontre seu estágio ideal</Text>
 
-      <Image
-        style={styles.logo}
-        source={{
-          uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Cartoon_network_modified_logo.PNG/1200px-Cartoon_network_modified_logo.PNG",
-        }}
-      />
+          {/* Toggle Candidato / Empresário */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                userType === 'candidato' && styles.activeToggleButton,
+              ]}
+              onPress={() => setUserType('candidato')}
+              activeOpacity={0.9}
+            >
+              <Feather
+                name="user"
+                size={20}
+                color={userType === 'candidato' ? '#3BB7FF' : '#9E9E9E'}
+              />
+              <Text
+                style={[
+                  styles.toggleText,
+                  userType === 'candidato'
+                    ? styles.activeToggleText
+                    : styles.inactiveToggleText,
+                ]}
+              >
+                Candidato
+              </Text>
+            </TouchableOpacity>
 
-      <View style={styles.cardContainer}> 
-        <View style={styles.card}>
-          <Text style={styles.title}>BEM-VINDO(A)!</Text>
-          <Text style={styles.subtitle}>
-            Pré-requisito para a disciplina de DDM
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                userType === 'empresario' && styles.activeToggleButton,
+              ]}
+              onPress={() => setUserType('empresario')}
+              activeOpacity={0.9}
+            >
+              <Feather
+                name="briefcase"
+                size={20}
+                color={userType === 'empresario' ? '#3BB7FF' : '#9E9E9E'}
+              />
+              <Text
+                style={[
+                  styles.toggleText,
+                  userType === 'empresario'
+                    ? styles.activeToggleText
+                    : styles.inactiveToggleText,
+                ]}
+              >
+                Empresário
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bloco Central: Formulário de Login */}
+        <View style={styles.formSection}>
+          <View style={styles.headerTextGroup}>
+            <Text style={styles.welcomeTitle}>Seja bem-vindo</Text>
+            <Text style={styles.welcomeSubtitle}>
+              Entre na sua conta de {userType}
+            </Text>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="E-mail"
+            placeholderTextColor="#B0B0B0"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Senha"
+            placeholderTextColor="#B0B0B0"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+
+          <TouchableOpacity style={styles.forgotPasswordButton}>
+            <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.submitButton} activeOpacity={0.85}>
+            <Text style={styles.submitButtonText}>Entrar</Text>
+          </TouchableOpacity>
+
+          <View style={styles.registerGroup}>
+            <Text style={styles.registerText}>Não tem conta? </Text>
+            <TouchableOpacity>
+              <Text style={styles.registerLink}>Criar conta</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bloco Inferior: Termos e Políticas */}
+        <View style={styles.footerSection}>
+          <Text style={styles.footerText}>
+            Ao entrar ou criar uma conta você concorda com os{' '}
+            <Text style={styles.footerLink}>Termos de Uso</Text> e{' '}
+            <Text style={styles.footerLink}>Política de Privacidade</Text>
           </Text>
         </View>
-      </View>
-
-      <View style={styles.footerStrip}>
-        <Text style={styles.footerText}>Desenvolvido por Gabriel Neves © 2025</Text>
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  // SplashScreen Loading
+  loadingContainer: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: CN_COLORS.BACKGROUND_LIGHT, 
-    padding: 20,
-    justifyContent: 'space-around',
+    backgroundColor: '#1E1D25',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
   logo: {
-    width: 300, 
-    height: 150,
-    resizeMode: "contain",
+    width: 180,
+    height: 180,
+  },
+  loader: {
     marginTop: 20,
   },
 
-  cardContainer: {
-    backgroundColor: CN_COLORS.SECONDARY_PURPLE, 
-    borderRadius: 30,
-    paddingBottom: 8, 
-    paddingRight: 8,
-    position: 'relative', 
-    width: "95%",
-    maxWidth: 400,
+  // Layout Principal
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
   },
 
-  card: {
-    backgroundColor: CN_COLORS.ACCENT_YELLOW,
-    borderRadius: 25, 
-    paddingVertical: 40, 
-    paddingHorizontal: 25, 
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 6, 
-    borderColor: CN_COLORS.OUTLINE_BLACK, 
-    position: 'relative', 
-    top: 0,
-    left: 0,
-  },
-
-  title: {
-    fontSize: 40, 
-    fontWeight: "900", 
-    color: CN_COLORS.TEXT_DARK, 
-    marginBottom: 10,
-    textAlign: "center",
-    textShadowColor: CN_COLORS.BRIGHT_WHITE,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    letterSpacing: 2,
-  },
-
-  subtitle: {
-    fontSize: 22, 
-    color: CN_COLORS.TEXT_DARK, 
-    textAlign: "center",
-    fontWeight: '800', 
-    lineHeight: 30, 
-    textShadowColor: CN_COLORS.TEXT_LIGHT, 
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
-    letterSpacing: 0.5,
-  },
-    
-  footerStrip: {
-    backgroundColor: CN_COLORS.PRIMARY_BLUE,
-    width: '100%',
-    paddingVertical: 15,
-    borderTopWidth: 6, 
-    borderBottomWidth: 6,
-    borderColor: CN_COLORS.OUTLINE_BLACK, 
+  // Cabeçalho & Selector
+  topSection: {
     alignItems: 'center',
-    marginBottom: -20,
+    marginBottom: 28,
+  },
+  mainTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#9E9E9E',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#EBEBEB',
+    borderRadius: 25,
+    padding: 5,
+    width: '100%',
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 20,
+    gap: 8,
+  },
+  activeToggleButton: {
+    backgroundColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  toggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  activeToggleText: {
+    color: '#3BB7FF',
+  },
+  inactiveToggleText: {
+    color: '#757575',
   },
 
+  // Formulário
+  formSection: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  headerTextGroup: {
+    marginBottom: 24,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: -0.3,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#9E9E9E',
+    marginTop: 4,
+    fontWeight: '400',
+  },
+  input: {
+    width: '100%',
+    height: 54,
+    borderWidth: 1.2,
+    borderColor: '#E2E2E2',
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    fontSize: 16,
+    color: '#222222',
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 28,
+  },
+  forgotPasswordText: {
+    color: '#3BB7FF',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  submitButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: '#3BB7FF',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  registerGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 22,
+  },
+  registerText: {
+    color: '#9E9E9E',
+    fontSize: 15,
+  },
+  registerLink: {
+    color: '#3BB7FF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Rodapé
+  footerSection: {
+    paddingHorizontal: 12,
+  },
   footerText: {
-    fontSize: 16, 
-    color: CN_COLORS.TEXT_LIGHT, 
-    textAlign: "center",
-    fontWeight: '900', 
-    letterSpacing: 1,
-    textShadowColor: CN_COLORS.OUTLINE_BLACK,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
+    fontSize: 11,
+    color: '#B0B0B0',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  footerLink: {
+    color: '#3BB7FF',
   },
 });
