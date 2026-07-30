@@ -14,6 +14,68 @@ import { Feather } from '@expo/vector-icons';
 export default function HomeScreen() {
   const [selectedFilter, setSelectedFilter] = useState('Para você');
 
+  const jobsData = [
+    {
+      id: 1,
+      company: 'Pires',
+      category: 'Supermercado',
+      logoBg: '#E3F2FD',
+      logoText: 'Pires',
+      logoColor: '#1565C0',
+      timeAgo: 'Há 1 semana',
+      daysAgo: 7,
+      title: 'VAGA DE CAIXA',
+      description: 'Procuramos jovens interessados e capacitados de preferência mulher',
+      salary: 'R$ 2.120',
+      vacancies: 3,
+      isRemote: false,
+    },
+    {
+      id: 2,
+      company: 'Pinheirão',
+      category: 'Supermercado',
+      logoBg: '#E8F5E9',
+      logoText: 'Pinheirão',
+      logoColor: '#2E7D32',
+      timeAgo: 'Há 2 dias',
+      daysAgo: 2,
+      title: 'VAGA DE REPOSITOR',
+      description: 'Procuramos jovens interessados e capacitados para a vaga',
+      salary: 'R$ 1.520',
+      vacancies: 7,
+      isRemote: false,
+    },
+    {
+      id: 3,
+      company: 'iFood',
+      category: 'Restaurante',
+      logoBg: '#FFEBEE',
+      logoText: 'iFood',
+      logoColor: '#C62828',
+      timeAgo: 'Há 1 semana',
+      daysAgo: 7,
+      title: 'VAGA DE ENTREGADOR',
+      description: 'Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas',
+      salary: 'R$ 1.000',
+      vacancies: 2,
+      isRemote: false,
+    },
+  ];
+
+  const getFilteredJobs = () => {
+    if (selectedFilter === 'Remotos') {
+      return [];
+    }
+    
+    if (selectedFilter === 'Recentes') {
+      return [...jobsData].sort((a, b) => a.daysAgo - b.daysAgo);
+    }
+    
+    return jobsData;
+  };
+
+  const filteredJobs = getFilteredJobs();
+
   return (
     <SafeAreaView style={styles.homeContainer}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
@@ -64,103 +126,55 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#E3F2FD' }]}>
-              <Text style={styles.logoText}>Pires</Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>Pires</Text>
-              <Text style={styles.companyCategory}>Supermercado</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 1 semana</Text>
+        {filteredJobs.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Nenhuma vaga encontrada</Text>
           </View>
-          <Text style={styles.jobTitle}>VAGA DE CAIXA</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos jovens interessados e capacitados de preferência mulher
-          </Text>
-          <Text style={styles.salary}>R$ 2.120</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>3 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#E8F5E9' }]}>
-              <Text style={[styles.logoText, { color: '#2E7D32' }]}>
-                Pinheirão
-              </Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>Pinheirão</Text>
-              <Text style={styles.companyCategory}>Supermercado</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 2 dias</Text>
-          </View>
-          <Text style={styles.jobTitle}>VAGA DE REPOSITOR</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos jovens interessados e capacitados para a vaga
-          </Text>
-          <Text style={styles.salary}>R$ 1.520</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>7 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#FFEBEE' }]}>
-              <Text style={[styles.logoText, { color: '#C62828' }]}>iFood</Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>iFood</Text>
-              <Text style={styles.companyCategory}>Restaurante</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 1 semana</Text>
-          </View>
-          <Text style={styles.jobTitle}>VAGA DE ENTREGADOR</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas
-          </Text>
-          <Text style={styles.salary}>R$ 1.000</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>2 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        ) : (
+          filteredJobs.map((job, index) => {
+            const isMostRecent = selectedFilter === 'Recentes' && index === 0;
+            
+            return (
+              <View 
+                key={job.id} 
+                style={[
+                  styles.card,
+                  isMostRecent && styles.mostRecentCard
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={[styles.companyLogo, { backgroundColor: job.logoBg }]}>
+                    <Text style={[styles.logoText, { color: job.logoColor }]}>
+                      {job.logoText}
+                    </Text>
+                  </View>
+                  <View style={styles.companyInfo}>
+                    <Text style={styles.companyName}>{job.company}</Text>
+                    <Text style={styles.companyCategory}>{job.category}</Text>
+                  </View>
+                  <Text style={styles.timeAgo}>{job.timeAgo}</Text>
+                </View>
+                <Text style={styles.jobTitle}>{job.title}</Text>
+                <Text style={styles.jobDescription}>{job.description}</Text>
+                <Text style={styles.salary}>{job.salary}</Text>
+                <View style={styles.cardFooter}>
+                  <View style={styles.vacancyInfo}>
+                    <Feather name="users" size={16} color="#8E8E93" />
+                    <Text style={styles.vacancyText}>{job.vacancies} vagas</Text>
+                  </View>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity style={styles.bookmarkButton}>
+                      <Feather name="bookmark" size={18} color="#8E8E93" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.interestButton}>
+                      <Text style={styles.interestButtonText}>Tenho interesse</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,8 +218,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   avatarContainer: {
-    width: 44,
-    height: 44,
+    width: 30,
+    height: 30,
     borderRadius: 22,
     backgroundColor: '#8BB4F7',
     justifyContent: 'center',
@@ -218,12 +232,12 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 12,
     gap: 10,
   },
   filterChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 18,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: '#CCCCCC',
@@ -243,11 +257,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#F7F7F7',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 20,
+    borderWidth: 4,
     borderColor: '#EAEAEA',
+  },
+  mostRecentCard: {
+    borderWidth: 2,
+    borderColor: '#3BB7FF',
+    backgroundColor: '#F0F9FF',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -264,7 +283,6 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#1565C0',
   },
   companyInfo: {
     flex: 1,
@@ -343,5 +361,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#007AFF',
+  },
+  emptyState: {
+    backgroundColor: '#F7F7F7',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#C4C4C4',
+    textAlign: 'center',
   },
 });
