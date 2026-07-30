@@ -12,12 +12,15 @@ import {
   ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
-export default function App() {
+export default function LoginScreen() {
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState('candidato');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,9 +30,15 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  const handleLogin = () => {
+    // Redireciona para a tela home dentro do grupo (tabs)
+    router.replace('/(tabs)/home');
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        {/* Caminho relativo correto para voltar da pasta app/ até a pasta assets/ */}
         <Image
           source={require('./assets/logo.png')}
           style={styles.logo}
@@ -51,11 +60,9 @@ export default function App() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Bloco Superior: Título + Toggle */}
         <View style={styles.topSection}>
           <Text style={styles.mainTitle}>Encontre seu estágio ideal</Text>
 
-          {/* Toggle Candidato / Empresário */}
           <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[
@@ -109,7 +116,6 @@ export default function App() {
           </View>
         </View>
 
-        {/* Bloco Central: Formulário de Login */}
         <View style={styles.formSection}>
           <View style={styles.headerTextGroup}>
             <Text style={styles.welcomeTitle}>Seja bem-vindo</Text>
@@ -141,7 +147,11 @@ export default function App() {
             <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.submitButton} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.submitButton}
+            activeOpacity={0.85}
+            onPress={handleLogin}
+          >
             <Text style={styles.submitButtonText}>Entrar</Text>
           </TouchableOpacity>
 
@@ -153,7 +163,6 @@ export default function App() {
           </View>
         </View>
 
-        {/* Bloco Inferior: Termos e Políticas */}
         <View style={styles.footerSection}>
           <Text style={styles.footerText}>
             Ao entrar ou criar uma conta você concorda com os{' '}
@@ -167,7 +176,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // SplashScreen Loading
   loadingContainer: {
     flex: 1,
     backgroundColor: '#1E1D25',
@@ -181,8 +189,6 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 20,
   },
-
-  // Layout Principal
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -194,8 +200,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     justifyContent: 'space-between',
   },
-
-  // Cabeçalho & Selector
   topSection: {
     alignItems: 'center',
     marginBottom: 28,
@@ -241,8 +245,6 @@ const styles = StyleSheet.create({
   inactiveToggleText: {
     color: '#757575',
   },
-
-  // Formulário
   formSection: {
     width: '100%',
     marginBottom: 20,
@@ -311,8 +313,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-
-  // Rodapé
   footerSection: {
     paddingHorizontal: 12,
   },
