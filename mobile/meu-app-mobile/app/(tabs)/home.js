@@ -1,42 +1,160 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
+  Text,
+  View,
   SafeAreaView,
   StatusBar,
   ScrollView,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+import Header from '../../components/Header';
+import NotificationModal from '../../components/NotificationModal';
+import ProfileMenuModal from '../../components/ProfileMenuModal';
+import JobCard from '../../components/JobCard';
+
+const INITIAL_JOBS = [
+  {
+    id: '1',
+    company: 'Pires',
+    category: 'Supermercado',
+    timeAgo: 'Há 1 semana',
+    createdAt: new Date('2026-07-24T10:00:00'),
+    title: 'VAGA DE CAIXA',
+    description: 'Procuramos jovens interessados e capacitados de preferência mulher',
+    salary: 'R$ 2.120',
+    vacancies: '3 vagas',
+    logoBg: '#E3F2FD',
+    logoTextColor: '#1565C0',
+    isRemote: false,
+  },
+  {
+    id: '2',
+    company: 'Pinheirão',
+    category: 'Supermercado',
+    timeAgo: 'Há 2 dias',
+    createdAt: new Date('2026-07-29T10:00:00'),
+    title: 'VAGA DE REPOSITOR',
+    description: 'Procuramos jovens interessados e capacitados para a vaga',
+    salary: 'R$ 1.520',
+    vacancies: '7 vagas',
+    logoBg: '#E8F5E9',
+    logoTextColor: '#2E7D32',
+    isRemote: false,
+  },
+  {
+    id: '3',
+    company: 'iFood',
+    category: 'Restaurante',
+    timeAgo: 'Há 5 dias',
+    createdAt: new Date('2026-07-26T10:00:00'),
+    title: 'VAGA DE ENTREGADOR',
+    description: 'Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas',
+    salary: 'R$ 1.000',
+    vacancies: '2 vagas',
+    logoBg: '#FFEBEE',
+    logoTextColor: '#C62828',
+    isRemote: false,
+  },
+];
 
 export default function HomeScreen() {
   const [selectedFilter, setSelectedFilter] = useState('Para você');
+  const [showNotification, setShowNotification] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isSettingsActive, setIsSettingsActive] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const [jobs, setJobs] = useState([]);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    setJobs(INITIAL_JOBS);
+  }, []);
+
+  const handleLogout = () => {
+    setShowProfileMenu(false);
+    setIsLoggingOut(true);
+
+    setTimeout(() => {
+      setIsLoggingOut(false);
+      router.replace('/');
+    }, 1000);
+  };
+
+  const handleGoToProfile = () => {
+    setShowProfileMenu(false);
+    router.push('/perfil');
+  };
+
+  const handleGoToSettings = () => {
+    setIsSettingsActive(true);
+    setShowNotification(false);
+    setShowProfileMenu(false);
+
+    setTimeout(() => {
+      setIsSettingsActive(false);
+      router.push('/configuracoes');
+    }, 150);
+  };
+
+  const getFilteredJobs = () => {
+    if (selectedFilter === 'Remotos') {
+      return jobs.filter((job) => job.isRemote);
+    }
+
+    if (selectedFilter === 'Recentes') {
+      return [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    return jobs;
+  };
+
+  const filteredJobs = getFilteredJobs();
 
   return (
     <SafeAreaView style={styles.homeContainer}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
-      <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={20} color="#8E8E93" />
-          <TextInput
-            placeholder="Pesquisa"
-            placeholderTextColor="#8E8E93"
-            style={styles.searchInput}
-          />
+      <Modal visible={isLoggingOut} transparent animationType="fade">
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#3BB7FF" />
+            <Text style={styles.loadingText}>Saindo...</Text>
+          </View>
         </View>
-        <TouchableOpacity style={styles.headerIconBtn}>
-          <Feather name="bell" size={24} color="#555" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.headerIconBtn}>
-          <Feather name="settings" size={24} color="#555" />
-        </TouchableOpacity>
-        <View style={styles.avatarContainer}>
-          <Feather name="user" size={24} color="#333" />
-        </View>
-      </View>
+      </Modal>
+
+      <Header
+        showNotification={showNotification}
+        onToggleNotification={() => {
+          setShowProfileMenu(false);
+          setShowNotification(!showNotification);
+        }}
+        onGoToSettings={handleGoToSettings}
+        isSettingsActive={isSettingsActive}
+        onToggleProfileMenu={() => {
+          setShowNotification(false);
+          setShowProfileMenu(!showProfileMenu);
+        }}
+      />
+
+      <NotificationModal
+        visible={showNotification}
+        onClose={() => setShowNotification(false)}
+      />
+
+      <ProfileMenuModal
+        visible={showProfileMenu}
+        onClose={() => setShowProfileMenu(false)}
+        onGoToProfile={handleGoToProfile}
+        onLogout={handleLogout}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -64,103 +182,32 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#E3F2FD' }]}>
-              <Text style={styles.logoText}>Pires</Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>Pires</Text>
-              <Text style={styles.companyCategory}>Supermercado</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 1 semana</Text>
-          </View>
-          <Text style={styles.jobTitle}>VAGA DE CAIXA</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos jovens interessados e capacitados de preferência mulher
-          </Text>
-          <Text style={styles.salary}>R$ 2.120</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>3 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        {filteredJobs.length > 0 ? (
+          filteredJobs.map((job, index) => {
+            const isHighlight = selectedFilter === 'Recentes' && index === 0;
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#E8F5E9' }]}>
-              <Text style={[styles.logoText, { color: '#2E7D32' }]}>
-                Pinheirão
-              </Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>Pinheirão</Text>
-              <Text style={styles.companyCategory}>Supermercado</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 2 dias</Text>
+            return (
+              <View
+                key={job.id}
+                style={isHighlight ? styles.mostRecentHighlight : null}
+              >
+                {isHighlight && (
+                  <View style={styles.recentBadge}>
+                    <Text style={styles.recentBadgeText}>Mais recente</Text>
+                  </View>
+                )}
+                <JobCard item={job} />
+              </View>
+            );
+          })
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>Nenhuma vaga encontrada</Text>
+            <Text style={styles.emptySubText}>
+              Não há vagas disponíveis para a categoria selecionada no momento.
+            </Text>
           </View>
-          <Text style={styles.jobTitle}>VAGA DE REPOSITOR</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos jovens interessados e capacitados para a vaga
-          </Text>
-          <Text style={styles.salary}>R$ 1.520</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>7 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.companyLogo, { backgroundColor: '#FFEBEE' }]}>
-              <Text style={[styles.logoText, { color: '#C62828' }]}>iFood</Text>
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>iFood</Text>
-              <Text style={styles.companyCategory}>Restaurante</Text>
-            </View>
-            <Text style={styles.timeAgo}>Há 1 semana</Text>
-          </View>
-          <Text style={styles.jobTitle}>VAGA DE ENTREGADOR</Text>
-          <Text style={styles.jobDescription}>
-            Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas
-          </Text>
-          <Text style={styles.salary}>R$ 1.000</Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.vacancyInfo}>
-              <Feather name="users" size={16} color="#8E8E93" />
-              <Text style={styles.vacancyText}>2 vagas</Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.bookmarkButton}>
-                <Feather name="bookmark" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.interestButton}>
-                <Text style={styles.interestButtonText}>Tenho interesse</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -170,47 +217,6 @@ const styles = StyleSheet.create({
   homeContainer: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: '#FAFAFA',
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 48,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#333333',
-  },
-  headerIconBtn: {
-    padding: 4,
-  },
-  avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#8BB4F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
   },
   homeContent: {
     paddingHorizontal: 16,
@@ -241,107 +247,61 @@ const styles = StyleSheet.create({
   activeFilterText: {
     color: '#FFFFFF',
   },
-  card: {
-    backgroundColor: '#F7F7F7',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#EAEAEA',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  companyLogo: {
-    width: 44,
-    height: 44,
+  mostRecentHighlight: {
+    borderWidth: 2,
+    borderColor: '#3BB7FF',
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 16,
+    position: 'relative',
   },
-  logoText: {
+  recentBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 16,
+    backgroundColor: '#3BB7FF',
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    zIndex: 1,
+  },
+  recentBadgeText: {
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#1565C0',
   },
-  companyInfo: {
-    flex: 1,
-    marginLeft: 12,
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  companyName: {
-    fontSize: 14,
-    fontWeight: '700',
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#333333',
-  },
-  companyCategory: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  timeAgo: {
-    fontSize: 11,
-    color: '#8E8E93',
-  },
-  jobTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#111111',
     marginBottom: 6,
   },
-  jobDescription: {
-    fontSize: 12,
-    color: '#777777',
-    marginBottom: 12,
-    lineHeight: 16,
-  },
-  salary: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#3BB7FF',
-    textAlign: 'right',
-    marginBottom: 12,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#EBEBEB',
-    paddingTop: 12,
-  },
-  vacancyInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  vacancyText: {
-    fontSize: 12,
+  emptySubText: {
+    fontSize: 13,
     color: '#8E8E93',
+    textAlign: 'center',
   },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bookmarkButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EBEBEB',
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  interestButton: {
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
+  loadingBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
     borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    alignItems: 'center',
+    gap: 12,
+    elevation: 5,
   },
-  interestButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#007AFF',
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
 });

@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,9 @@ export default function LoginScreen() {
   const [userType, setUserType] = useState('candidato');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [cnpj, setCnpj] = useState('');
+
+  const [modalVisible, setModalVisible] = useState(false);
 
   const router = useRouter();
 
@@ -31,14 +35,16 @@ export default function LoginScreen() {
   }, []);
 
   const handleLogin = () => {
-    // Redireciona para a tela home dentro do grupo (tabs)
     router.replace('/(tabs)/home');
+  };
+
+  const handleOpenLegalModal = () => {
+    setModalVisible(true);
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        {/* Caminho relativo correto para voltar da pasta app/ até a pasta assets/ */}
         <Image
           source={require('./assets/logo.png')}
           style={styles.logo}
@@ -124,6 +130,17 @@ export default function LoginScreen() {
             </Text>
           </View>
 
+          {userType === 'empresario' && (
+            <TextInput
+              style={styles.input}
+              placeholder="CNPJ"
+              placeholderTextColor="#B0B0B0"
+              value={cnpj}
+              onChangeText={setCnpj}
+              keyboardType="numeric"
+            />
+          )}
+
           <TextInput
             style={styles.input}
             placeholder="E-mail"
@@ -166,11 +183,36 @@ export default function LoginScreen() {
         <View style={styles.footerSection}>
           <Text style={styles.footerText}>
             Ao entrar ou criar uma conta você concorda com os{' '}
-            <Text style={styles.footerLink}>Termos de Uso</Text> e{' '}
-            <Text style={styles.footerLink}>Política de Privacidade</Text>
+            <Text style={styles.footerLink} onPress={handleOpenLegalModal}>
+              Termos de Uso
+            </Text>{' '}
+            e{' '}
+            <Text style={styles.footerLink} onPress={handleOpenLegalModal}>
+              Política de Privacidade
+            </Text>
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <SafeAreaView style={styles.fullScreenModal}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Feather name="arrow-left" size={24} color="#000000" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.blankModalContent} />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -324,5 +366,24 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     color: '#3BB7FF',
+  },
+  fullScreenModal: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  blankModalContent: {
+    flexGrow: 1,
+    backgroundColor: '#FFFFFF',
   },
 });

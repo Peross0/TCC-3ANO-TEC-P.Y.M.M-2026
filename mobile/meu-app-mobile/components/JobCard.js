@@ -1,35 +1,38 @@
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../constants/colors';
+import { Feather } from '@expo/vector-icons';
 
-export default function JobCard({ vaga }) {
+export default function JobCard({ item }) {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.empresaContainer}>
-          <View style={styles.avatarSmall}>
-            <Ionicons name="business" size={16} color="#666" />
-          </View>
-          <View>
-            <Text style={styles.empresaNome}>{vaga.empresa}</Text>
-            <Text style={styles.empresaSegmento}>{vaga.segmento}</Text>
-          </View>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={[styles.companyLogo, { backgroundColor: item.logoBg }]}>
+          <Text style={[styles.logoText, { color: item.logoTextColor || '#1565C0' }]}>
+            {item.company}
+          </Text>
         </View>
-        <Text style={styles.tempo}>{vaga.tempo}</Text>
+        <View style={styles.companyInfo}>
+          <Text style={styles.companyName}>{item.company}</Text>
+          <Text style={styles.companyCategory}>{item.category}</Text>
+        </View>
+        <Text style={styles.timeAgo}>{item.timeAgo}</Text>
       </View>
 
-      <Text style={styles.titulo}>{vaga.vaga}</Text>
-      <Text style={styles.descricao}>{vaga.desc}</Text>
+      <Text style={styles.jobTitle}>{item.title}</Text>
+      <Text style={styles.jobDescription}>{item.description}</Text>
+      <Text style={styles.salary}>{item.salary}</Text>
 
-      <View style={styles.footer}>
-        <View style={styles.vagasInfo}>
-          <Ionicons name="people-outline" size={16} color="#666" />
-          <Text style={styles.qtdVagas}>3 vagas</Text>
+      <View style={styles.cardFooter}>
+        <View style={styles.vacancyInfo}>
+          <Feather name="users" size={16} color="#8E8E93" />
+          <Text style={styles.vacancyText}>{item.vacancies}</Text>
         </View>
-        <View style={styles.footerRight}>
-          <Text style={styles.valor}>{vaga.valor}</Text>
-          <TouchableOpacity style={styles.interesseButton}>
-            <Text style={styles.interesseButtonText}>Tenho interesse</Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.bookmarkButton}>
+            <Feather name="bookmark" size={18} color="#8E8E93" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.interestButton}>
+            <Text style={styles.interestButtonText}>Tenho interesse</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -38,92 +41,106 @@ export default function JobCard({ vaga }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
+  card: {
+    backgroundColor: '#F7F7F7',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e8e8e8',
+    borderColor: '#EAEAEA',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  empresaContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  avatarSmall: {
-    backgroundColor: '#eee',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    alignItems: 'center',
+  companyLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
-    marginRight: 8,
+    alignItems: 'center',
   },
-  empresaNome: {
+  logoText: {
+    fontSize: 10,
     fontWeight: 'bold',
-    fontSize: 13,
   },
-  empresaSegmento: {
-    fontSize: 11,
-    color: '#777',
+  companyInfo: {
+    flex: 1,
+    marginLeft: 12,
   },
-  tempo: {
-    fontSize: 11,
-    color: '#aaa',
-  },
-  titulo: {
+  companyName: {
     fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 15,
-    color: '#000',
+    fontWeight: '700',
+    color: '#333333',
   },
-  descricao: {
-    fontSize: 13,
-    color: '#555',
-    marginVertical: 8,
+  companyCategory: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  timeAgo: {
+    fontSize: 11,
+    color: '#8E8E93',
+  },
+  jobTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111111',
+    marginBottom: 6,
+  },
+  jobDescription: {
+    fontSize: 12,
+    color: '#777777',
+    marginBottom: 12,
     lineHeight: 16,
   },
-  footer: {
+  salary: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#3BB7FF',
+    textAlign: 'right',
+    marginBottom: 12,
+  },
+  cardFooter: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EBEBEB',
+    paddingTop: 12,
   },
-  vagasInfo: {
+  vacancyInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
-  qtdVagas: {
+  vacancyText: {
     fontSize: 12,
-    color: '#666',
+    color: '#8E8E93',
   },
-  footerRight: {
+  actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
-  valor: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginRight: 10,
+  bookmarkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EBEBEB',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  interesseButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingHorizontal: 12,
+  interestButton: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderRadius: 16,
     paddingVertical: 6,
-    borderRadius: 15,
+    paddingHorizontal: 14,
   },
-  interesseButtonText: {
-    color: colors.primary,
+  interestButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#007AFF',
   },
 });
