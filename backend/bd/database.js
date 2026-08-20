@@ -4,7 +4,6 @@ const db = new sqlite3.Database('./database.db');
 
 db.serialize(() => {
 
-    // Tabela de usuários
     db.run(`
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,7 +15,6 @@ db.serialize(() => {
         )
     `);
 
-    // Tabela de empresas
     db.run(`
         CREATE TABLE IF NOT EXISTS empresas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +26,6 @@ db.serialize(() => {
         )
     `);
 
-    // Tabela de vagas
     db.run(`
         CREATE TABLE IF NOT EXISTS vagas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +38,6 @@ db.serialize(() => {
         )
     `);
 
-    // Tabela de candidaturas
     db.run(`
         CREATE TABLE IF NOT EXISTS candidaturas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
