@@ -34,7 +34,8 @@ export default function PerfilScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Avatar e Mudar foto */}
+        
+        //Avatar e Mudar foto
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
             <FontAwesome5 name="user-alt" size={50} color="#555" />
@@ -44,7 +45,7 @@ export default function PerfilScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Inputs de Informação */}
+        //Informação
         <View style={styles.inputGroup}>
           <TextInput
             style={styles.input}
@@ -77,7 +78,6 @@ export default function PerfilScreen() {
           />
         </View>
 
-        {/* Anexar Currículo */}
         <TouchableOpacity style={styles.curriculoCard} activeOpacity={0.8}>
           <Text style={styles.curriculoText}>Curriculo</Text>
           <Feather name="paperclip" size={22} color="#333" />

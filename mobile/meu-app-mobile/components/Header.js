@@ -20,7 +20,7 @@ export default function Header({
         />
       </View>
 
-      {/* Notificação */}
+      // Notificação
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onToggleNotification}
@@ -32,7 +32,7 @@ export default function Header({
         />
       </TouchableOpacity>
 
-      {/* Configurações (Cinza por padrão, azul ao clicar) */}
+      //Configurações do clique
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onGoToSettings}
@@ -45,7 +45,7 @@ export default function Header({
         />
       </TouchableOpacity>
 
-      {/* Perfil */}
+      //Perfil da conta 
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={onToggleProfileMenu}
