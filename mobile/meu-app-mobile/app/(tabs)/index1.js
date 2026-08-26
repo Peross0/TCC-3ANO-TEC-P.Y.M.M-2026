@@ -12,9 +12,10 @@ import {
   Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import MessageHeader from '../../components/MessageHeader';
+import MessageInput from '../../components/MessageInput';
 
 export default function MessagesScreen() {
-  // Lista de conversas zerada (pronta para integração com seu banco de dados)
   const [conversations, setConversations] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [chatMessages, setChatMessages] = useState({});
@@ -60,33 +61,15 @@ export default function MessagesScreen() {
       c.jobTitle?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // RENDER: TELA DE CHAT ABERTA
   if (activeChat) {
     const messages = chatMessages[activeChat.id] || [];
 
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+        
+        <MessageHeader activeChat={activeChat} onBack={() => setActiveChat(null)} />
 
-        {/* Cabeçalho do Chat */}
-        <View style={styles.chatHeader}>
-          <TouchableOpacity onPress={() => setActiveChat(null)} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color="#333" />
-          </TouchableOpacity>
-
-          <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || '#E3F2FD' }]}>
-            <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || '#1565C0' }]}>
-              {activeChat.company ? activeChat.company.charAt(0) : 'C'}
-            </Text>
-          </View>
-
-          <View style={styles.chatHeaderInfo}>
-            <Text style={styles.chatHeaderCompany}>{activeChat.company}</Text>
-            <Text style={styles.chatHeaderJob}>{activeChat.jobTitle}</Text>
-          </View>
-        </View>
-
-        {/* Corpo do Chat */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.chatBody}
@@ -120,35 +103,24 @@ export default function MessagesScreen() {
             }
           />
 
-          {/* Campo de Digitação */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Escreva uma mensagem..."
-              placeholderTextColor="#8E8E93"
-              value={inputText}
-              onChangeText={setInputText}
-            />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-              <Feather name="send" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+          <MessageInput
+            value={inputText}
+            onChangeText={setInputText}
+            onSend={handleSendMessage}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
 
-  // RENDER: LISTA DE CONVERSAS (INICIAL)
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
-      {/* Cabeçalho Principal */}
       <View style={styles.header}>
         <Text style={styles.title}>Mensagens</Text>
       </View>
 
-      {/* Barra de Pesquisa */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Feather name="search" size={18} color="#8E8E93" />
@@ -162,7 +134,6 @@ export default function MessagesScreen() {
         </View>
       </View>
 
-      {/* Lista de Conversas */}
       <FlatList
         data={filteredConversations}
         keyExtractor={(item) => item.id}
@@ -189,12 +160,6 @@ export default function MessagesScreen() {
                 {item.lastMessage}
               </Text>
             </View>
-
-            {item.unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.unreadCount}</Text>
-              </View>
-            )}
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -202,7 +167,7 @@ export default function MessagesScreen() {
             <Feather name="message-square" size={40} color="#CCCCCC" />
             <Text style={styles.emptyTitle}>Sua caixa de entrada está vazia</Text>
             <Text style={styles.emptySubText}>
-              Suas conversas sobre candidaturas aparecerão aqui.
+              Suas conversas aparecerão aqui.
             </Text>
           </View>
         }
@@ -299,56 +264,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777777',
   },
-  badge: {
-    backgroundColor: '#3BB7FF',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    marginLeft: 8,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAEAEA',
-  },
-  backBtn: {
-    paddingRight: 12,
-  },
-  avatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarTextSmall: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  chatHeaderInfo: {
-    marginLeft: 10,
-  },
-  chatHeaderCompany: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333333',
-  },
-  chatHeaderJob: {
-    fontSize: 11,
-    color: '#8E8E93',
-  },
   chatBody: {
     flex: 1,
   },
@@ -390,34 +305,6 @@ const styles = StyleSheet.create({
   },
   userMessageTime: {
     color: '#E0F4FF',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#EAEAEA',
-    gap: 10,
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: '#333333',
-    maxHeight: 100,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3BB7FF',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   emptyContainer: {
     paddingVertical: 60,
