@@ -12,75 +12,77 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 export default function PerfilScreen() {
-  const [nome, setNome] = useState('');
+  const [nome, setNome] = useState('Carlos Silva');
   const [genero, setGenero] = useState('');
   const [descricao, setDescricao] = useState('');
-
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Perfil */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color="#333" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.btnIcon}>
+          <Feather name="arrow-left" size={20} color="#333" />
         </TouchableOpacity>
-        <View style={styles.perfilPill}>
-          <Text style={styles.perfilPillText}>Perfil</Text>
-        </View>
-        <TouchableOpacity>
-          <Feather name="edit-3" size={22} color="#3BB7FF" />
+        <Text style={styles.headerTitle}>Editar Perfil</Text>
+        <TouchableOpacity style={styles.btnIcon}>
+          <Feather name="more-horizontal" size={20} color="#333" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        //Avatar e Mudar foto
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <FontAwesome5 name="user-alt" size={50} color="#555" />
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Avatar */}
+        <View style={styles.avatarWrap}>
+          <View style={styles.avatar}>
+            <FontAwesome5 name="user-alt" size={40} color="#666" />
           </View>
-          <TouchableOpacity style={styles.mudarFotoBtn}>
-            <Text style={styles.mudarFotoText}>Mudar foto</Text>
+          <TouchableOpacity style={styles.camBadge}>
+            <Feather name="camera" size={14} color="#FFF" />
           </TouchableOpacity>
         </View>
 
-        //Informação
-        <View style={styles.inputGroup}>
+        {/* Inputs */}
+        <View style={styles.form}>
+          <Text style={styles.label}>Nome</Text>
           <TextInput
             style={styles.input}
-            placeholder="Nome"
-            placeholderTextColor="#888"
             value={nome}
             onChangeText={setNome}
+            placeholder="Seu nome"
           />
+
+          <Text style={styles.label}>Gênero</Text>
           <TextInput
             style={styles.input}
-            placeholder="Gênero"
-            placeholderTextColor="#888"
             value={genero}
             onChangeText={setGenero}
+            placeholder="Seu gênero"
           />
-        </View>
 
-        {/* Descrição com Contador 0/300 */}
-        <View style={styles.descSection}>
-          <View style={styles.descHeader}>
-            <Text style={styles.descTitle}>Breve descrição</Text>
-            <Text style={styles.descCounter}>{descricao.length} / 300</Text>
+          <View style={styles.descHead}>
+            <Text style={styles.label}>Sobre</Text>
+            <Text style={styles.counter}>{descricao.length}/300</Text>
           </View>
           <TextInput
-            style={styles.descInput}
-            multiline
-            maxLength={300}
+            style={[styles.input, styles.descInput]}
             value={descricao}
             onChangeText={setDescricao}
+            placeholder="Breve descrição..."
+            multiline
+            maxLength={300}
           />
         </View>
 
-        <TouchableOpacity style={styles.curriculoCard} activeOpacity={0.8}>
-          <Text style={styles.curriculoText}>Curriculo</Text>
-          <Feather name="paperclip" size={22} color="#333" />
+        {/* Currículo */}
+        <TouchableOpacity style={styles.card}>
+          <Feather name="file-text" size={20} color="#3BB7FF" />
+          <Text style={styles.cardText}>Anexar Currículo (PDF)</Text>
+          <Feather name="paperclip" size={18} color="#888" />
+        </TouchableOpacity>
+
+        {/* Botão Salvar */}
+        <TouchableOpacity style={styles.saveBtn}>
+          <Text style={styles.saveText}>Salvar</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -88,72 +90,66 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#FAFAFA' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 12,
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderColor: '#EEE',
   },
-  backBtn: { padding: 4 },
-  perfilPill: {
-    backgroundColor: '#F2F2F2',
-    paddingHorizontal: 32,
-    paddingVertical: 8,
-    borderRadius: 20,
-    elevation: 1,
-  },
-  perfilPillText: { fontSize: 16, fontWeight: 'bold', color: '#555' },
-  content: { paddingHorizontal: 28, paddingTop: 10, paddingBottom: 30 },
-  avatarSection: { alignItems: 'center', marginVertical: 16 },
-  avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#8BB4F7',
+  btnIcon: { padding: 8, borderRadius: 20, backgroundColor: '#F0F0F0' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#111' },
+  content: { padding: 20 },
+  avatarWrap: { alignSelf: 'center', marginBottom: 20 },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#E5E5E5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  mudarFotoBtn: { paddingVertical: 4 },
-  mudarFotoText: { fontSize: 18, color: '#3BB7FF', fontWeight: 'bold' },
-  inputGroup: { gap: 12, marginTop: 10 },
+  camBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#3BB7FF',
+    padding: 8,
+    borderRadius: 15,
+  },
+  form: { gap: 8, marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 8 },
   input: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#CCC',
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    paddingVertical: 6,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 14,
   },
-  descSection: { marginTop: 28 },
-  descHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  descTitle: { fontSize: 18, fontWeight: 'bold', color: '#444' },
-  descCounter: { fontSize: 16, color: '#888', fontWeight: '600' },
-  descInput: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#CCC',
-    minHeight: 40,
-    fontSize: 15,
-    color: '#333',
-  },
-  curriculoCard: {
+  descHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  counter: { fontSize: 11, color: '#888' },
+  descInput: { height: 80, textAlignVertical: 'top' },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: '#CCC',
-    borderRadius: 25,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    marginTop: 32,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    padding: 12,
+    gap: 10,
+    marginBottom: 20,
   },
-  curriculoText: { fontSize: 20, fontWeight: 'bold', color: '#666' },
+  cardText: { flex: 1, fontSize: 14, color: '#444' },
+  saveBtn: {
+    backgroundColor: '#3BB7FF',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });
