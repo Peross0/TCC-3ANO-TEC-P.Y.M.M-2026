@@ -10,14 +10,15 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 import Header from '../../components/Header';
 import NotificationModal from '../../components/NotificationModal';
 import ProfileMenuModal from '../../components/ProfileMenuModal';
 import JobCard from '../../components/JobCard';
 
-const INITIAL_JOBS = [
+const INITIAL_JOBS_CANDIDATE = [
   {
     id: '1',
     company: 'Pires',
@@ -63,6 +64,9 @@ const INITIAL_JOBS = [
 ];
 
 export default function HomeScreen() {
+  const params = useLocalSearchParams();
+  const isEmployer = params.role === 'empresario';
+
   const [selectedFilter, setSelectedFilter] = useState('Para você');
   const [showNotification, setShowNotification] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -70,10 +74,12 @@ export default function HomeScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [jobs, setJobs] = useState([]);
+  const [employerJobs, setEmployerJobs] = useState([]); // Inicia vazio para mostrar o layout da foto
+
   const router = useRouter();
 
   useEffect(() => {
-    setJobs(INITIAL_JOBS);
+    setJobs(INITIAL_JOBS_CANDIDATE);
   }, []);
 
   const handleLogout = () => {
@@ -102,15 +108,18 @@ export default function HomeScreen() {
     }, 150);
   };
 
+  const handleCreateJob = () => {
+    // Redireciona para a tela de criação de vagas (ajuste a rota se necessário)
+    router.push('/criar-vaga');
+  };
+
   const getFilteredJobs = () => {
     if (selectedFilter === 'Remotos') {
       return jobs.filter((job) => job.isRemote);
     }
 
     if (selectedFilter === 'Recentes') {
-      return [...jobs].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      return [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     return jobs;
@@ -122,6 +131,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.homeContainer}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
+      {/* Modal de Logout */}
       <Modal visible={isLoggingOut} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
@@ -161,53 +171,87 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.homeContent}
       >
-        <View style={styles.filterContainer}>
-          {['Para você', 'Recentes', 'Remotos'].map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              onPress={() => setSelectedFilter(filter)}
-              style={[
-                styles.filterChip,
-                selectedFilter === filter && styles.activeFilterChip,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === filter && styles.activeFilterText,
-                ]}
+        {isEmployer ? (
+          /* ==================== TELA DO EMPRESÁRIO ==================== */
+          <View style={styles.employerSection}>
+            {/* Barra Arredondada de Criar Vaga */}
+            <View style={styles.createJobBarContainer}>
+              <TouchableOpacity
+                style={styles.createJobPillButton}
+                activeOpacity={0.8}
+                onPress={handleCreateJob}
               >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={styles.createJobPillText}>Criar Vaga</Text>
+                <Feather name="plus-circle" size={18} color="#000000" />
+              </TouchableOpacity>
+            </View>
 
-        {filteredJobs.length > 0 ? (
-          filteredJobs.map((job, index) => {
-            const isHighlight = selectedFilter === 'Recentes' && index === 0;
-
-            return (
-              <View
-                key={job.id}
-                style={isHighlight ? styles.mostRecentHighlight : null}
-              >
-                {isHighlight && (
-                  <View style={styles.recentBadge}>
-                    <Text style={styles.recentBadgeText}>Mais recente</Text>
-                  </View>
-                )}
-                <JobCard item={job} />
+            {/* Conteúdo: Estado Vazio ou Lista de Vagas */}
+            {employerJobs.length === 0 ? (
+              <View style={styles.emptyEmployerContainer}>
+                <Text style={styles.emptyEmployerText}>Não há vaga criada</Text>
               </View>
-            );
-          })
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>Nenhuma vaga encontrada</Text>
-            <Text style={styles.emptySubText}>
-              Não há vagas disponíveis para a categoria selecionada no momento.
-            </Text>
+            ) : (
+              employerJobs.map((job) => (
+                <View key={job.id} style={styles.employerJobCard}>
+                  <Text style={styles.employerJobTitle}>{job.title}</Text>
+                  <Text style={styles.employerJobDetails}>{job.category}</Text>
+                </View>
+              ))
+            )}
           </View>
+        ) : (
+          /* ==================== TELA DO CANDIDATO ==================== */
+          <>
+            <View style={styles.filterContainer}>
+              {['Para você', 'Recentes', 'Remotos'].map((filter) => (
+                <TouchableOpacity
+                  key={filter}
+                  onPress={() => setSelectedFilter(filter)}
+                  style={[
+                    styles.filterChip,
+                    selectedFilter === filter && styles.activeFilterChip,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      selectedFilter === filter && styles.activeFilterText,
+                    ]}
+                  >
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {filteredJobs.length > 0 ? (
+              filteredJobs.map((job, index) => {
+                const isHighlight = selectedFilter === 'Recentes' && index === 0;
+
+                return (
+                  <View
+                    key={job.id}
+                    style={isHighlight ? styles.mostRecentHighlight : null}
+                  >
+                    {isHighlight && (
+                      <View style={styles.recentBadge}>
+                        <Text style={styles.recentBadgeText}>Mais recente</Text>
+                      </View>
+                    )}
+                    <JobCard item={job} />
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>Nenhuma vaga encontrada</Text>
+                <Text style={styles.emptySubText}>
+                  Não há vagas disponíveis para a categoria selecionada no momento.
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -223,6 +267,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
+  // Candidato
   filterContainer: {
     flexDirection: 'row',
     marginBottom: 12,
@@ -273,7 +318,7 @@ const styles = StyleSheet.create({
   emptyContainer: {
     paddingVertical: 60,
     alignItems: 'center',
-    justify: 'center',
+    justifyContent: 'center',
   },
   emptyTitle: {
     fontSize: 16,
@@ -304,5 +349,64 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+
+  // Empresário (Igual à foto)
+  employerSection: {
+    marginTop: 10,
+  },
+  createJobBarContainer: {
+    width: '100%',
+    height: 54,
+    backgroundColor: '#F3F3F3',
+    borderRadius: 27,
+    borderWidth: 1,
+    borderColor: '#888888',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  createJobPillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBEBEB',
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#777777',
+    gap: 6,
+  },
+  createJobPillText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  emptyEmployerContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  emptyEmployerText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#AAAAAA',
+  },
+  employerJobCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  employerJobTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222222',
+  },
+  employerJobDetails: {
+    fontSize: 13,
+    color: '#757575',
+    marginTop: 4,
   },
 });

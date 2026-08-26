@@ -35,7 +35,10 @@ export default function LoginScreen() {
   }, []);
 
   const handleLogin = () => {
-    router.replace('/(tabs)/home');
+    router.replace({
+      pathname: '/(tabs)/home',
+      params: { role: userType },
+    });
   };
 
   const handleOpenLegalModal = () => {
@@ -214,8 +217,10 @@ export default function LoginScreen() {
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
+   
   );
 }
+
 
 const styles = StyleSheet.create({
   loadingContainer: {

@@ -4,13 +4,15 @@ import { Feather } from '@expo/vector-icons';
 
 export default function JobCard({ item }) {
   return (
+
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={[styles.companyLogo, { backgroundColor: item.logoBg }]}>
           <Text style={[styles.logoText, { color: item.logoTextColor || '#1565C0' }]}>
             {item.company}
           </Text>
-        </View>
+          </View>
+
         <View style={styles.companyInfo}>
           <Text style={styles.companyName}>{item.company}</Text>
           <Text style={styles.companyCategory}>{item.category}</Text>
@@ -27,6 +29,8 @@ export default function JobCard({ item }) {
           <Feather name="users" size={16} color="#8E8E93" />
           <Text style={styles.vacancyText}>{item.vacancies}</Text>
         </View>
+
+        
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.bookmarkButton}>
             <Feather name="bookmark" size={18} color="#8E8E93" />
