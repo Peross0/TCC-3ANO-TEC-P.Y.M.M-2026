@@ -1,18 +1,41 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+import PagInicial from './paginicial';
+
 import {
   StyleSheet,
   Text,
   View,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 
 export default function App() {
+  // Controla se o usuário está na tela de cadastro
   const [isRegister, setIsRegister] = useState(false);
+
+  // Dados dos campos
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+
+  // Controla se deve mostrar a página inicial
+  const [mostrarPaginaInicial, setMostrarPaginaInicial] = useState(false);
+
+  // Controla a tela de carregamento inicial
+  const [carregando, setCarregando] = useState(true);
+
+  // Executado quando o aplicativo é aberto
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCarregando(false);
+    }, 2500);
+
+    // Limpa o timer caso o componente seja desmontado
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = () => {
     if (isRegister) {
@@ -21,20 +44,60 @@ export default function App() {
       console.log('Email:', email);
       console.log('Senha:', senha);
 
-      alert('Cadastro realizado com sucesso!');
+
+      setMostrarPaginaInicial(true);
     } else {
       console.log('Login');
       console.log('Email:', email);
       console.log('Senha:', senha);
 
-      alert('Login realizado!');
+
+      setMostrarPaginaInicial(true);
     }
   };
 
+  // ==========================================
+  // TELA DE CARREGAMENTO
+  // ==========================================
+  if (carregando) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingLogo}>
+          Conecta Fácil
+        </Text>
+
+        <ActivityIndicator
+          size="large"
+          color="#2563EB"
+        />
+
+        <Text style={styles.loadingText}>
+          Carregando...
+        </Text>
+
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
+
+  // ==========================================
+  // PÁGINA INICIAL
+  // ==========================================
+  if (mostrarPaginaInicial) {
+    return <PagInicial />;
+  }
+
+  // ==========================================
+  // TELA DE LOGIN / CADASTRO
+  // ==========================================
   return (
     <View style={styles.container}>
+
       <View style={styles.card}>
-        <Text style={styles.logo}>Conecta Fácil</Text>
+
+        <Text style={styles.logo}>
+          Conecta Fácil
+        </Text>
 
         <Text style={styles.title}>
           {isRegister ? 'Criar Conta' : 'Entrar'}
@@ -46,7 +109,6 @@ export default function App() {
             : 'Faça login para acessar o sistema'}
         </Text>
 
-        {/* Campo Nome aparece somente no cadastro */}
         {isRegister && (
           <TextInput
             style={styles.input}
@@ -59,7 +121,7 @@ export default function App() {
 
         <TextInput
           style={styles.input}
-          placeholder="Digite seu e-mail"
+          placeholder="E-mail"
           placeholderTextColor="#999"
           value={email}
           onChangeText={setEmail}
@@ -69,7 +131,7 @@ export default function App() {
 
         <TextInput
           style={styles.input}
-          placeholder="Digite sua senha"
+          placeholder="Senha"
           placeholderTextColor="#999"
           value={senha}
           onChangeText={setSenha}
@@ -103,6 +165,7 @@ export default function App() {
         <Text style={styles.footer}>
           © 2026 Conecta Fácil
         </Text>
+
       </View>
 
       <StatusBar style="dark" />
@@ -111,6 +174,35 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+
+  // ==========================================
+  // TELA DE CARREGAMENTO
+  // ==========================================
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#2b2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  loadingLogo: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#01629e',
+    marginBottom: 40,
+  },
+
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+
+  // ==========================================
+  // TELA DE LOGIN
+  // ==========================================
+
   container: {
     flex: 1,
     backgroundColor: '#E9EEF5',
