@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import { Link } from 'expo-router';
 
 export default function App() {
   const [isRegister, setIsRegister] = useState(false);
@@ -79,6 +80,7 @@ export default function App() {
         <TouchableOpacity
           style={styles.button}
           onPress={handleSubmit}
+          
         >
           <Text style={styles.buttonText}>
             {isRegister ? 'Cadastrar' : 'Entrar'}
@@ -86,19 +88,19 @@ export default function App() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => {
-            setIsRegister(!isRegister);
-            setNome('');
-            setEmail('');
-            setSenha('');
-          }}
-        >
-          <Text style={styles.registerText}>
-            {isRegister
-              ? 'Já possui conta? Entrar'
-              : 'Não possui conta? Cadastre-se'}
-          </Text>
-        </TouchableOpacity>
+           onPress={() => {
+           setIsRegister(!isRegister);
+           setNome('');
+           setEmail('');
+           setSenha('');
+        }}
+    >
+  <Text style={styles.registerText}>
+    {isRegister
+      ? 'Já possui conta? Entrar'
+      : 'Não possui conta? Cadastre-se'}
+  </Text>
+</TouchableOpacity>
 
         <Text style={styles.footer}>
           © 2026 Conecta Fácil
