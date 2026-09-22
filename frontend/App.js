@@ -6,36 +6,82 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 
 export default function App() {
   const [isRegister, setIsRegister] = useState(false);
+
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
   const handleSubmit = () => {
     if (isRegister) {
+      if (!nome || !email || !senha) {
+        Alert.alert(
+          'Atenção',
+          'Preencha todos os campos para realizar o cadastro.'
+        );
+        return;
+      }
+
       console.log('Cadastro');
       console.log('Nome:', nome);
       console.log('Email:', email);
       console.log('Senha:', senha);
 
-      alert('Cadastro realizado com sucesso!');
-    } else {
-      console.log('Login');
-      console.log('Email:', email);
-      console.log('Senha:', senha);
+      Alert.alert(
+        'Cadastro',
+        'Cadastro realizado com sucesso!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsRegister(false);
+              setNome('');
+              setEmail('');
+              setSenha('');
+            },
+          },
+        ]
+      );
 
-      alert('Login realizado!');
+      return;
     }
+
+    // LOGIN
+    if (!email || !senha) {
+      Alert.alert(
+        'Atenção',
+        'Digite seu e-mail e sua senha.'
+      );
+      return;
+    }
+
+    console.log('Login');
+    console.log('Email:', email);
+    console.log('Senha:', senha);
+
+    // Abre a tela Home
+    router.replace('/home');
+  };
+
+  const alternarTela = () => {
+    setIsRegister(!isRegister);
+    setNome('');
+    setEmail('');
+    setSenha('');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.logo}>Conecta Fácil</Text>
+
+        <Text style={styles.logo}>
+          Conecta Fácil
+        </Text>
 
         <Text style={styles.title}>
           {isRegister ? 'Criar Conta' : 'Entrar'}
@@ -47,7 +93,7 @@ export default function App() {
             : 'Faça login para acessar o sistema'}
         </Text>
 
-        {/* Campo Nome aparece somente no cadastro */}
+        {/* NOME - somente no cadastro */}
         {isRegister && (
           <TextInput
             style={styles.input}
@@ -55,9 +101,11 @@ export default function App() {
             placeholderTextColor="#999"
             value={nome}
             onChangeText={setNome}
+            autoCapitalize="words"
           />
         )}
 
+        {/* EMAIL */}
         <TextInput
           style={styles.input}
           placeholder="Digite seu e-mail"
@@ -66,8 +114,10 @@ export default function App() {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoCorrect={false}
         />
 
+        {/* SENHA */}
         <TextInput
           style={styles.input}
           placeholder="Digite sua senha"
@@ -77,34 +127,33 @@ export default function App() {
           secureTextEntry
         />
 
+        {/* BOTÃO */}
         <TouchableOpacity
           style={styles.button}
           onPress={handleSubmit}
-          
+          activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>
             {isRegister ? 'Cadastrar' : 'Entrar'}
           </Text>
         </TouchableOpacity>
 
+        {/* ALTERAR LOGIN/CADASTRO */}
         <TouchableOpacity
-           onPress={() => {
-           setIsRegister(!isRegister);
-           setNome('');
-           setEmail('');
-           setSenha('');
-        }}
-    >
-  <Text style={styles.registerText}>
-    {isRegister
-      ? 'Já possui conta? Entrar'
-      : 'Não possui conta? Cadastre-se'}
-  </Text>
-</TouchableOpacity>
+          onPress={alternarTela}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.registerText}>
+            {isRegister
+              ? 'Já possui conta? Entrar'
+              : 'Não possui conta? Cadastre-se'}
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.footer}>
           © 2026 Conecta Fácil
         </Text>
+
       </View>
 
       <StatusBar style="dark" />
