@@ -1,6 +1,9 @@
 import sqlite3 from 'sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const db = new sqlite3.Database('./database.db');
+const databasePath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'database.db');
+const db = new sqlite3.Database(databasePath);
 
 db.serialize(() => {
 
@@ -14,6 +17,12 @@ db.serialize(() => {
             curso TEXT
         )
     `);
+
+    db.run(`ALTER TABLE usuarios ADD COLUMN tipo_usuario TEXT NOT NULL DEFAULT 'estudante'`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('Erro ao atualizar a tabela usuarios:', err.message);
+        }
+    });
 
     db.run(`
         CREATE TABLE IF NOT EXISTS empresas (

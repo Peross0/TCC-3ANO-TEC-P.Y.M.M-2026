@@ -14,8 +14,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+import { apiFetch, saveSession } from '../lib/api';
 
 export default function LoginScreen() {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -24,12 +23,35 @@ export default function LoginScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [documentNumber, setDocumentNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationPending, setVerificationPending] = useState(false);
 
   const clearFields = () => {
     setName('');
     setEmail('');
     setPassword('');
+    setDocumentNumber('');
+    setVerificationCode('');
+    setVerificationPending(false);
     setShowPassword(false);
+  };
+
+  const isValidCnpj = (value) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
+    const calculate = (length) => {
+      let sum = 0;
+      let weight = length - 7;
+      for (let index = 0; index < length; index += 1) {
+        sum += Number(digits[index]) * weight;
+        weight -= 1;
+        if (weight < 2) weight = 9;
+      }
+      const remainder = sum % 11;
+      return remainder < 2 ? 0 : 11 - remainder;
+    };
+    return calculate(12) === Number(digits[12]) && calculate(13) === Number(digits[13]);
   };
 
   const handleSubmit = async () => {
@@ -39,54 +61,74 @@ export default function LoginScreen() {
       Alert.alert('Nome obrigatório', 'Digite seu nome completo para continuar.');
       return;
     }
+    if (isRegistering && !isValidCnpj(documentNumber)) {
+      Alert.alert('CNPJ inválido', 'Digite um CNPJ válido com 14 números.');
+      return;
+    }
     if (!normalizedEmail || !normalizedEmail.includes('@')) {
       Alert.alert('E-mail inválido', 'Digite um e-mail válido para continuar.');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Senha inválida', 'A senha deve ter pelo menos 6 caracteres.');
+    if (password.length < 8) {
+      Alert.alert('Senha inválida', 'A senha deve ter pelo menos 8 caracteres.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const endpoint = isRegistering ? 'cadastro' : 'login';
-      const body = isRegistering
-        ? { nome: name.trim(), email: normalizedEmail, senha: password, tipo_usuario: 'empresa' }
-        : { email: normalizedEmail, senha: password };
-      const response = await fetch(`${API_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await response.json();
-
-        if (!response.ok || !data.sucesso) {
-        throw new Error(data.mensagem || 'Não foi possível concluir a operação.');
-      }
-
       if (isRegistering) {
-        Alert.alert('Cadastro realizado', 'Sua conta foi criada com sucesso!', [
-          { text: 'Entrar', onPress: () => { setIsRegistering(false); setName(''); } },
-        ]);
-        setPassword('');
+        const data = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            full_name: name.trim(),
+            email: normalizedEmail,
+            password,
+            user_type: 'RECRUITER',
+            document_type: 'CNPJ',
+            document_number: documentNumber.replace(/\D/g, ''),
+          }),
+        });
+        setVerificationPending(true);
+        Alert.alert('Cadastro realizado', data.message || 'Confira o código enviado para seu e-mail.');
         return;
       }
 
-      if (data.usuario.tipo_usuario !== 'empresa') {
-        throw new Error('Esta conta é de candidato. Use o aplicativo mobile para entrar.');
-      }
-
-      router.replace({
-        pathname: '/home',
-        params: { nome: data.usuario.nome, email: data.usuario.email },
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
+      if (data.user.user_type !== 'RECRUITER') throw new Error('Esta conta não possui acesso de recrutador.');
+      await saveSession(data.token, data.user);
+      router.replace({ pathname: '/home', params: { nome: data.user.full_name, email: data.user.email } });
     } catch (error) {
       const message = error instanceof TypeError
         ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
         : error.message;
-      Alert.alert('Não foi possível entrar', message);
+      Alert.alert(isRegistering ? 'Não foi possível cadastrar' : 'Não foi possível entrar', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (verificationCode.trim().length !== 6) {
+      Alert.alert('Código inválido', 'Digite o código de 6 números recebido por e-mail.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await apiFetch('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
+      });
+      Alert.alert('E-mail verificado', 'Agora você já pode entrar na sua conta.');
+      setVerificationPending(false);
+      setIsRegistering(false);
+      setPassword('');
+      setVerificationCode('');
+    } catch (error) {
+      Alert.alert('Não foi possível verificar', error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -126,6 +168,26 @@ export default function LoginScreen() {
               </View>
             )}
 
+            {isRegistering && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>CNPJ da empresa</Text>
+                <View style={styles.inputRow}>
+                  <Feather name="briefcase" size={19} color="#718096" />
+                  <TextInput style={styles.input} placeholder="00.000.000/0000-00" placeholderTextColor="#A0AEC0" keyboardType="number-pad" value={documentNumber} onChangeText={setDocumentNumber} />
+                </View>
+              </View>
+            )}
+
+            {verificationPending && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Código de verificação</Text>
+                <View style={styles.inputRow}>
+                  <Feather name="check-circle" size={19} color="#718096" />
+                  <TextInput style={styles.input} placeholder="Código com 6 números" placeholderTextColor="#A0AEC0" keyboardType="number-pad" maxLength={6} value={verificationCode} onChangeText={setVerificationCode} />
+                </View>
+              </View>
+            )}
+
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>E-mail</Text>
               <View style={styles.inputRow}>
@@ -148,8 +210,8 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={handleSubmit} disabled={isSubmitting} accessibilityRole="button">
-              <Text style={styles.submitText}>{isSubmitting ? 'Aguarde...' : (isRegistering ? 'Criar minha conta' : 'Entrar')}</Text>
+            <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={verificationPending ? handleVerifyEmail : handleSubmit} disabled={isSubmitting} accessibilityRole="button">
+              <Text style={styles.submitText}>{isSubmitting ? 'Aguarde...' : (verificationPending ? 'Verificar e-mail' : (isRegistering ? 'Criar minha conta' : 'Entrar'))}</Text>
               {!isSubmitting && <Feather name="arrow-right" size={19} color="#FFFFFF" />}
             </Pressable>
 

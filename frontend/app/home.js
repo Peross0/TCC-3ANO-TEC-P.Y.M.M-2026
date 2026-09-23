@@ -10,16 +10,15 @@ import {
   ScrollView,
   Modal,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { apiFetch, clearSession } from '../lib/api';
 
 const { width } = Dimensions.get('window');
 
 export default function Home() {
   const { nome, email } = useLocalSearchParams();
-  const apiUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
   const [menuAberto, setMenuAberto] = useState(false);
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
   const [empresaModalAberto, setEmpresaModalAberto] = useState(false);
@@ -39,9 +38,16 @@ export default function Home() {
 
   const carregarEmpresas = async () => {
     try {
-      const resposta = await fetch(`${apiUrl}/empresas`);
-      const dados = await resposta.json();
-      if (resposta.ok && dados.sucesso) setEmpresas(dados.empresas);
+      const dados = await apiFetch('/recruiters/profile');
+      const recrutador = dados.recruiter;
+      setEmpresas([{
+        id: recrutador.id,
+        nome: recrutador.full_name,
+        cnpj: recrutador.document_number,
+        email: recrutador.email,
+        telefone: recrutador.phone || '',
+        endereco: '',
+      }]);
     } catch (erro) {
       console.error('Não foi possível carregar empresas:', erro);
     } finally {
@@ -99,6 +105,7 @@ export default function Home() {
 
   const sair = () => {
     fecharTudo();
+    clearSession();
     router.replace('/');
   };
 
@@ -129,7 +136,7 @@ export default function Home() {
   };
 
   const cadastrarEmpresa = async () => {
-    const camposObrigatorios = Object.values(empresa).every((campo) => campo.trim());
+    const camposObrigatorios = Boolean(empresa.nome.trim());
     if (!camposObrigatorios) {
       Alert.alert('Dados incompletos', 'Preencha todos os campos para cadastrar a empresa.');
       return;
@@ -137,16 +144,10 @@ export default function Home() {
 
     setCadastrandoEmpresa(true);
     try {
-      const resposta = await fetch(`${apiUrl}/empresas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(empresa),
+      await apiFetch('/recruiters/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ full_name: empresa.nome, phone: empresa.telefone }),
       });
-      const dados = await resposta.json();
-
-      if (!resposta.ok || !dados.sucesso) {
-        throw new Error(dados.mensagem || 'Não foi possível cadastrar a empresa.');
-      }
 
       Alert.alert('Empresa cadastrada', 'A empresa foi cadastrada com sucesso.');
       setEmpresa({ nome: '', cnpj: '', email: '', telefone: '', endereco: '' });
@@ -165,13 +166,7 @@ export default function Home() {
   const abrirVisualizacoes = async (empresaAtual) => {
     setEmpresaSelecionada(empresaAtual);
     setVisualizacoesModalAberto(true);
-    try {
-      const resposta = await fetch(`${apiUrl}/empresas/${empresaAtual.id}/visualizacoes`);
-      const dados = await resposta.json();
-      if (resposta.ok && dados.sucesso) setVisualizacoes(dados.visualizacoes);
-    } catch (erro) {
-      Alert.alert('Erro', 'Não foi possível carregar quem visualizou a empresa.');
-    }
+    setVisualizacoes([]);
   };
 
   const abrirEdicao = (empresaAtual) => {
@@ -187,20 +182,17 @@ export default function Home() {
   };
 
   const salvarEdicao = async () => {
-    if (!empresaSelecionada || !Object.values(empresa).every((campo) => campo.trim())) {
+    if (!empresaSelecionada || !empresa.nome.trim()) {
       Alert.alert('Dados incompletos', 'Preencha todos os campos da empresa.');
       return;
     }
 
     setCadastrandoEmpresa(true);
     try {
-      const resposta = await fetch(`${apiUrl}/empresas/${empresaSelecionada.id}`, {
+      await apiFetch('/recruiters/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(empresa),
+        body: JSON.stringify({ full_name: empresa.nome, phone: empresa.telefone }),
       });
-      const dados = await resposta.json();
-      if (!resposta.ok || !dados.sucesso) throw new Error(dados.mensagem || 'Não foi possível editar a empresa.');
       Alert.alert('Empresa atualizada', 'Os dados foram salvos com sucesso.');
       setEditarEmpresaModalAberto(false);
       carregarEmpresas();
@@ -222,9 +214,7 @@ export default function Home() {
     setVagasEmpresa([]);
     setVagasModalAberto(true);
     try {
-      const resposta = await fetch(`${apiUrl}/empresas/${empresaAtual.id}/vagas`);
-      const dados = await resposta.json();
-      if (!resposta.ok || !dados.sucesso) throw new Error(dados.mensagem || 'Não foi possível carregar as vagas.');
+      const dados = await apiFetch('/recruiters/vacancies?limit=50');
       setVagasEmpresa(dados.vagas);
     } catch (erro) {
       setVagasModalAberto(false);
@@ -240,13 +230,15 @@ export default function Home() {
 
     setCadastrandoEmpresa(true);
     try {
-      const resposta = await fetch(`${apiUrl}/empresas/${empresaSelecionada.id}/vagas`, {
+      await apiFetch('/recruiters/vacancies', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(vaga),
+        body: JSON.stringify({
+          job_title: vaga.titulo,
+          company_name: empresaSelecionada.nome,
+          job_description: vaga.descricao,
+          requirements: vaga.requisitos,
+        }),
       });
-      const dados = await resposta.json();
-      if (!resposta.ok || !dados.sucesso) throw new Error(dados.mensagem || 'Não foi possível cadastrar a vaga.');
       Alert.alert('Vaga adicionada', 'A vaga foi publicada para os candidatos.');
       setVagaModalAberto(false);
     } catch (erro) {
@@ -329,7 +321,7 @@ export default function Home() {
               <View style={styles.companyItemContent}>
                 <Text style={styles.companyItemTitle}>{empresaAtual.nome}</Text>
                 <Text style={styles.companyItemDetails}>{empresaAtual.email}</Text>
-                <Text style={styles.companyItemViews}>{empresaAtual.visualizacoes} visualização(ões)</Text>
+                <Text style={styles.companyItemViews}>Painel do recrutador</Text>
               </View>
               <View style={styles.companyActions}>
                 <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirEdicao(empresaAtual)} accessibilityLabel="Editar empresa">
@@ -641,11 +633,11 @@ export default function Home() {
                 <View style={styles.jobItem} key={vagaAtual.id}>
                   <View style={styles.jobIcon}><Feather name="briefcase" size={17} color="#2E56D9" /></View>
                   <View style={styles.jobContent}>
-                    <Text style={styles.jobTitle}>{vagaAtual.titulo}</Text>
+                    <Text style={styles.jobTitle}>{vagaAtual.job_title}</Text>
                     <Text style={styles.jobLabel}>Descrição</Text>
-                    <Text style={styles.jobText}>{vagaAtual.descricao}</Text>
+                    <Text style={styles.jobText}>{vagaAtual.job_description}</Text>
                     <Text style={styles.jobLabel}>Requisitos</Text>
-                    <Text style={styles.jobText}>{vagaAtual.requisitos}</Text>
+                    <Text style={styles.jobText}>{vagaAtual.requirements || 'Não informado'}</Text>
                   </View>
                 </View>
               ))}

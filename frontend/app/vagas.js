@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,8 +12,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+import { apiFetch } from '../lib/api';
 
 export default function VagasScreen() {
   const { nome, email } = useLocalSearchParams();
@@ -23,17 +21,13 @@ export default function VagasScreen() {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/vagas`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (!data.sucesso) throw new Error(data.mensagem);
-        setVagas(data.vagas);
-      })
+    apiFetch('/recruiters/vacancies?limit=50')
+      .then((data) => setVagas(data.vacancies || []))
       .catch((error) => Alert.alert('Não foi possível carregar vagas', error.message || 'Verifique o backend.'))
       .finally(() => setCarregando(false));
   }, []);
 
-  const vagasFiltradas = vagas.filter((vaga) => `${vaga.titulo} ${vaga.empresa_nome} ${vaga.descricao}`.toLowerCase().includes(busca.toLowerCase()));
+  const vagasFiltradas = vagas.filter((vaga) => `${vaga.job_title} ${vaga.company_name} ${vaga.job_description}`.toLowerCase().includes(busca.toLowerCase()));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,15 +59,15 @@ export default function VagasScreen() {
             <View style={styles.jobIcon}><Feather name="briefcase" size={20} color="#2E56D9" /></View>
             <View style={styles.jobBody}>
               <View style={styles.jobHeader}>
-                <Text style={styles.jobTitle}>{vaga.titulo}</Text>
+                <Text style={styles.jobTitle}>{vaga.job_title}</Text>
                 <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>ATIVA</Text></View>
               </View>
-              <Text style={styles.companyName}>{vaga.empresa_nome}</Text>
-              <Text style={styles.location}><Feather name="map-pin" size={13} color="#8293A8" /> {vaga.empresa_endereco}</Text>
-              <Text style={styles.jobDescription}>{vaga.descricao}</Text>
-              <View style={styles.requirements}><Text style={styles.requirementsLabel}>Requisitos</Text><Text style={styles.requirementsText}>{vaga.requisitos}</Text></View>
-              <Pressable style={styles.applyButton} onPress={() => Alert.alert('Candidatura', `Sua candidatura para ${vaga.titulo} será disponibilizada em breve.`)}>
-                <Text style={styles.applyText}>Tenho interesse</Text><Feather name="arrow-right" size={17} color="#FFFFFF" />
+              <Text style={styles.companyName}>{vaga.company_name}</Text>
+              <Text style={styles.location}><Feather name="map-pin" size={13} color="#8293A8" /> {vaga.location || 'Local não informado'}</Text>
+              <Text style={styles.jobDescription}>{vaga.job_description}</Text>
+              <View style={styles.requirements}><Text style={styles.requirementsLabel}>Requisitos</Text><Text style={styles.requirementsText}>{vaga.requirements || 'Não informado'}</Text></View>
+              <Pressable style={styles.applyButton} onPress={() => Alert.alert('Vaga da sua empresa', 'Use o painel para acompanhar os candidatos desta vaga.')}>
+                <Text style={styles.applyText}>Gerenciar candidatos</Text><Feather name="arrow-right" size={17} color="#FFFFFF" />
               </Pressable>
             </View>
           </View>

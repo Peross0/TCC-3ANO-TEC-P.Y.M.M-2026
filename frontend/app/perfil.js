@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { apiFetch } from '../lib/api';
 
 export default function PerfilScreen() {
   const params = useLocalSearchParams();
@@ -9,13 +10,30 @@ export default function PerfilScreen() {
   const [nome, setNome] = useState(params.nome || 'Empresário');
   const [email, setEmail] = useState(params.email || '');
 
-  const salvar = () => {
+  useEffect(() => {
+    apiFetch('/recruiters/profile')
+      .then(({ recruiter }) => {
+        setNome(recruiter.full_name);
+        setEmail(recruiter.email);
+      })
+      .catch((error) => Alert.alert('Não foi possível carregar o perfil', error.message));
+  }, []);
+
+  const salvar = async () => {
     if (!nome.trim() || !email.trim()) {
       Alert.alert('Dados incompletos', 'Preencha nome e e-mail.');
       return;
     }
-    setEditando(false);
-    Alert.alert('Perfil atualizado', 'Seus dados foram atualizados nesta sessão.');
+    try {
+      await apiFetch('/recruiters/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ full_name: nome }),
+      });
+      setEditando(false);
+      Alert.alert('Perfil atualizado', 'Seus dados foram salvos com sucesso.');
+    } catch (error) {
+      Alert.alert('Não foi possível salvar', error.message);
+    }
   };
 
   return (
