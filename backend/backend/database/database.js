@@ -28,6 +28,41 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS empresas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      cnpj TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
+      telefone TEXT NOT NULL,
+      endereco TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS empresa_visualizacoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      empresa_id INTEGER NOT NULL,
+      usuario_nome TEXT,
+      usuario_email TEXT,
+      visualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vagas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      empresa_id INTEGER NOT NULL,
+      titulo TEXT NOT NULL,
+      descricao TEXT NOT NULL,
+      requisitos TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+    )
+  `);
 });
 
 module.exports = db;

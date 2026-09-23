@@ -1,127 +1,101 @@
-import { StyleSheet, Text, View, Image, StatusBar } from "react-native";
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 
-const CN_COLORS = {
-  PRIMARY_BLUE: "#00B0FF", 
-  SECONDARY_PURPLE: "#8E24AA", 
-  ACCENT_YELLOW: "#FFD700",
-  OUTLINE_BLACK: "#000000", 
-  TEXT_DARK: "#212121", 
-  TEXT_LIGHT: "#FFFFFF", 
-  BRIGHT_WHITE: "#FAFAFA",
-  BACKGROUND_LIGHT: "#E0F7FA",
-};
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
-export default function Home() {
+export default function EmpresasScreen() {
+  const { nome, email } = useLocalSearchParams();
+  const [empresas, setEmpresas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+
+  const carregarEmpresas = async () => {
+    try {
+      const resposta = await fetch(`${API_URL}/empresas`);
+      const dados = await resposta.json();
+      if (!resposta.ok || !dados.sucesso) throw new Error('Não foi possível carregar as empresas.');
+      setEmpresas(dados.empresas);
+    } catch (error) {
+      Alert.alert('Erro', error instanceof TypeError ? 'Não foi possível conectar ao servidor.' : error.message);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarEmpresas();
+  }, []);
+
+  const abrirEmpresa = async (empresa) => {
+    try {
+      await fetch(`${API_URL}/empresas/${empresa.id}/visualizacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_nome: nome, usuario_email: email }),
+      });
+      Alert.alert(empresa.nome, `${empresa.endereco}\n\nE-mail: ${empresa.email}\nTelefone: ${empresa.telefone}`);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível registrar esta visualização.');
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={CN_COLORS.BACKGROUND_LIGHT} />
-
-      <Image
-        style={styles.logo}
-        source={{
-          uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Cartoon_network_modified_logo.PNG/1200px-Cartoon_network_modified_logo.PNG",
-        }}
-      />
-
-      <View style={styles.cardContainer}> 
-        <View style={styles.card}>
-          <Text style={styles.title}>BEM-VINDO(A)!</Text>
-          <Text style={styles.subtitle}>
-            Pré-requisito para a disciplina de DDM
-          </Text>
-        </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Empresas</Text>
+        <Text style={styles.subtitle}>Conheça oportunidades perto de você</Text>
       </View>
-
-      <View style={styles.footerStrip}>
-        <Text style={styles.footerText}>Desenvolvido por Gabriel Neves © 2025</Text>
-      </View>
-    </View>
+      {carregando ? (
+        <View style={styles.center}><ActivityIndicator size="large" color="#2F80ED" /></View>
+      ) : (
+        <FlatList
+          data={empresas}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.companyCard} onPress={() => abrirEmpresa(item)} activeOpacity={0.8}>
+              <View style={styles.companyIcon}><Feather name="briefcase" size={22} color="#2F80ED" /></View>
+              <View style={styles.companyInfo}>
+                <Text style={styles.companyName}>{item.nome}</Text>
+                <Text style={styles.companyAddress}>{item.endereco}</Text>
+                <Text style={styles.companyAction}>Ver empresa</Text>
+              </View>
+              <Feather name="chevron-right" size={21} color="#8EA1B7" />
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<View style={styles.center}><Feather name="briefcase" size={42} color="#C5D0DC" /><Text style={styles.emptyTitle}>Nenhuma empresa cadastrada</Text><Text style={styles.emptyText}>Novas empresas aparecerão aqui.</Text></View>}
+          onRefresh={carregarEmpresas}
+          refreshing={carregando}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    backgroundColor: CN_COLORS.BACKGROUND_LIGHT, 
-    padding: 20,
-    justifyContent: 'space-around',
-  },
-
-  logo: {
-    width: 300, 
-    height: 150,
-    resizeMode: "contain",
-    marginTop: 20,
-  },
-
-  cardContainer: {
-    backgroundColor: CN_COLORS.SECONDARY_PURPLE, 
-    borderRadius: 30,
-    paddingBottom: 8, 
-    paddingRight: 8,
-    position: 'relative', 
-    width: "95%",
-    maxWidth: 400,
-  },
-
-  card: {
-    backgroundColor: CN_COLORS.ACCENT_YELLOW,
-    borderRadius: 25, 
-    paddingVertical: 40, 
-    paddingHorizontal: 25, 
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 6, 
-    borderColor: CN_COLORS.OUTLINE_BLACK, 
-    position: 'relative', 
-    top: 0,
-    left: 0,
-  },
-
-  title: {
-    fontSize: 40, 
-    fontWeight: "900", 
-    color: CN_COLORS.TEXT_DARK, 
-    marginBottom: 10,
-    textAlign: "center",
-    textShadowColor: CN_COLORS.BRIGHT_WHITE,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    letterSpacing: 2,
-  },
-
-  subtitle: {
-    fontSize: 22, 
-    color: CN_COLORS.TEXT_DARK, 
-    textAlign: "center",
-    fontWeight: '800', 
-    lineHeight: 30, 
-    textShadowColor: CN_COLORS.TEXT_LIGHT, 
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
-    letterSpacing: 0.5,
-  },
-    
-  footerStrip: {
-    backgroundColor: CN_COLORS.PRIMARY_BLUE,
-    width: '100%',
-    paddingVertical: 15,
-    borderTopWidth: 6, 
-    borderBottomWidth: 6,
-    borderColor: CN_COLORS.OUTLINE_BLACK, 
-    alignItems: 'center',
-    marginBottom: -20,
-  },
-
-  footerText: {
-    fontSize: 16, 
-    color: CN_COLORS.TEXT_LIGHT, 
-    textAlign: "center",
-    fontWeight: '900', 
-    letterSpacing: 1,
-    textShadowColor: CN_COLORS.OUTLINE_BLACK,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
-  },
+  container: { flex: 1, backgroundColor: '#F5F8FC' },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E8EEF5' },
+  title: { color: '#14213D', fontSize: 27, fontWeight: '800' },
+  subtitle: { color: '#8792AC', fontSize: 14, marginTop: 5 },
+  list: { padding: 16, paddingBottom: 30 },
+  companyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#E6EDF4' },
+  companyIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EAF2FF', marginRight: 13 },
+  companyInfo: { flex: 1 },
+  companyName: { color: '#14213D', fontSize: 16, fontWeight: '800' },
+  companyAddress: { color: '#8792AC', fontSize: 12, marginTop: 4 },
+  companyAction: { color: '#2F80ED', fontSize: 12, fontWeight: '700', marginTop: 7 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  emptyTitle: { color: '#526581', fontSize: 16, fontWeight: '700', marginTop: 14 },
+  emptyText: { color: '#8792AC', fontSize: 13, marginTop: 5 },
 });
