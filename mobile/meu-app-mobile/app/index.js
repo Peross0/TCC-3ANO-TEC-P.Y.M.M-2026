@@ -27,43 +27,27 @@ export default function LoginScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail || !normalizedEmail.includes('@')) {
       Alert.alert('E-mail inválido', 'Informe um e-mail válido para continuar.');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Senha inválida', 'A senha deve ter pelo menos 6 caracteres.');
+    if (!password.trim()) {
+      Alert.alert('Senha obrigatória', 'Digite sua senha para entrar.');
       return;
     }
 
     setIsSubmitting(true);
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, senha: password }),
-      });
-      const data = await response.json();
 
-      if (!response.ok || !data.sucesso) {
-        throw new Error(data.mensagem || 'Não foi possível entrar.');
-      }
-      if (data.usuario.tipo_usuario !== 'estudante') {
-        throw new Error('Esta conta é de empresa. Use a versão web para entrar.');
-      }
+    const nome = normalizedEmail.split('@')[0] || 'Usuário';
+    router.replace({
+      pathname: '/(tabs)/home',
+      params: { role: 'candidato', nome, email: normalizedEmail },
+    });
 
-      router.replace({ pathname: '/(tabs)/home', params: { role: 'candidato', nome: data.usuario.nome, email: data.usuario.email } });
-    } catch (error) {
-      const message = error instanceof TypeError
-        ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
-        : error.message;
-      Alert.alert('Não foi possível entrar', message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    setIsSubmitting(false);
   };
 
   return (

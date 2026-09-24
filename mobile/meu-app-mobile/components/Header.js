@@ -8,6 +8,7 @@ export default function Header({
   onGoToSettings,
   isSettingsActive,
   onToggleProfileMenu,
+  onOpenMessages,
 }) {
   return (
     <View style={styles.header}>
@@ -20,7 +21,14 @@ export default function Header({
         />
       </View>
 
-      // Notificação
+      <TouchableOpacity
+        style={styles.headerIconBtn}
+        onPress={onOpenMessages}
+        activeOpacity={0.7}
+      >
+        <Feather name="message-square" size={23} color="#555" />
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onToggleNotification}
@@ -32,7 +40,6 @@ export default function Header({
         />
       </TouchableOpacity>
 
-      //Configurações do clique
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onGoToSettings}
@@ -45,7 +52,6 @@ export default function Header({
         />
       </TouchableOpacity>
 
-      //Perfil da conta 
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={onToggleProfileMenu}

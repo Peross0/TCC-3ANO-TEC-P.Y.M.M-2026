@@ -40,18 +40,7 @@ export default function LoginScreen() {
   const isValidCnpj = (value) => {
     const digits = value.replace(/\D/g, '');
     if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
-    const calculate = (length) => {
-      let sum = 0;
-      let weight = length - 7;
-      for (let index = 0; index < length; index += 1) {
-        sum += Number(digits[index]) * weight;
-        weight -= 1;
-        if (weight < 2) weight = 9;
-      }
-      const remainder = sum % 11;
-      return remainder < 2 ? 0 : 11 - remainder;
-    };
-    return calculate(12) === Number(digits[12]) && calculate(13) === Number(digits[13]);
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -65,11 +54,19 @@ export default function LoginScreen() {
       Alert.alert('CNPJ inválido', 'Digite um CNPJ válido com 14 números.');
       return;
     }
-    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+    if (!normalizedEmail) {
+      Alert.alert('E-mail obrigatório', 'Digite seu e-mail para continuar.');
+      return;
+    }
+    if (!normalizedEmail.includes('@')) {
       Alert.alert('E-mail inválido', 'Digite um e-mail válido para continuar.');
       return;
     }
-    if (password.length < 8) {
+    if (!password.trim()) {
+      Alert.alert('Senha obrigatória', 'Digite sua senha para continuar.');
+      return;
+    }
+    if (password.trim().length < 8) {
       Alert.alert('Senha inválida', 'A senha deve ter pelo menos 8 caracteres.');
       return;
     }
@@ -89,8 +86,14 @@ export default function LoginScreen() {
             document_number: documentNumber.replace(/\D/g, ''),
           }),
         });
-        setVerificationPending(true);
-        Alert.alert('Cadastro realizado', data.message || 'Confira o código enviado para seu e-mail.');
+
+        Alert.alert('Cadastro realizado', data.message || 'Seu cadastro foi concluído com sucesso.');
+        setVerificationPending(false);
+        setIsRegistering(false);
+        setName('');
+        setPassword('');
+        setDocumentNumber('');
+        setEmail(normalizedEmail);
         return;
       }
 

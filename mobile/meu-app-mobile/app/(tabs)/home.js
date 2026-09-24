@@ -97,6 +97,10 @@ export default function HomeScreen() {
     router.push('/perfil');
   };
 
+  const handleOpenMessages = () => {
+    router.push('/(tabs)/index1');
+  };
+
   const handleGoToSettings = () => {
     setIsSettingsActive(true);
     setShowNotification(false);
@@ -153,6 +157,7 @@ export default function HomeScreen() {
           setShowNotification(false);
           setShowProfileMenu(!showProfileMenu);
         }}
+        onOpenMessages={handleOpenMessages}
       />
 
       <NotificationModal

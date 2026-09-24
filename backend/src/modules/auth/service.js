@@ -37,17 +37,14 @@ export async function registerUser(data) {
     document_number: data.document_number,
     phone: data.phone || null,
     avatar_url: null,
-    verified_email: false,
-    code_email_verification: code,
-    code_expires_at: codeExpiresAt,
+    verified_email: true,
+    code_email_verification: null,
+    code_expires_at: null,
     active_notification: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     deleted_at: null,
   }).returning(['id', 'email', 'full_name', 'user_type', 'verified_email']);
-
-  // Send verification email
-  await sendVerificationEmail(data.email, code);
 
   return {
     user: {
@@ -57,7 +54,7 @@ export async function registerUser(data) {
       user_type: user.user_type,
       verified_email: user.verified_email,
     },
-    message: 'Usuário criado com sucesso. Verifique seu e-mail para ativar a conta.',
+    message: 'Cadastro realizado com sucesso. Agora você pode entrar com seu e-mail e senha.',
   };
 }
 

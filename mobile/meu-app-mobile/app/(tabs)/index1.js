@@ -15,10 +15,54 @@ import { Feather } from '@expo/vector-icons';
 import MessageHeader from '../../components/MessageHeader';
 import MessageInput from '../../components/MessageInput';
 
+const INITIAL_CONVERSATIONS = [
+  {
+    id: '1',
+    company: 'Pires',
+    jobTitle: 'Vaga de Caixa',
+    lastMessage: 'Oi, você ainda está interessado na vaga?',
+    timeAgo: 'Agora',
+    unreadCount: 1,
+    logoBg: '#E3F2FD',
+    logoTextColor: '#1565C0',
+  },
+  {
+    id: '2',
+    company: 'Pinheirão',
+    jobTitle: 'Repositor',
+    lastMessage: 'Você pode comparecer à entrevista na quinta?',
+    timeAgo: '10 min',
+    unreadCount: 0,
+    logoBg: '#E8F5E9',
+    logoTextColor: '#2E7D32',
+  },
+  {
+    id: '3',
+    company: 'iFood',
+    jobTitle: 'Entregador',
+    lastMessage: 'Parabéns, seu perfil foi aprovado!',
+    timeAgo: '1h',
+    unreadCount: 2,
+    logoBg: '#FFEBEE',
+    logoTextColor: '#C62828',
+  },
+];
+
 export default function MessagesScreen() {
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
   const [activeChat, setActiveChat] = useState(null);
-  const [chatMessages, setChatMessages] = useState({});
+  const [chatMessages, setChatMessages] = useState({
+    '1': [
+      { id: 'm1', text: 'Oi, você ainda está interessado na vaga?', sender: 'company', time: '09:40' },
+      { id: 'm2', text: 'Sim, estou muito interessado!', sender: 'user', time: '09:42' },
+    ],
+    '2': [
+      { id: 'm3', text: 'Você pode comparecer à entrevista na quinta?', sender: 'company', time: '08:15' },
+    ],
+    '3': [
+      { id: 'm4', text: 'Parabéns, seu perfil foi aprovado!', sender: 'company', time: 'Ontem' },
+    ],
+  });
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
