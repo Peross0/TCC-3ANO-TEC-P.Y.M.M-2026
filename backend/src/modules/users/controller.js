@@ -10,3 +10,8 @@ export async function uploadAvatar(req, res) {
   const result = await userService.updateAvatar(req.user.id, req.file.filename);
   res.json(result);
 }
+
+export async function listUsers(req, res) {
+  const users = await userService.getUsers();
+  res.json(users)
+}

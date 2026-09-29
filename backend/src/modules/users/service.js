@@ -42,3 +42,8 @@ export async function updateAvatar(userId, avatarFilename) {
     message: 'Avatar atualizado com sucesso',
   };
 }
+
+export async function getUsers() {
+  const knex = getKnex();
+  return await knex('users').whereNull('deleted_at')
+}

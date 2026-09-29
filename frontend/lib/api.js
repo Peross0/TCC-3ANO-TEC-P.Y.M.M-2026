@@ -17,20 +17,53 @@ export const API_URL = getApiUrl();
 const TOKEN_KEY = 'conecta_facil_token';
 
 export async function saveSession(token, user) {
-  await AsyncStorage.multiSet([
-    [TOKEN_KEY, token],
-    ['conecta_facil_user', JSON.stringify(user)],
-  ]);
+  try {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+    await AsyncStorage.setItem('conecta_facil_user', JSON.stringify(user));
+  } catch (error) {
+    console.error("Erro ao salvar sessão:", error);
+  }
 }
+// export async function saveSession(token, user) {
+//   await AsyncStorage.multiSet([
+//     [TOKEN_KEY, token],
+//     ['conecta_facil_user', JSON.stringify(user)],
+//   ]);
+// }
 
 export async function clearSession() {
-  await AsyncStorage.multiRemove([TOKEN_KEY, 'conecta_facil_user']);
+  try {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem('conecta_facil_user');
+  } catch (error) {
+    console.error("Erro ao limpar sessão:", error);
+  }
 }
 
+// export async function clearSession() {
+//   await AsyncStorage.multiRemove([TOKEN_KEY, 'conecta_facil_user']);
+// }
+
 export async function getSession() {
-  const [[, token], [, userJson]] = await AsyncStorage.multiGet([TOKEN_KEY, 'conecta_facil_user']);
-  return { token, user: userJson ? JSON.parse(userJson) : null };
+  try {
+    // Busca os dados de forma individual (Altamente seguro e compatível com Web/Mobile)
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const userJson = await AsyncStorage.getItem('conecta_facil_user');
+
+    return {
+      token,
+      user: userJson ? JSON.parse(userJson) : null
+    };
+  } catch (error) {
+    console.error("Erro ao buscar sessão:", error);
+    return { token: null, user: null };
+  }
 }
+// export async function getSession() {  
+
+//   const [[, token], [, userJson]] = await AsyncStorage.multiGet([TOKEN_KEY, 'conecta_facil_user']);
+//   return { token, user: userJson ? JSON.parse(userJson) : null };
+// }
 
 export async function apiFetch(path, options = {}) {
   const { token } = await getSession();

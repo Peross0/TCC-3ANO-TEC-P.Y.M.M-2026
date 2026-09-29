@@ -103,6 +103,7 @@ export default function LoginScreen() {
       });
       if (data.user.user_type !== 'RECRUITER') throw new Error('Esta conta não possui acesso de recrutador.');
       await saveSession(data.token, data.user);
+      console.log(data.token, data.user)
       router.replace({ pathname: '/home', params: { nome: data.user.full_name, email: data.user.email } });
     } catch (error) {
       const message = error instanceof TypeError
