@@ -8,14 +8,15 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Rotas
-app.use('/', usuariosRoutes);
-
-// Rota raiz só pra confirmar que a API está no ar
+// Rota raiz para teste de conexão
 app.get('/', (req, res) => {
   res.json({ mensagem: 'API Conecta Fácil rodando!' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+// Rotas de Usuários e Empresas (Prefixo /api)
+app.use('/api', usuariosRoutes);
+
+// '0.0.0.0' para aceitar conexões da rede local / emuladores
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor Conecta Fácil rodando em http://192.168.101.144:${PORT}`);
 });

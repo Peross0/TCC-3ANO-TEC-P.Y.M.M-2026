@@ -15,53 +15,69 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-// Substitua pelo mesmo IP utilizado no cadastro.js
-const API_URL = 'http://192.168.101.144:3000/api';export default function LoginScreen() {
+// IP da sua máquina na rede local
+const API_URL = 'http://192.168.101.144:3000/api';
+
+export default function RegisterScreen() {
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [curso, setCurso] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
+    const nomeLimpo = nome.trim();
     const emailLimpo = email.trim().toLowerCase();
 
+    if (!nomeLimpo) {
+      Alert.alert('Campo obrigatório', 'Por favor, informe seu nome.');
+      return;
+    }
     if (!emailLimpo || !emailLimpo.includes('@')) {
       Alert.alert('E-mail inválido', 'Informe um e-mail válido.');
       return;
     }
-    if (!senha) {
-      Alert.alert('Campo obrigatório', 'Por favor, informe sua senha.');
+    if (senha.length < 6) {
+      Alert.alert('Senha fraca', 'A senha deve conter no mínimo 6 caracteres.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Faz o POST correto para http://SEU_IP:3000/api/login
-      const response = await fetch(`${API_URL}/login`, {
+      const response = await fetch(`${API_URL}/cadastro`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          nome: nomeLimpo,
           email: emailLimpo,
           senha: senha,
+          telefone: telefone.trim() || null,
+          curso: curso.trim() || null,
+          tipo_usuario: 'estudante',
         }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.sucesso) {
-        Alert.alert('Sucesso', 'Login realizado com sucesso!');
-        // router.push('/home'); // Altere para a sua rota principal após o login
+        Alert.alert(
+          'Conta Criada!',
+          'Cadastro realizado com sucesso. Agora faça o seu login.',
+          [{ text: 'Ir para Login', onPress: () => router.back() }]
+        );
       } else {
-        Alert.alert('Erro no login', data.mensagem || 'E-mail ou senha incorretos.');
+        Alert.alert('Erro ao cadastrar', data.mensagem || 'Não foi possível cadastrar.');
       }
     } catch (error) {
       console.error('Erro na requisição:', error);
       Alert.alert(
         'Erro de Conexão',
-        'Verifique se o servidor backend está rodando e acessível no endereço da API.'
+        'Não foi possível conectar ao servidor. Verifique a rede e se o backend está ativo.'
       );
     } finally {
       setIsSubmitting(false);
@@ -81,11 +97,25 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.headerGroup}>
-            <Text style={styles.title}>Conecta Fácil</Text>
-            <Text style={styles.subtitle}>Faça login para acessar sua conta</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Feather name="arrow-left" size={24} color="#1A202C" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Criar Conta</Text>
+            <Text style={styles.subtitle}>Informe seus dados para se cadastrar</Text>
           </View>
 
           <View style={styles.formSection}>
+            <View style={styles.inputWrapper}>
+              <Feather name="user" size={19} color="#718096" />
+              <TextInput
+                style={styles.input}
+                placeholder="Nome completo *"
+                placeholderTextColor="#A0AEC0"
+                value={nome}
+                onChangeText={setNome}
+              />
+            </View>
+
             <View style={styles.inputWrapper}>
               <Feather name="mail" size={19} color="#718096" />
               <TextInput
@@ -114,22 +144,38 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
               </TouchableOpacity>
             </View>
 
+            <View style={styles.inputWrapper}>
+              <Feather name="phone" size={19} color="#718096" />
+              <TextInput
+                style={styles.input}
+                placeholder="Telefone (opcional)"
+                placeholderTextColor="#A0AEC0"
+                value={telefone}
+                onChangeText={setTelefone}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Feather name="book" size={19} color="#718096" />
+              <TextInput
+                style={styles.input}
+                placeholder="Curso (opcional)"
+                placeholderTextColor="#A0AEC0"
+                value={curso}
+                onChangeText={setCurso}
+              />
+            </View>
+
             <TouchableOpacity
               style={[styles.submitButton, isSubmitting && styles.disabledButton]}
-              onPress={handleLogin}
+              onPress={handleRegister}
               disabled={isSubmitting}
             >
               <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Entrando...' : 'Entrar'}
+                {isSubmitting ? 'Cadastrando...' : 'Finalizar Cadastro'}
               </Text>
             </TouchableOpacity>
-
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>Ainda não tem uma conta? </Text>
-              <TouchableOpacity onPress={() => router.push('/cadastro')}>
-                <Text style={styles.registerLink}>Cadastre-se</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -140,10 +186,11 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7FAFC' },
   keyboardAvoidingView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20 },
-  headerGroup: { marginBottom: 32 },
-  title: { fontSize: 32, fontWeight: '800', color: '#1A202C' },
-  subtitle: { fontSize: 16, color: '#718096', marginTop: 6 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 20 },
+  headerGroup: { marginBottom: 24 },
+  backButton: { width: 40, height: 40, justifyContent: 'center', marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1A202C' },
+  subtitle: { fontSize: 16, color: '#718096', marginTop: 4 },
   formSection: { width: '100%' },
   inputWrapper: {
     width: '100%',
@@ -154,7 +201,7 @@ const styles = StyleSheet.create({
     borderColor: '#DCE5EE',
     borderRadius: 14,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 13,
     backgroundColor: '#FFFFFF',
   },
   input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: '#1A202C' },
@@ -165,16 +212,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 12,
   },
   disabledButton: { opacity: 0.6 },
   submitButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  footerText: { fontSize: 15, color: '#718096' },
-  registerLink: { fontSize: 15, fontWeight: '700', color: '#2F80ED' },
 });
