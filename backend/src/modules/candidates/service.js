@@ -236,6 +236,14 @@ export async function listApplications(userId) {
 export async function deleteApplication(userId, vacancyId) {
   const knex = getKnex();
 
+  const application = await knex('interests')
+    .where({ user_id: userId, vacancy_id: vacancyId })
+    .first('id');
+
+  if (application) {
+    await knex('messages').where({ application_id: application.id }).delete();
+  }
+
   const deleted = await knex('interests')
     .where({ user_id: userId, vacancy_id: vacancyId })
     .delete();

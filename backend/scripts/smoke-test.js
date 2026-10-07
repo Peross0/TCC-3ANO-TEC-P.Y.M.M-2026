@@ -38,6 +38,13 @@ const adminLogin = await request('/api/auth/login', {
 });
 expectStatus(adminLogin, 200, 'admin login');
 
+const invalidLogin = await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'senha-incorreta' },
+});
+expectStatus(invalidLogin, 401, 'invalid login credentials');
+assert.equal(invalidLogin.data.message, 'Credenciais inválidas');
+
 const recruiterLogin = await request('/api/auth/login', {
   method: 'POST',
   body: { email: 'recruiter@test.com', password: 'Senha123!' },
@@ -54,6 +61,10 @@ const candidateToken = candidateLogin.data.token;
 const recruiterToken = recruiterLogin.data.token;
 const adminToken = adminLogin.data.token;
 const candidateId = candidateLogin.data.user.id;
+
+const candidateMe = await request('/api/auth/me', { token: candidateToken });
+expectStatus(candidateMe, 200, 'candidate session validation');
+assert.equal(candidateMe.data.user.id, candidateId);
 
 const setupDb = new DatabaseSync('./data/conectafacil.db');
 setupDb.prepare('DELETE FROM users WHERE email = ?').run('second-recruiter@smoke.test');
@@ -171,6 +182,30 @@ assert.ok(recruiterCandidates.data.candidates.some((candidate) => candidate.cand
 const applications = await request('/api/candidates/applications', { token: candidateToken });
 expectStatus(applications, 200, 'candidate applications');
 assert.ok(applications.data.applications.some((application) => application.vacancy_id === 2));
+
+const application = applications.data.applications.find((item) => item.vacancy_id === 2);
+const candidateMessage = await request('/api/messages', {
+  method: 'POST',
+  token: candidateToken,
+  body: { application_id: application.id, body: 'Olá, tenho interesse nesta oportunidade.' },
+});
+expectStatus(candidateMessage, 201, 'candidate sends message');
+
+const recruiterMessages = await request('/api/messages', { token: recruiterToken });
+expectStatus(recruiterMessages, 200, 'recruiter reads messages');
+assert.ok(recruiterMessages.data.messages.some((message) => message.id === candidateMessage.data.message.id));
+assert.ok(recruiterMessages.data.conversations.some((item) => item.application_id === application.id));
+
+const unrelatedRecruiterMessage = await request('/api/messages', {
+  method: 'POST',
+  token: secondRecruiterToken,
+  body: { application_id: application.id, body: 'Mensagem não autorizada' },
+});
+expectStatus(unrelatedRecruiterMessage, 403, 'unrelated recruiter cannot message');
+
+const cleanupMessages = new DatabaseSync('./data/conectafacil.db');
+cleanupMessages.prepare('DELETE FROM messages WHERE id = ?').run(candidateMessage.data.message.id);
+cleanupMessages.close();
 
 const forgot = await request('/api/auth/forgot-password', {
   method: 'POST',

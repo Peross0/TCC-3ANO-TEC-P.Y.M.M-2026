@@ -4,6 +4,7 @@ import userRoutes from '../modules/users/routes.js';
 import candidateRoutes from '../modules/candidates/routes.js';
 import recruiterRoutes from '../modules/recruiters/routes.js';
 import adminRoutes from '../modules/admin/routes.js';
+import messageRoutes from '../modules/messages/routes.js';
 
 export const routes = Router();
 
@@ -12,3 +13,4 @@ routes.use('/users', userRoutes);
 routes.use('/candidates', candidateRoutes);
 routes.use('/recruiters', recruiterRoutes);
 routes.use('/admin', adminRoutes);
+routes.use('/messages', messageRoutes);

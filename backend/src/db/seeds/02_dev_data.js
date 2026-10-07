@@ -15,7 +15,11 @@ export async function seed(knex) {
   const devUserIds = devUsers.map(({ id }) => id);
 
   if (devUserIds.length > 0) {
-    await knex('interests').whereIn('user_id', devUserIds).delete();
+    const devApplicationIds = await knex('interests').whereIn('user_id', devUserIds).pluck('id');
+    if (devApplicationIds.length > 0) {
+      await knex('messages').whereIn('application_id', devApplicationIds).delete();
+    }
+    await knex('interests').whereIn('id', devApplicationIds).delete();
     await knex('vacancies').whereIn('user_id', devUserIds).delete();
     await knex('users').whereIn('id', devUserIds).delete();
   }
