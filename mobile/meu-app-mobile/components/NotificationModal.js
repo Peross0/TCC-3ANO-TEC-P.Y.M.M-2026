@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { View, Text, Modal, Pressable, StyleSheet, Platform } from 'react-native';
 import { Colors } from '../constants/theme';
 
 const colors = Colors.light;
@@ -12,22 +12,21 @@ export default function NotificationModal({ visible, onClose }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.notificationDropdown}>
-            <Text style={styles.notificationTitle}>1 Notificação</Text>
-            <View style={styles.notificationCard}>
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>P</Text>
-              </View>
-              <View>
-                <Text style={styles.notifCompany}>Pinheirão</Text>
-                <Text style={styles.notifSub}>Supermercado</Text>
-              </View>
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar notificações" />
+        <View style={styles.notificationDropdown}>
+          <Text style={styles.notificationTitle}>1 Notificação</Text>
+          <View style={styles.notificationCard}>
+            <View style={styles.notificationBadge}>
+              <Text style={styles.badgeText}>P</Text>
+            </View>
+            <View>
+              <Text style={styles.notifCompany}>Pinheirão</Text>
+              <Text style={styles.notifSub}>Supermercado</Text>
             </View>
           </View>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 }
@@ -37,6 +36,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  backdrop: { ...StyleSheet.absoluteFillObject },
   notificationDropdown: {
     position: 'absolute',
     top: 60,
@@ -46,9 +46,10 @@ const styles = StyleSheet.create({
     padding: 10,
     width: 180,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
+    ...Platform.select({
+      web: { boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.15)' },
+      default: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 5 },
+    }),
   },
   notificationTitle: {
     fontSize: 10,

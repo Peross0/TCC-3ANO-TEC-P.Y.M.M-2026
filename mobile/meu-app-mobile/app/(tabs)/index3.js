@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, StatusBar } from "react-native";
+import { Platform, StyleSheet, Text, View, Image, StatusBar } from "react-native";
 import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
@@ -87,9 +87,14 @@ const styles = StyleSheet.create({
     color: CN_COLORS.TEXT_DARK, 
     marginBottom: 10,
     textAlign: "center",
-    textShadowColor: CN_COLORS.BRIGHT_WHITE,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    ...Platform.select({
+      web: { textShadow: `1px 1px 1px ${CN_COLORS.BRIGHT_WHITE}` },
+      default: {
+        textShadowColor: CN_COLORS.BRIGHT_WHITE,
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 1,
+      },
+    }),
     letterSpacing: 2,
   },
 
@@ -99,9 +104,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: '800', 
     lineHeight: 30, 
-    textShadowColor: CN_COLORS.TEXT_LIGHT, 
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
+    ...Platform.select({
+      web: { textShadow: `0.5px 0.5px 1px ${CN_COLORS.TEXT_LIGHT}` },
+      default: {
+        textShadowColor: CN_COLORS.TEXT_LIGHT,
+        textShadowOffset: { width: 0.5, height: 0.5 },
+        textShadowRadius: 1,
+      },
+    }),
     letterSpacing: 0.5,
   },
     
@@ -122,8 +132,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: '900', 
     letterSpacing: 1,
-    textShadowColor: CN_COLORS.OUTLINE_BLACK,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
+    ...Platform.select({
+      web: { textShadow: `2px 2px 0px ${CN_COLORS.OUTLINE_BLACK}` },
+      default: {
+        textShadowColor: CN_COLORS.OUTLINE_BLACK,
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 0,
+      },
+    }),
   },
 });

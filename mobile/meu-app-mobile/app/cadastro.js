@@ -15,11 +15,9 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
+import { apiFetch } from '../lib/api';
 
 const colors = Colors.light;
-
-// IP da sua máquina na rede local
-const API_URL = 'http://192.168.101.144:3000/api';
 
 export default function RegisterScreen() {
   const [nome, setNome] = useState('');
@@ -27,6 +25,7 @@ export default function RegisterScreen() {
   const [senha, setSenha] = useState('');
   const [telefone, setTelefone] = useState('');
   const [curso, setCurso] = useState('');
+  const [cpf, setCpf] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,43 +43,44 @@ export default function RegisterScreen() {
       Alert.alert('E-mail inválido', 'Informe um e-mail válido.');
       return;
     }
-    if (senha.length < 6) {
-      Alert.alert('Senha fraca', 'A senha deve conter no mínimo 6 caracteres.');
+    if (senha.length < 8) {
+      Alert.alert('Senha fraca', 'A senha deve conter no mínimo 8 caracteres.');
+      return;
+    }
+    const documento = cpf.replace(/\D/g, '');
+    if (documento.length !== 11) {
+      Alert.alert('CPF inválido', 'Informe um CPF válido com 11 números.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/cadastro`, {
+      const data = await apiFetch('/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: nomeLimpo,
+          full_name: nomeLimpo,
           email: emailLimpo,
-          senha: senha,
-          telefone: telefone.trim() || null,
-          curso: curso.trim() || null,
-          tipo_usuario: 'estudante',
+          password: senha,
+          phone: telefone.trim() || undefined,
+          user_type: 'CANDIDATE',
+          document_type: 'CPF',
+          document_number: documento,
         }),
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.sucesso) {
-        Alert.alert(
-          'Conta Criada!',
-          'Cadastro realizado com sucesso. Agora faça o seu login.',
-          [{ text: 'Ir para Login', onPress: () => router.back() }]
-        );
-      } else {
-        Alert.alert('Erro ao cadastrar', data.mensagem || 'Não foi possível cadastrar.');
-      }
+      Alert.alert(
+        'Conta criada!',
+        data.message || 'Cadastro realizado com sucesso. Agora faça login.',
+        [{ text: 'Ir para Login', onPress: () => router.back() }]
+      );
     } catch (error) {
       console.error('Erro na requisição:', error);
       Alert.alert(
         'Erro de Conexão',
-        'Não foi possível conectar ao servidor. Verifique a rede e se o backend está ativo.'
+        error instanceof TypeError
+          ? 'Não foi possível conectar ao servidor. Verifique a rede e se o backend está ativo.'
+          : error.message
       );
     } finally {
       setIsSubmitting(false);
@@ -156,6 +156,19 @@ export default function RegisterScreen() {
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Feather name="credit-card" size={19} color={colors.muted} />
+              <TextInput
+                style={styles.input}
+                placeholder="CPF *"
+                placeholderTextColor={colors.muted}
+                value={cpf}
+                onChangeText={setCpf}
+                keyboardType="number-pad"
+                maxLength={14}
               />
             </View>
 

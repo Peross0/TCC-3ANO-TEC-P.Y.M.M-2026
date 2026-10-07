@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -11,14 +12,69 @@ import {
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
+import { SessionContext } from '../context/SessionContext';
+import { apiFetch } from '../lib/api';
 
 const colors = Colors.light;
 
 export default function PerfilScreen() {
-  const [nome, setNome] = useState('Carlos Silva');
+  const { sessionData, setSessionData } = useContext(SessionContext);
+  const [nome, setNome] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [genero, setGenero] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setNome(sessionData?.profile?.full_name || '');
+    setTelefone(sessionData?.profile?.phone || '');
+  }, [sessionData?.profile]);
+
+  const handleSave = async () => {
+    if (!nome.trim()) {
+      Alert.alert('Nome obrigatório', 'Informe seu nome completo.');
+      return;
+    }
+    const user = sessionData?.user;
+    const profilePath = user?.user_type === 'CANDIDATE'
+      ? '/candidates/profile'
+      : user?.user_type === 'RECRUITER'
+        ? '/recruiters/profile'
+        : `/admin/users/${user?.id}`;
+    setIsSaving(true);
+    try {
+      const result = await apiFetch(profilePath, {
+        method: 'PUT',
+        body: JSON.stringify({
+          full_name: nome.trim(),
+          ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+        }),
+      });
+      const profile = result.candidate || result.recruiter || result.user;
+      setSessionData((current) => ({
+        ...current,
+        user: {
+          ...current.user,
+          full_name: nome.trim(),
+          ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+        },
+        profile: {
+          ...current.profile,
+          ...profile,
+          full_name: nome.trim(),
+          ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+        },
+      }));
+      Alert.alert('Perfil atualizado', 'Seus dados foram salvos com sucesso.');
+    } catch (error) {
+      Alert.alert('Não foi possível salvar', error instanceof TypeError
+        ? 'Não foi possível conectar ao servidor.'
+        : error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,6 +110,22 @@ export default function PerfilScreen() {
             placeholder="Seu nome"
           />
 
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            style={[styles.input, styles.readOnlyInput]}
+            value={sessionData?.profile?.email || sessionData?.user?.email || ''}
+            editable={false}
+          />
+
+          <Text style={styles.label}>Telefone</Text>
+          <TextInput
+            style={styles.input}
+            value={telefone}
+            onChangeText={setTelefone}
+            placeholder="Seu telefone"
+            keyboardType="phone-pad"
+          />
+
           <Text style={styles.label}>Gênero</Text>
           <TextInput
             style={styles.input}
@@ -84,8 +156,8 @@ export default function PerfilScreen() {
         </TouchableOpacity>
 
         {/* Botão Salvar */}
-        <TouchableOpacity style={styles.saveBtn}>
-          <Text style={styles.saveText}>Salvar</Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+          <Text style={styles.saveText}>{isSaving ? 'Salvando...' : 'Salvar'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -133,6 +205,7 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 14,
   },
+  readOnlyInput: { color: colors.muted },
   descHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   counter: { fontSize: 11, color: colors.muted },
   descInput: { height: 80, textAlignVertical: 'top' },

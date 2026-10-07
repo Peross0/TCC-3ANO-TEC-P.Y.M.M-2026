@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/theme';
 
@@ -84,11 +84,16 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     height: 48,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    ...Platform.select({
+      web: { boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)' },
+      default: {
+        elevation: 2,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+    }),
   },
   searchInput: {
     flex: 1,

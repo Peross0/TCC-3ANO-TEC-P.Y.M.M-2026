@@ -1,12 +1,17 @@
+import React, { useState } from 'react';
 import { Stack } from 'expo-router';
+import { SessionContext } from '../context/SessionContext';
 
 export default function RootLayout() {
+  const [sessionData, setSessionData] = useState(null);
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* Tela de Login/Loading sem abas */}
-      <Stack.Screen name="index" />
-      {/* Grupo com a navegação por abas */}
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <SessionContext.Provider value={{ sessionData, setSessionData }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="carregando" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </SessionContext.Provider>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { View, Text, Modal, Pressable, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../constants/theme';
 
@@ -13,23 +13,22 @@ export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLo
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.profileDropdown}>
-            <TouchableOpacity style={styles.dropdownOption} onPress={onGoToProfile}>
-              <Feather name="edit-2" size={16} color={colors.inkSoft} />
-              <Text style={styles.dropdownText}>Ver perfil</Text>
-            </TouchableOpacity>
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar menu" />
+        <View style={styles.profileDropdown}>
+          <TouchableOpacity style={styles.dropdownOption} onPress={onGoToProfile}>
+            <Feather name="edit-2" size={16} color={colors.inkSoft} />
+            <Text style={styles.dropdownText}>Ver perfil</Text>
+          </TouchableOpacity>
 
-            <View style={styles.dropdownDivider} />
+          <View style={styles.dropdownDivider} />
 
-            <TouchableOpacity style={styles.dropdownOption} onPress={onLogout}>
-              <Feather name="log-out" size={16} color={colors.inkSoft} />
-              <Text style={styles.dropdownText}>Sair</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.dropdownOption} onPress={onLogout}>
+            <Feather name="log-out" size={16} color={colors.inkSoft} />
+            <Text style={styles.dropdownText}>Sair</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 }
@@ -39,6 +38,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  backdrop: { ...StyleSheet.absoluteFillObject },
   profileDropdown: {
     position: 'absolute',
     top: 60,
@@ -50,9 +50,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     width: 140,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: { boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.1)' },
+      default: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+    }),
   },
   dropdownOption: {
     flexDirection: 'row',

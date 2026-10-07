@@ -1,10 +1,20 @@
 import { Tabs } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Platform } from 'react-native';
 import { Colors } from '../../constants/theme';
+
+function blurFocusedWebElement() {
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    document.activeElement?.blur?.();
+  }
+}
 
 export default function TabLayout() {
   return (
     <Tabs
+      screenListeners={{
+        blur: blurFocusedWebElement,
+      }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.light.primaryDark,

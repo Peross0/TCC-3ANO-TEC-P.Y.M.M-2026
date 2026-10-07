@@ -4,42 +4,38 @@
     "slug": "meu-app-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./app/assets/logo.png",
     "scheme": "meuappmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F9F2E7",
-        "foregroundImage": "./assets/logo.png"
+        "foregroundImage": "./app/assets/logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "output": "static",
-      "favicon": "./assets/logo.png"
+      "favicon": "./app/assets/logo.png"
     },
-
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo.png",
+          "image": "./app/assets/logo.png",
           "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#F9F2E7"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

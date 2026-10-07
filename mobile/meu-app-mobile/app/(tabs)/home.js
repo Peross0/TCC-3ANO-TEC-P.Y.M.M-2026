@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
+  Alert,
   StyleSheet,
   TouchableOpacity,
   Text,
@@ -10,9 +11,11 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
+import { SessionContext } from '../../context/SessionContext';
+import { clearToken } from '../../lib/api';
 
 import Header from '../../components/Header';
 import NotificationModal from '../../components/NotificationModal';
@@ -67,8 +70,8 @@ const INITIAL_JOBS_CANDIDATE = [
 ];
 
 export default function HomeScreen() {
-  const params = useLocalSearchParams();
-  const isEmployer = params.role === 'empresario';
+  const { sessionData, setSessionData } = useContext(SessionContext);
+  const isEmployer = sessionData?.user?.user_type === 'RECRUITER';
 
   const [selectedFilter, setSelectedFilter] = useState('Para você');
   const [showNotification, setShowNotification] = useState(false);
@@ -85,14 +88,21 @@ export default function HomeScreen() {
     setJobs(INITIAL_JOBS_CANDIDATE);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowProfileMenu(false);
     setIsLoggingOut(true);
 
-    setTimeout(() => {
+    try {
+      await clearToken();
+      setSessionData(null);
+      setTimeout(() => {
+        setIsLoggingOut(false);
+        router.replace('/');
+      }, 400);
+    } catch (error) {
       setIsLoggingOut(false);
-      router.replace('/');
-    }, 1000);
+      Alert.alert('Não foi possível sair', error.message);
+    }
   };
 
   const handleGoToProfile = () => {
