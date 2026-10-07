@@ -457,7 +457,7 @@ export default function PerfilScreen() {
                     ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} accessibilityLabel="Foto do perfil" />
                     : <Text style={styles.avatarText}>{recruiter.full_name?.trim().charAt(0).toUpperCase() || 'R'}</Text>}
                   <View style={styles.imageEditBadge}>
-                    <Feather name={avatarUploading ? 'loader' : 'camera'} size={12} color={colors.surface} />
+                    <Feather name={avatarUploading ? 'loader' : 'camera'} size={12} color={colors.ink} />
                   </View>
                 </Pressable>
                 <View style={styles.profileCopy}>
@@ -473,7 +473,7 @@ export default function PerfilScreen() {
                   <Text style={styles.statusText}>Conta ativa</Text>
                 </View>
                 <Pressable style={styles.primaryButton} onPress={editing ? cancelEditing : beginEditing} accessibilityRole="button">
-                  <Feather name={editing ? 'x' : 'edit-2'} size={15} color={colors.surface} />
+                  <Feather name={editing ? 'x' : 'edit-2'} size={15} color={colors.ink} />
                   <Text style={styles.primaryButtonText}>{editing ? 'Cancelar edição' : 'Editar perfil'}</Text>
                 </Pressable>
               </View>
@@ -537,7 +537,7 @@ export default function PerfilScreen() {
                         <Text style={styles.secondaryButtonText}>Cancelar</Text>
                       </Pressable>
                       <Pressable style={[styles.primaryButton, saving && styles.disabledButton]} onPress={saveProfile} disabled={saving} accessibilityRole="button">
-                        <Feather name={saving ? 'loader' : 'check'} size={15} color={colors.surface} />
+                        <Feather name={saving ? 'loader' : 'check'} size={15} color={colors.ink} />
                         <Text style={styles.primaryButtonText}>{saving ? 'Salvando...' : 'Salvar alterações'}</Text>
                       </Pressable>
                     </View>
@@ -622,7 +622,7 @@ export default function PerfilScreen() {
                           <Text style={styles.secondaryButtonText}>Cancelar</Text>
                         </Pressable>
                         <Pressable style={[styles.primaryButton, companySaving && styles.disabledButton]} onPress={saveCompany} disabled={companySaving} accessibilityRole="button">
-                          <Feather name={companySaving ? 'loader' : 'check'} size={15} color={colors.surface} />
+                          <Feather name={companySaving ? 'loader' : 'check'} size={15} color={colors.ink} />
                           <Text style={styles.primaryButtonText}>{companySaving ? 'Salvando...' : 'Salvar empresa'}</Text>
                         </Pressable>
                       </View>
@@ -786,8 +786,8 @@ const styles = StyleSheet.create({
   pageTitle: { color: colors.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.7 },
   pageSubtitle: { color: colors.inkSoft, fontSize: 13, lineHeight: 19, marginTop: 5, maxWidth: 620 },
   feedback: { flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 14 },
-  feedbackSuccess: { backgroundColor: colors.limeWash, borderColor: '#DAEAAE' },
-  feedbackError: { backgroundColor: '#FBEDEC', borderColor: '#F0D2CF' },
+  feedbackSuccess: { backgroundColor: colors.limeWash, borderColor: colors.line },
+  feedbackError: { backgroundColor: colors.surface, borderColor: colors.line },
   feedbackText: { flex: 1, color: colors.inkSoft, fontSize: 12, lineHeight: 17 },
   feedbackErrorText: { color: colors.danger },
   loadingPanel: { minHeight: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 15, padding: 24 },
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   profileIdentity: { flexDirection: 'row', alignItems: 'center', gap: 15, flex: 1, minWidth: 240 },
   avatar: { width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryWash },
   avatarImage: { width: '100%', height: '100%', borderRadius: 18 },
-  imageEditBadge: { position: 'absolute', right: -4, bottom: -4, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryDark, borderWidth: 2, borderColor: colors.surface },
+  imageEditBadge: { position: 'absolute', right: -4, bottom: -4, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.surface },
   avatarText: { color: colors.primaryDark, fontSize: 27, fontWeight: '800' },
   profileCopy: { flex: 1, minWidth: 0 },
   profileName: { color: colors.ink, fontSize: 21, fontWeight: '800', letterSpacing: -0.3 },
@@ -807,8 +807,8 @@ const styles = StyleSheet.create({
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.limeWash, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 20 },
   statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.limeDark },
   statusText: { color: colors.inkSoft, fontSize: 11, fontWeight: '700' },
-  primaryButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, borderRadius: 9, backgroundColor: colors.primaryDark },
-  primaryButtonText: { color: colors.surface, fontSize: 12, fontWeight: '800' },
+  primaryButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, borderRadius: 9, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
   disabledButton: { opacity: 0.6 },
   mainGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 16 },
   mainColumn: { flex: 1.7, flexBasis: 560, minWidth: 0, gap: 16 },
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   preferenceCopy: { flex: 1 },
   preferenceDescription: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
   toggle: { width: 42, height: 24, justifyContent: 'center', padding: 3, borderRadius: 12, backgroundColor: colors.line },
-  toggleActive: { backgroundColor: colors.primaryDark },
+  toggleActive: { backgroundColor: colors.primary },
   toggleKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.surface },
   toggleKnobActive: { alignSelf: 'flex-end' },
   signOutButton: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingTop: 15 },

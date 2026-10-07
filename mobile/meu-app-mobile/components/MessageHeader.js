@@ -15,7 +15,7 @@ export default function MessageHeader({ activeChat, onBack }) {
       </TouchableOpacity>
 
       <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || colors.primaryWash }]}>
-        <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || colors.tint }]}>
+        <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || colors.text }]}>
           {activeChat.company ? activeChat.company.charAt(0) : 'C'}
         </Text>
       </View>

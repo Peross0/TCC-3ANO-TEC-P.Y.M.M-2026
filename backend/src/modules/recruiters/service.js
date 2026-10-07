@@ -43,6 +43,78 @@ export async function getProfile(userId) {
   return { recruiter: user };
 }
 
+export async function getDashboard(userId) {
+  const knex = getKnex();
+  const [profileRows, vacancyRows, applicationRows, recentVacancies, recentApplications] = await Promise.all([
+    knex('users')
+      .where({ id: userId, user_type: 'RECRUITER' })
+      .whereNull('deleted_at')
+      .count('* as total'),
+    knex('vacancies')
+      .where({ user_id: userId })
+      .whereNull('deleted_at')
+      .select('status')
+      .count('* as total')
+      .groupBy('status'),
+    knex('interests')
+      .join('vacancies', 'interests.vacancy_id', 'vacancies.id')
+      .join('users', 'interests.user_id', 'users.id')
+      .where('vacancies.user_id', userId)
+      .whereNull('vacancies.deleted_at')
+      .whereNull('users.deleted_at')
+      .select('interests.status')
+      .count('* as total')
+      .groupBy('interests.status'),
+    knex('vacancies')
+      .where({ user_id: userId })
+      .whereNull('deleted_at')
+      .select('job_title', 'created_at')
+      .orderBy('created_at', 'desc')
+      .limit(5),
+    knex('interests')
+      .join('vacancies', 'interests.vacancy_id', 'vacancies.id')
+      .join('users', 'interests.user_id', 'users.id')
+      .where('vacancies.user_id', userId)
+      .whereNull('vacancies.deleted_at')
+      .whereNull('users.deleted_at')
+      .select('users.full_name', 'vacancies.job_title', 'interests.created_at')
+      .orderBy('interests.created_at', 'desc')
+      .limit(5),
+  ]);
+
+  const vacancyCounts = Object.fromEntries(vacancyRows.map((row) => [row.status, Number(row.total)]));
+  const applicationCounts = Object.fromEntries(applicationRows.map((row) => [row.status, Number(row.total)]));
+  const activities = [
+    ...recentVacancies.map((vacancy) => ({
+      type: 'VACANCY_CREATED',
+      title: 'Vaga publicada',
+      description: vacancy.job_title,
+      created_at: vacancy.created_at,
+    })),
+    ...recentApplications.map((application) => ({
+      type: 'APPLICATION_RECEIVED',
+      title: 'Candidatura recebida',
+      description: `${application.full_name} · ${application.job_title}`,
+      created_at: application.created_at,
+    })),
+  ].sort((first, second) => new Date(second.created_at) - new Date(first.created_at)).slice(0, 5);
+
+  return {
+    profileCount: Number(profileRows[0]?.total || 0),
+    vacancies: {
+      open: vacancyCounts.OPEN || 0,
+      closed: vacancyCounts.CLOSED || 0,
+    },
+    applications: {
+      total: Object.values(applicationCounts).reduce((total, count) => total + count, 0),
+      pending: applicationCounts.PENDING || 0,
+      accepted: applicationCounts.ACCEPTED || 0,
+      rejected: applicationCounts.REJECTED || 0,
+    },
+    activities,
+  };
+}
+
 export async function updateProfile(userId, data) {
   const knex = getKnex();
 

@@ -171,7 +171,7 @@ export default function LoginScreen() {
           <View style={[styles.shell, isWide && styles.shellWide]}>
             <View style={[styles.intro, isWide && styles.introWide]}>
               <Pressable style={styles.brand} onPress={() => router.replace('/')} accessibilityRole="button" accessibilityLabel="Voltar à página inicial">
-                <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.surface} /></View>
+                <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.ink} /></View>
                 <Text style={styles.brandName}>Conecta Fácil</Text>
               </Pressable>
               <View style={styles.introCopy}>
@@ -226,7 +226,7 @@ export default function LoginScreen() {
 
                 <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={verificationPending ? handleVerifyEmail : handleSubmit} disabled={isSubmitting} accessibilityRole="button">
                   <Text style={styles.submitText}>{isSubmitting ? 'Aguarde…' : verificationPending ? 'Verificar e-mail' : isRegistering ? 'Criar meu acesso' : 'Entrar na conta'}</Text>
-                  {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.surface} />}
+                  {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.ink} />}
                 </Pressable>
 
                 <View style={styles.switchRow}>
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   intro: { padding: 22, paddingBottom: 8 },
   introWide: { flex: 0.88, justifyContent: 'space-between', padding: 42, backgroundColor: colors.surfaceSoft },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start' },
-  brandMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center' },
+  brandMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   introCopy: { marginTop: 34, maxWidth: 450 },
   eyebrow: { color: colors.primaryDark, fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 13 },
@@ -275,10 +275,10 @@ const styles = StyleSheet.create({
   forgotPassword: { color: colors.primaryDark, fontSize: 12, fontWeight: '700', marginBottom: 7 },
   inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: colors.surface },
   input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14, outlineStyle: 'none' },
-  submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primaryDark, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
+  submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
   pressedButton: { opacity: 0.88 },
   disabledButton: { opacity: 0.58 },
-  submitText: { color: colors.surface, fontSize: 14, fontWeight: '800' },
+  submitText: { color: colors.ink, fontSize: 14, fontWeight: '800' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 20 },
   switchText: { color: colors.muted, fontSize: 13 },
   switchLink: { color: colors.primaryDark, fontSize: 13, fontWeight: '800' },

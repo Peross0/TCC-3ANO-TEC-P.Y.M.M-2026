@@ -16,6 +16,21 @@ export function getKnex() {
   return knexInstance;
 }
 
+export async function ensureDatabaseReady() {
+  const knex = getKnex();
+
+  try {
+    await knex.migrate.latest();
+
+    if (process.env.NODE_ENV !== 'production') {
+      await knex.seed.run();
+    }
+  } catch (error) {
+    console.error('❌ Falha ao inicializar o banco de dados:', error);
+    throw error;
+  }
+}
+
 export function closeKnex() {
   if (knexInstance) {
     knexInstance.destroy();

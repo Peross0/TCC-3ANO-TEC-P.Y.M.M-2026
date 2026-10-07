@@ -46,7 +46,7 @@ export default function LandingPage() {
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Pressable style={styles.brand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button" accessibilityLabel="Conecta Fácil, início">
-            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.surface} /></View>
+            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.ink} /></View>
             <Text style={styles.brandName}>Conecta Fácil</Text>
           </Pressable>
           {isWide && (
@@ -69,7 +69,7 @@ export default function LandingPage() {
             <View style={styles.heroActions}>
               <Pressable style={styles.primaryButton} onPress={goToRegister} accessibilityRole="button">
                 <Text style={styles.primaryButtonText}>Cadastrar minha empresa</Text>
-                <Feather name="arrow-right" size={17} color={colors.surface} />
+                <Feather name="arrow-right" size={17} color={colors.ink} />
               </Pressable>
               <Pressable style={styles.secondaryButton} onPress={scrollToBenefits} accessibilityRole="button">
                 <Text style={styles.secondaryButtonText}>Conhecer a plataforma</Text>
@@ -101,7 +101,7 @@ export default function LandingPage() {
               </View>
               <View style={styles.visualFooter}><View style={styles.visualFooterIcon}><Feather name="heart" size={14} color={colors.primaryDark} /></View><Text style={styles.visualFooterText}>Mais clareza para os dois lados.</Text></View>
             </View>
-            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.surface} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
+            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.ink} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
           </View>
         </View>
 
@@ -135,7 +135,7 @@ export default function LandingPage() {
 
         <View style={styles.footer}>
           <Pressable style={styles.footerBrand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button">
-            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.surface} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
+            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.ink} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
           </Pressable>
           <Text style={styles.footerText}>Conexões profissionais começam com proximidade.</Text>
           <Text style={styles.copyright}>© 2026 Conecta Fácil</Text>
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, alignItems: 'center' },
   header: { width: '100%', maxWidth: 1180, minHeight: 76, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.line },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandMark: { width: 37, height: 37, borderRadius: 12, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center' },
+  brandMark: { width: 37, height: 37, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
   navLinks: { flexDirection: 'row', alignItems: 'center', gap: 32 },
   navText: { color: colors.inkSoft, fontSize: 13, fontWeight: '600' },
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.ink, fontSize: 43, lineHeight: 51, fontWeight: '700', letterSpacing: -1.25 },
   heroDescription: { maxWidth: 520, color: colors.inkSoft, fontSize: 16, lineHeight: 25, marginTop: 17 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 25 },
-  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primaryDark },
-  primaryButtonText: { color: colors.surface, fontSize: 13, fontWeight: '800' },
+  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   secondaryButton: { minHeight: 45, justifyContent: 'center', paddingHorizontal: 8 },
   secondaryButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   trustNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25 },
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   flowLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 25 },
   flowItem: { alignItems: 'center', gap: 8 },
   flowIcon: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  flowIconPrimary: { backgroundColor: colors.primaryWash },
+  flowIconPrimary: { backgroundColor: colors.primary },
   flowIconAccent: { backgroundColor: colors.accentWash },
   flowLabel: { color: colors.inkSoft, fontSize: 10, fontWeight: '700' },
   flowConnector: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 6 },
@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
   visualFooter: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 22, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.line },
   visualFooterIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.primaryWash },
   visualFooterText: { color: colors.inkSoft, fontSize: 12, fontWeight: '600' },
-  visualNote: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.primaryDark, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 11, marginTop: 13 },
-  visualNoteText: { color: colors.surface, fontSize: 11, fontWeight: '600' },
+  visualNote: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 11, marginTop: 13 },
+  visualNoteText: { color: colors.ink, fontSize: 11, fontWeight: '600' },
   benefitSection: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingVertical: 52, borderTopWidth: 1, borderTopColor: colors.line },
   sectionHeading: { maxWidth: 650 },
   sectionEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   benefitItemWide: { flex: 1, paddingHorizontal: 22, paddingVertical: 22, borderTopWidth: 1 },
   firstBenefit: { borderTopColor: colors.primary },
   benefitIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryWash, marginBottom: 15 },
-  benefitIconAccent: { backgroundColor: colors.limeWash },
+  benefitIconAccent: { backgroundColor: colors.accentWash },
   benefitTitle: { color: colors.ink, fontSize: 16, fontWeight: '700', marginBottom: 7 },
   benefitText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   closing: { width: '92%', maxWidth: 1132, padding: 25, backgroundColor: colors.primaryWash, borderRadius: 18, gap: 20 },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   closingButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   footer: { width: '100%', maxWidth: 1180, marginTop: 39, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, borderTopWidth: 1, borderTopColor: colors.line, gap: 9 },
   footerBrand: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
-  footerMark: { width: 25, height: 25, borderRadius: 8, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center' },
+  footerMark: { width: 25, height: 25, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   footerName: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   footerText: { color: colors.muted, fontSize: 11 },
   copyright: { color: colors.muted, fontSize: 10, marginTop: 3 },

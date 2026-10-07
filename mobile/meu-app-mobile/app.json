@@ -13,8 +13,13 @@
     },
     "android": {
       "adaptiveIcon": {
+<<<<<<< HEAD
         "backgroundColor": "#F9F2E7",
         "foregroundImage": "./app/assets/logo.png"
+=======
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/logo.png"
+>>>>>>> e3a87ae647cdd02b539d83b578774a6203be129d
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -31,7 +36,7 @@
           "image": "./app/assets/logo.png",
           "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#F9F2E7"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-secure-store"

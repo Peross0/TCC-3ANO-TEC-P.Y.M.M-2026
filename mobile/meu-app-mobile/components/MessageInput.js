@@ -16,7 +16,7 @@ export default function MessageInput({ value, onChangeText, onSend }) {
         onChangeText={onChangeText}
       />
       <TouchableOpacity style={styles.sendButton} onPress={onSend}>
-        <Feather name="send" size={18} color={colors.surface} />
+        <Feather name="send" size={18} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.tint,
     justifyContent: 'center',
     alignItems: 'center',
   },

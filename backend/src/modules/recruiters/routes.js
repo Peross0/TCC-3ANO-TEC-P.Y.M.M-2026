@@ -12,6 +12,7 @@ const router = Router();
 router.use(authMiddleware, requireRole('RECRUITER'));
 
 router.get('/profile', recruiterController.getProfile);
+router.get('/dashboard', recruiterController.getDashboard);
 router.put('/profile', validate(recruiterSchemas.updateProfileSchema), recruiterController.updateProfile);
 router.put('/company', validate(recruiterSchemas.updateCompanySchema), recruiterController.updateCompany);
 router.post('/company/logo', uploadCompanyLogo.single('company_logo'), recruiterController.uploadCompanyLogo);

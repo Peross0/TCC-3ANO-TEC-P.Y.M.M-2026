@@ -5,6 +5,11 @@ export async function getProfile(req, res) {
   res.json(result);
 }
 
+export async function getDashboard(req, res) {
+  const result = await recruiterService.getDashboard(req.user.id);
+  res.json(result);
+}
+
 export async function updateProfile(req, res) {
   const result = await recruiterService.updateProfile(req.user.id, req.validated.body);
   res.json(result);

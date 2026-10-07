@@ -67,7 +67,7 @@ export default function EmpresasScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.companyCard} onPress={() => abrirEmpresa(item)} activeOpacity={0.8}>
-              <View style={styles.companyIcon}><Feather name="briefcase" size={22} color={colors.tint} /></View>
+              <View style={styles.companyIcon}><Feather name="briefcase" size={22} color={colors.text} /></View>
               <View style={styles.companyInfo}>
                 <Text style={styles.companyName}>{item.nome}</Text>
                 <Text style={styles.companyAddress}>{item.endereco}</Text>

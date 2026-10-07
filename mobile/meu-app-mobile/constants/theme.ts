@@ -5,46 +5,47 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#00A8C6';
-const tintColorDark = '#40C0CB';
-const tintColorStrong = '#007F96';
+const paletteBlue = '#4FB3E6';
+const paletteGray = '#BFBFBF';
+const paletteBlack = '#000000';
+const paletteWhite = '#FFFFFF';
 
 export const Colors = {
   light: {
-    text: '#1E343B',
-    background: '#F9F2E7',
-    surface: '#FFFFFF',
-    line: '#E7DED0',
-    muted: '#788B8F',
-    tint: tintColorLight,
-    primaryDark: tintColorStrong,
-    accent: '#40C0CB',
-    accentWash: '#E5F7F8',
-    lime: '#AEE239',
-    limeDark: '#8FBE00',
-    limeWash: '#F1F8DD',
-    primaryWash: '#E2F5F7',
-    icon: '#52686D',
-    tabIconDefault: '#788B8F',
-    tabIconSelected: tintColorStrong,
+    text: paletteBlack,
+    background: paletteWhite,
+    surface: paletteWhite,
+    line: paletteGray,
+    muted: paletteBlack,
+    tint: paletteBlue,
+    primaryDark: paletteBlack,
+    accent: paletteBlue,
+    accentWash: paletteGray,
+    lime: paletteBlue,
+    limeDark: paletteBlack,
+    limeWash: paletteGray,
+    primaryWash: paletteBlue,
+    icon: paletteBlack,
+    tabIconDefault: paletteGray,
+    tabIconSelected: paletteBlue,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    surface: '#202426',
-    line: '#394144',
-    muted: '#9BA1A6',
-    tint: tintColorDark,
-    primaryDark: '#40C0CB',
-    accent: '#40C0CB',
-    accentWash: '#17383B',
-    lime: '#AEE239',
-    limeDark: '#8FBE00',
-    limeWash: '#303A1B',
-    primaryWash: '#17383B',
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: paletteWhite,
+    background: paletteBlack,
+    surface: paletteBlack,
+    line: paletteGray,
+    muted: paletteGray,
+    tint: paletteBlue,
+    primaryDark: paletteWhite,
+    accent: paletteBlue,
+    accentWash: paletteGray,
+    lime: paletteBlue,
+    limeDark: paletteBlack,
+    limeWash: paletteGray,
+    primaryWash: paletteBlue,
+    icon: paletteWhite,
+    tabIconDefault: paletteGray,
+    tabIconSelected: paletteBlue,
   },
 };
 

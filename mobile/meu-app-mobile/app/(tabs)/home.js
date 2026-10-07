@@ -36,7 +36,7 @@ const INITIAL_JOBS_CANDIDATE = [
     salary: 'R$ 2.120',
     vacancies: '3 vagas',
     logoBg: colors.primaryWash,
-    logoTextColor: colors.tint,
+    logoTextColor: colors.text,
     isRemote: false,
   },
   {
@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   activeFilterChip: {
-    backgroundColor: colors.primaryDark,
-    borderColor: colors.primaryDark,
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   filterText: {
     fontSize: 14,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   activeFilterText: {
-    color: '#FFFFFF',
+    color: colors.text,
   },
   mostRecentHighlight: {
     borderWidth: 2,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -10,
     right: 16,
-    backgroundColor: colors.lime,
+    backgroundColor: colors.tint,
     paddingVertical: 2,
     paddingHorizontal: 10,
     borderRadius: 10,

@@ -21,11 +21,11 @@ export default function CandidaturasScreen() {
         </View>
 
         <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}><Feather name="users" size={25} color={colors.primaryDark} /></View>
+          <View style={styles.emptyIcon}><Feather name="users" size={25} color={colors.ink} /></View>
           <Text style={styles.emptyTitle}>Esta área é voltada a candidatos</Text>
           <Text style={styles.emptyText}>Sua conta atual é de recrutador. Acompanhe as oportunidades da empresa pela área de vagas.</Text>
           <Pressable style={styles.primaryButton} onPress={() => router.push({ pathname: '/vagas', params: { nome, email } })}>
-            <Text style={styles.primaryButtonText}>Ver vagas da empresa</Text><Feather name="arrow-right" size={17} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>Ver vagas da empresa</Text><Feather name="arrow-right" size={17} color={colors.ink} />
           </Pressable>
         </View>
       </View>
@@ -38,12 +38,12 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: 900, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 },
   headingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   backButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  eyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 5 },
+  eyebrow: { color: colors.ink, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 5 },
   title: { color: colors.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.7 },
   emptyState: { backgroundColor: colors.surface, borderRadius: 16, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: colors.line, marginTop: 8 },
   emptyIcon: { width: 56, height: 56, borderRadius: 17, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
   emptyTitle: { color: colors.ink, fontSize: 18, fontWeight: '700', textAlign: 'center' },
   emptyText: { maxWidth: 480, color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 7 },
-  primaryButton: { minHeight: 46, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primaryDark, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  primaryButton: { minHeight: 46, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
+  primaryButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
 });

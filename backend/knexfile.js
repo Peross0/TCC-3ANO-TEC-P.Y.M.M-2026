@@ -8,8 +8,8 @@ config(); // Load .env file
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const databasePath = process.env.DATABASE_PATH || './data/conectafacil.db';
-mkdirSync(path.dirname(databasePath) || '.', { recursive: true });
+const databasePath = path.resolve(__dirname, process.env.DATABASE_PATH || './data/conectafacil.db');
+mkdirSync(path.dirname(databasePath) || __dirname, { recursive: true });
 
 export default {
   client: NodeSqliteClient,
@@ -21,12 +21,12 @@ export default {
     max: 1,
   },
   migrations: {
-    directory: './src/db/migrations',
+    directory: path.resolve(__dirname, './src/db/migrations'),
     tableName: 'knex_migrations',
     loadExtensions: ['.js'],
   },
   seeds: {
-    directory: './src/db/seeds',
+    directory: path.resolve(__dirname, './src/db/seeds'),
     loadExtensions: ['.js'],
   },
   useNullAsDefault: true,

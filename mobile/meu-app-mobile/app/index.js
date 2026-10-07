@@ -491,6 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: BRAND.white,
   },
+<<<<<<< HEAD
   input: { flex: 1, height: 52, paddingHorizontal: 11, color: BRAND.black, fontSize: 15 },
   forgotPasswordRow: { alignItems: 'flex-end', marginTop: 10, marginBottom: 8 },
   forgotPasswordText: { color: '#168AC7', fontSize: 13, fontWeight: '600', paddingVertical: 4 },
@@ -498,6 +499,21 @@ const styles = StyleSheet.create({
   loginPrimaryButton: { marginTop: 8 },
   disabledButton: { opacity: 0.65 },
   registerLine: {
+=======
+  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: colors.text },
+  submitButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: colors.tint,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  disabledButton: { opacity: 0.6 },
+  submitButtonText: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  footerContainer: {
+>>>>>>> e3a87ae647cdd02b539d83b578774a6203be129d
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
