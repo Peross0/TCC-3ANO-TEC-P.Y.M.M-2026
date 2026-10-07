@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { colors } from './lib/theme';
 
 export default function App() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function App() {
           <TextInput
             style={styles.input}
             placeholder="Nome completo"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={nome}
             onChangeText={setNome}
           />
@@ -63,7 +64,7 @@ export default function App() {
         <TextInput
           style={styles.input}
           placeholder="Digite seu e-mail"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.muted}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -73,7 +74,7 @@ export default function App() {
         <TextInput
           style={styles.input}
           placeholder="Digite sua senha"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.muted}
           value={senha}
           onChangeText={setSenha}
           secureTextEntry
@@ -114,7 +115,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E9EEF5',
+    backgroundColor: colors.paper,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 40,
     shadowColor: '#000',
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2563EB',
+    color: colors.primaryDark,
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -147,13 +148,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.ink,
     textAlign: 'center',
   },
 
   subtitle: {
     fontSize: 15,
-    color: '#6B7280',
+    color: colors.muted,
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 30,
@@ -161,9 +162,9 @@ const styles = StyleSheet.create({
 
   input: {
     height: 55,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-    borderColor: '#909091',
+    borderColor: colors.line,
     borderRadius: 10,
     paddingHorizontal: 15,
     fontSize: 16,
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
 
   button: {
     height: 55,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primaryDark,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#FFF',
+    color: colors.surface,
     fontSize: 17,
     fontWeight: 'bold',
   },
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   registerText: {
     textAlign: 'center',
     marginTop: 20,
-    color: '#2563EB',
+    color: colors.primaryDark,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   footer: {
     textAlign: 'center',
     marginTop: 25,
-    color: '#9CA3AF',
+    color: colors.muted,
     fontSize: 13,
   },
 });

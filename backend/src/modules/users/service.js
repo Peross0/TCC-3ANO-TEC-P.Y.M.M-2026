@@ -1,6 +1,7 @@
 import { getKnex } from '../../config/database.js';
+import { env } from '../../config/env.js';
 import { unlinkSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { resolve } from 'node:path';
 
 export async function updateAvatar(userId, avatarFilename) {
   const knex = getKnex();
@@ -19,13 +20,13 @@ export async function updateAvatar(userId, avatarFilename) {
 
   // Delete old avatar file if exists
   if (user.avatar_url) {
-    const oldPath = join(process.cwd(), 'uploads', 'avatars', user.avatar_url);
+    const oldPath = resolve(process.cwd(), env.UPLOAD_DIR, user.avatar_url);
     if (existsSync(oldPath)) {
       unlinkSync(oldPath);
     }
   }
 
-  const avatarUrl = `/uploads/avatars/${avatarFilename}`;
+  const avatarUrl = `/uploads/${avatarFilename}`;
 
   await knex('users')
     .where({ id: userId })

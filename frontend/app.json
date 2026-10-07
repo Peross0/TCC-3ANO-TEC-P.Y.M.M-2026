@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F9F2E7"
     },
 
     "ios": {
@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F9F2E7"
       },
       "edgeToEdgeEnabled": true
     },
@@ -31,7 +31,13 @@
     },
 
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita que o Conecta Fácil acesse suas fotos para adicionar imagens ao perfil e à empresa."
+        }
+      ]
     ]
   }
 }

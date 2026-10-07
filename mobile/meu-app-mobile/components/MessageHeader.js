@@ -1,6 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function MessageHeader({ activeChat, onBack }) {
   if (!activeChat) return null;
@@ -8,11 +11,11 @@ export default function MessageHeader({ activeChat, onBack }) {
   return (
     <View style={styles.chatHeader}>
       <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-        <Feather name="arrow-left" size={22} color="#333" />
+        <Feather name="arrow-left" size={22} color={colors.text} />
       </TouchableOpacity>
 
-      <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || '#E3F2FD' }]}>
-        <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || '#1565C0' }]}>
+      <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || colors.primaryWash }]}>
+        <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || colors.tint }]}>
           {activeChat.company ? activeChat.company.charAt(0) : 'C'}
         </Text>
       </View>
@@ -31,9 +34,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EAEAEA',
+    borderBottomColor: colors.line,
   },
   backBtn: {
     paddingRight: 12,
@@ -55,10 +58,10 @@ const styles = StyleSheet.create({
   chatHeaderCompany: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#333333',
+    color: colors.text,
   },
   chatHeaderJob: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.muted,
   },
 });

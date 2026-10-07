@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function PerfilScreen() {
   const [nome, setNome] = useState('Carlos Silva');
@@ -22,11 +25,11 @@ export default function PerfilScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.btnIcon}>
-          <Feather name="arrow-left" size={20} color="#333" />
+          <Feather name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Editar Perfil</Text>
         <TouchableOpacity style={styles.btnIcon}>
-          <Feather name="more-horizontal" size={20} color="#333" />
+          <Feather name="more-horizontal" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -34,10 +37,10 @@ export default function PerfilScreen() {
         {/* Avatar */}
         <View style={styles.avatarWrap}>
           <View style={styles.avatar}>
-            <FontAwesome5 name="user-alt" size={40} color="#666" />
+            <FontAwesome5 name="user-alt" size={40} color={colors.muted} />
           </View>
           <TouchableOpacity style={styles.camBadge}>
-            <Feather name="camera" size={14} color="#FFF" />
+            <Feather name="camera" size={14} color={colors.surface} />
           </TouchableOpacity>
         </View>
 
@@ -75,9 +78,9 @@ export default function PerfilScreen() {
 
         {/* Currículo */}
         <TouchableOpacity style={styles.card}>
-          <Feather name="file-text" size={20} color="#3BB7FF" />
+          <Feather name="file-text" size={20} color={colors.tint} />
           <Text style={styles.cardText}>Anexar Currículo (PDF)</Text>
-          <Feather name="paperclip" size={18} color="#888" />
+          <Feather name="paperclip" size={18} color={colors.muted} />
         </TouchableOpacity>
 
         {/* Botão Salvar */}
@@ -90,25 +93,25 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderColor: '#EEE',
+    borderColor: colors.line,
   },
-  btnIcon: { padding: 8, borderRadius: 20, backgroundColor: '#F0F0F0' },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#111' },
+  btnIcon: { padding: 8, borderRadius: 20, backgroundColor: colors.primaryWash },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   content: { padding: 20 },
   avatarWrap: { alignSelf: 'center', marginBottom: 20 },
   avatar: {
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: colors.primaryWash,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -116,40 +119,40 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#3BB7FF',
+    backgroundColor: colors.primaryDark,
     padding: 8,
     borderRadius: 15,
   },
   form: { gap: 8, marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: colors.inkSoft, marginTop: 8 },
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: colors.line,
     borderRadius: 10,
     padding: 10,
     fontSize: 14,
   },
   descHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  counter: { fontSize: 11, color: '#888' },
+  counter: { fontSize: 11, color: colors.muted },
   descInput: { height: 80, textAlignVertical: 'top' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: colors.line,
     borderRadius: 10,
     padding: 12,
     gap: 10,
     marginBottom: 20,
   },
-  cardText: { flex: 1, fontSize: 14, color: '#444' },
+  cardText: { flex: 1, fontSize: 14, color: colors.text },
   saveBtn: {
-    backgroundColor: '#3BB7FF',
+    backgroundColor: colors.primaryDark,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  saveText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+  saveText: { color: colors.surface, fontWeight: '700', fontSize: 15 },
 });

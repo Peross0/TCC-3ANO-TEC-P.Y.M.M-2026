@@ -12,11 +12,14 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Colors } from '../../constants/theme';
 
 import Header from '../../components/Header';
 import NotificationModal from '../../components/NotificationModal';
 import ProfileMenuModal from '../../components/ProfileMenuModal';
 import JobCard from '../../components/JobCard';
+
+const colors = Colors.light;
 
 const INITIAL_JOBS_CANDIDATE = [
   {
@@ -29,8 +32,8 @@ const INITIAL_JOBS_CANDIDATE = [
     description: 'Procuramos jovens interessados e capacitados de preferência mulher',
     salary: 'R$ 2.120',
     vacancies: '3 vagas',
-    logoBg: '#E3F2FD',
-    logoTextColor: '#1565C0',
+    logoBg: colors.primaryWash,
+    logoTextColor: colors.tint,
     isRemote: false,
   },
   {
@@ -43,8 +46,8 @@ const INITIAL_JOBS_CANDIDATE = [
     description: 'Procuramos jovens interessados e capacitados para a vaga',
     salary: 'R$ 1.520',
     vacancies: '7 vagas',
-    logoBg: '#E8F5E9',
-    logoTextColor: '#2E7D32',
+    logoBg: colors.limeWash,
+    logoTextColor: colors.limeDark,
     isRemote: false,
   },
   {
@@ -57,8 +60,8 @@ const INITIAL_JOBS_CANDIDATE = [
     description: 'Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas',
     salary: 'R$ 1.000',
     vacancies: '2 vagas',
-    logoBg: '#FFEBEE',
-    logoTextColor: '#C62828',
+    logoBg: colors.accentWash,
+    logoTextColor: colors.primaryDark,
     isRemote: false,
   },
 ];
@@ -133,13 +136,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.homeContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Modal de Logout */}
       <Modal visible={isLoggingOut} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#3BB7FF" />
+            <ActivityIndicator size="large" color={colors.tint} />
             <Text style={styles.loadingText}>Saindo...</Text>
           </View>
         </View>
@@ -187,7 +190,7 @@ export default function HomeScreen() {
                 onPress={handleCreateJob}
               >
                 <Text style={styles.createJobPillText}>Criar Vaga</Text>
-                <Feather name="plus-circle" size={18} color="#000000" />
+                <Feather name="plus-circle" size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -266,7 +269,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   homeContainer: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background,
   },
   homeContent: {
     paddingHorizontal: 16,
@@ -283,24 +286,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#CCCCCC',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
   },
   activeFilterChip: {
-    backgroundColor: '#3BB7FF',
-    borderColor: '#3BB7FF',
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
   },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.muted,
   },
   activeFilterText: {
     color: '#FFFFFF',
   },
   mostRecentHighlight: {
     borderWidth: 2,
-    borderColor: '#3BB7FF',
+    borderColor: colors.tint,
     borderRadius: 12,
     marginBottom: 16,
     position: 'relative',
@@ -309,14 +312,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -10,
     right: 16,
-    backgroundColor: '#3BB7FF',
+    backgroundColor: colors.lime,
     paddingVertical: 2,
     paddingHorizontal: 10,
     borderRadius: 10,
     zIndex: 1,
   },
   recentBadgeText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -328,12 +331,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: colors.text,
     marginBottom: 6,
   },
   emptySubText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.muted,
     textAlign: 'center',
   },
   loadingOverlay: {
@@ -343,7 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     padding: 24,
     borderRadius: 16,
     alignItems: 'center',
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
 
   // Empresário (Igual à foto)
@@ -363,10 +366,10 @@ const styles = StyleSheet.create({
   createJobBarContainer: {
     width: '100%',
     height: 54,
-    backgroundColor: '#F3F3F3',
+    backgroundColor: colors.surfaceSoft,
     borderRadius: 27,
     borderWidth: 1,
-    borderColor: '#888888',
+    borderColor: colors.line,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -374,18 +377,18 @@ const styles = StyleSheet.create({
   createJobPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EBEBEB',
+    backgroundColor: colors.primaryWash,
     paddingVertical: 6,
     paddingHorizontal: 18,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#777777',
+    borderColor: colors.line,
     gap: 6,
   },
   createJobPillText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.text,
   },
   emptyEmployerContainer: {
     alignItems: 'center',
@@ -394,24 +397,24 @@ const styles = StyleSheet.create({
   emptyEmployerText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#AAAAAA',
+    color: colors.muted,
   },
   employerJobCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: colors.line,
   },
   employerJobTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#222222',
+    color: colors.text,
   },
   employerJobDetails: {
     fontSize: 13,
-    color: '#757575',
+    color: colors.muted,
     marginTop: 4,
   },
 });

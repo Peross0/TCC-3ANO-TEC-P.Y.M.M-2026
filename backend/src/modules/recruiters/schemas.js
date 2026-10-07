@@ -8,6 +8,14 @@ export const updateProfileSchema = z.object({
   }),
 });
 
+export const updateCompanySchema = z.object({
+  body: z.object({
+    company_name: z.string().trim().min(2).max(255),
+    company_sector: z.string().max(100),
+    location: z.string().max(255),
+  }),
+});
+
 export const createVacancySchema = z.object({
   body: z.object({
     job_title: z.string().min(3).max(255),

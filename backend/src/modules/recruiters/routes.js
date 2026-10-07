@@ -4,6 +4,7 @@ import * as recruiterSchemas from './schemas.js';
 import { validate } from '../../middlewares/validate.js';
 import { authMiddleware } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/requireRole.js';
+import { uploadCompanyLogo } from '../../middlewares/upload.js';
 
 const router = Router();
 
@@ -12,6 +13,8 @@ router.use(authMiddleware, requireRole('RECRUITER'));
 
 router.get('/profile', recruiterController.getProfile);
 router.put('/profile', validate(recruiterSchemas.updateProfileSchema), recruiterController.updateProfile);
+router.put('/company', validate(recruiterSchemas.updateCompanySchema), recruiterController.updateCompany);
+router.post('/company/logo', uploadCompanyLogo.single('company_logo'), recruiterController.uploadCompanyLogo);
 
 router.post('/vacancies', validate(recruiterSchemas.createVacancySchema), recruiterController.createVacancy);
 router.get('/vacancies', validate(recruiterSchemas.listCandidatesSchema), recruiterController.listMyVacancies);

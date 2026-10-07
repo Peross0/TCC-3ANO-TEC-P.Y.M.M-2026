@@ -10,6 +10,22 @@ export async function updateProfile(req, res) {
   res.json(result);
 }
 
+export async function updateCompany(req, res) {
+  const result = await recruiterService.updateCompany(req.user.id, req.validated.body);
+  res.json(result);
+}
+
+export async function uploadCompanyLogo(req, res) {
+  if (!req.file) {
+    const err = new Error('Nenhum arquivo enviado');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const result = await recruiterService.updateCompanyLogo(req.user.id, req.file.filename);
+  res.json(result);
+}
+
 export async function createVacancy(req, res) {
   const result = await recruiterService.createVacancy(req.user.id, req.validated.body);
   res.status(201).json(result);

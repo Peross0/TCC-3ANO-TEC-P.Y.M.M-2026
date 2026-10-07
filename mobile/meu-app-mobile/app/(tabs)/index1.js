@@ -14,7 +14,9 @@ import {
 import { Feather } from '@expo/vector-icons';
 import MessageHeader from '../../components/MessageHeader';
 import MessageInput from '../../components/MessageInput';
+import { Colors } from '../../constants/theme';
 
+const colors = Colors.light;
 const INITIAL_CONVERSATIONS = [
   {
     id: '1',
@@ -23,8 +25,8 @@ const INITIAL_CONVERSATIONS = [
     lastMessage: 'Oi, você ainda está interessado na vaga?',
     timeAgo: 'Agora',
     unreadCount: 1,
-    logoBg: '#E3F2FD',
-    logoTextColor: '#1565C0',
+    logoBg: colors.primaryWash,
+    logoTextColor: colors.tint,
   },
   {
     id: '2',
@@ -33,8 +35,8 @@ const INITIAL_CONVERSATIONS = [
     lastMessage: 'Você pode comparecer à entrevista na quinta?',
     timeAgo: '10 min',
     unreadCount: 0,
-    logoBg: '#E8F5E9',
-    logoTextColor: '#2E7D32',
+    logoBg: colors.limeWash,
+    logoTextColor: colors.limeDark,
   },
   {
     id: '3',
@@ -43,8 +45,8 @@ const INITIAL_CONVERSATIONS = [
     lastMessage: 'Parabéns, seu perfil foi aprovado!',
     timeAgo: '1h',
     unreadCount: 2,
-    logoBg: '#FFEBEE',
-    logoTextColor: '#C62828',
+    logoBg: colors.accentWash,
+    logoTextColor: colors.primaryDark,
   },
 ];
 
@@ -110,7 +112,7 @@ export default function MessagesScreen() {
 
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         
         <MessageHeader activeChat={activeChat} onBack={() => setActiveChat(null)} />
 
@@ -159,7 +161,7 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       <View style={styles.header}>
         <Text style={styles.title}>Mensagens</Text>
@@ -167,10 +169,10 @@ export default function MessagesScreen() {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Feather name="search" size={18} color="#8E8E93" />
+          <Feather name="search" size={18} color={colors.muted} />
           <TextInput
             placeholder="Pesquisar conversa..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.muted}
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -188,8 +190,8 @@ export default function MessagesScreen() {
             onPress={() => handleOpenChat(item)}
             activeOpacity={0.7}
           >
-            <View style={[styles.avatar, { backgroundColor: item.logoBg || '#E3F2FD' }]}>
-              <Text style={[styles.avatarText, { color: item.logoTextColor || '#1565C0' }]}>
+            <View style={[styles.avatar, { backgroundColor: item.logoBg || colors.primaryWash }]}>
+              <Text style={[styles.avatarText, { color: item.logoTextColor || colors.tint }]}>
                 {item.company ? item.company.charAt(0) : 'C'}
               </Text>
             </View>
@@ -208,7 +210,7 @@ export default function MessagesScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Feather name="message-square" size={40} color="#CCCCCC" />
+            <Feather name="message-square" size={40} color={colors.line} />
             <Text style={styles.emptyTitle}>Sua caixa de entrada está vazia</Text>
             <Text style={styles.emptySubText}>
               Suas conversas aparecerão aqui.
@@ -223,7 +225,7 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -233,7 +235,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111111',
+    color: colors.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -242,18 +244,18 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     paddingHorizontal: 14,
     height: 42,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: colors.line,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
-    color: '#333333',
+    color: colors.text,
   },
   conversationsList: {
     paddingHorizontal: 16,
@@ -262,12 +264,12 @@ const styles = StyleSheet.create({
   conversationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: colors.line,
   },
   avatar: {
     width: 48,
@@ -292,21 +294,21 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#333333',
+    color: colors.text,
   },
   timeAgo: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.muted,
   },
   jobTitleTag: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#3BB7FF',
+    color: colors.primaryDark,
     marginVertical: 2,
   },
   lastMessage: {
     fontSize: 13,
-    color: '#777777',
+    color: colors.inkSoft,
   },
   chatBody: {
     flex: 1,
@@ -323,19 +325,19 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#3BB7FF',
+    backgroundColor: colors.primaryDark,
     borderBottomRightRadius: 2,
   },
   companyBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: colors.line,
     borderBottomLeftRadius: 2,
   },
   messageText: {
     fontSize: 14,
-    color: '#333333',
+    color: colors.text,
     lineHeight: 18,
   },
   userMessageText: {
@@ -343,12 +345,12 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.muted,
     alignSelf: 'flex-end',
     marginTop: 4,
   },
   userMessageTime: {
-    color: '#E0F4FF',
+    color: colors.primaryWash,
   },
   emptyContainer: {
     paddingVertical: 60,
@@ -359,11 +361,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333333',
+    color: colors.text,
   },
   emptySubText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.muted,
     textAlign: 'center',
   },
 });

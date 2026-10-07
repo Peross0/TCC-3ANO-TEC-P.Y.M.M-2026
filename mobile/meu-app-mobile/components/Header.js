@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function Header({
   showNotification,
@@ -13,10 +16,10 @@ export default function Header({
   return (
     <View style={styles.header}>
       <View style={styles.searchBar}>
-        <Feather name="search" size={20} color="#8E8E93" />
+        <Feather name="search" size={20} color={colors.muted} />
         <TextInput
           placeholder="Pesquisa"
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.muted}
           style={styles.searchInput}
         />
       </View>
@@ -26,7 +29,7 @@ export default function Header({
         onPress={onOpenMessages}
         activeOpacity={0.7}
       >
-        <Feather name="message-square" size={23} color="#555" />
+        <Feather name="message-square" size={23} color={colors.inkSoft} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -36,7 +39,7 @@ export default function Header({
         <Feather
           name="bell"
           size={24}
-          color={showNotification ? '#3BB7FF' : '#555'}
+          color={showNotification ? colors.tint : colors.inkSoft}
         />
       </TouchableOpacity>
 
@@ -48,7 +51,7 @@ export default function Header({
         <Ionicons
           name="settings-sharp"
           size={24}
-          color={isSettingsActive ? '#3BB7FF' : '#555'}
+          color={isSettingsActive ? colors.tint : colors.inkSoft}
         />
       </TouchableOpacity>
 
@@ -56,7 +59,7 @@ export default function Header({
         style={styles.avatarContainer}
         onPress={onToggleProfileMenu}
       >
-        <Feather name="user" size={24} color="#333" />
+        <Feather name="user" size={24} color={colors.inkSoft} />
       </TouchableOpacity>
     </View>
   );
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background,
     gap: 12,
     zIndex: 10,
   },
@@ -77,7 +80,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     paddingHorizontal: 16,
     height: 48,
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: '#333333',
+    color: colors.text,
   },
   headerIconBtn: {
     padding: 4,
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#8BB4F7',
+    backgroundColor: colors.lime,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',

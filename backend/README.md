@@ -27,6 +27,8 @@ npm run test:smoke
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET/PUT /api/recruiters/profile`
+- `PUT /api/recruiters/company` (atualiza nome, segmento e localização em todas as vagas não removidas do recrutador)
+- `POST /api/recruiters/company/logo` (envia `company_logo` em multipart/form-data)
 - `GET/POST/PUT/DELETE /api/recruiters/vacancies`
 - `GET/POST /api/candidates/vacancies`
 

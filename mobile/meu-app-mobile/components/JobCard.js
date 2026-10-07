@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function JobCard({ item }) {
   return (
@@ -8,7 +11,7 @@ export default function JobCard({ item }) {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={[styles.companyLogo, { backgroundColor: item.logoBg }]}>
-          <Text style={[styles.logoText, { color: item.logoTextColor || '#1565C0' }]}>
+          <Text style={[styles.logoText, { color: item.logoTextColor || colors.tint }]}>
             {item.company}
           </Text>
           </View>
@@ -26,14 +29,14 @@ export default function JobCard({ item }) {
 
       <View style={styles.cardFooter}>
         <View style={styles.vacancyInfo}>
-          <Feather name="users" size={16} color="#8E8E93" />
+          <Feather name="users" size={16} color={colors.muted} />
           <Text style={styles.vacancyText}>{item.vacancies}</Text>
         </View>
 
         
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.bookmarkButton}>
-            <Feather name="bookmark" size={18} color="#8E8E93" />
+            <Feather name="bookmark" size={18} color={colors.muted} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.interestButton}>
             <Text style={styles.interestButtonText}>Tenho interesse</Text>
@@ -46,12 +49,12 @@ export default function JobCard({ item }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: colors.line,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -76,32 +79,32 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#333333',
+    color: colors.text,
   },
   companyCategory: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.muted,
   },
   timeAgo: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.muted,
   },
   jobTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111111',
+    color: colors.text,
     marginBottom: 6,
   },
   jobDescription: {
     fontSize: 12,
-    color: '#777777',
+    color: colors.inkSoft,
     marginBottom: 12,
     lineHeight: 16,
   },
   salary: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#3BB7FF',
+    color: colors.primaryDark,
     textAlign: 'right',
     marginBottom: 12,
   },
@@ -110,7 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#EBEBEB',
+    borderTopColor: colors.line,
     paddingTop: 12,
   },
   vacancyInfo: {
@@ -120,7 +123,7 @@ const styles = StyleSheet.create({
   },
   vacancyText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.muted,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -131,13 +134,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#EBEBEB',
+    backgroundColor: colors.primaryWash,
     justifyContent: 'center',
     alignItems: 'center',
   },
   interestButton: {
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: colors.tint,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
@@ -145,6 +148,6 @@ const styles = StyleSheet.create({
   interestButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#007AFF',
+    color: colors.primaryDark,
   },
 });

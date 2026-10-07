@@ -1,5 +1,8 @@
 import { getKnex } from '../../config/database.js';
+import { env } from '../../config/env.js';
 import { sendApplicationStatusEmail, sendVacancyUpdateEmail } from '../../utils/mailer.js';
+import { existsSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 async function getOwnedVacancy(userId, vacancyId) {
   const knex = getKnex();
@@ -29,7 +32,7 @@ export async function getProfile(userId) {
   const user = await knex('users')
     .where({ id: userId, user_type: 'RECRUITER' })
     .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'phone', 'avatar_url', 'document_type', 'document_number', 'active_notification', 'created_at');
+    .first('id', 'email', 'full_name', 'phone', 'avatar_url', 'company_logo_url', 'document_type', 'document_number', 'verified_email', 'active_notification', 'created_at');
 
   if (!user) {
     const err = new Error('Perfil de recrutador não encontrado');
@@ -63,6 +66,73 @@ export async function updateProfile(userId, data) {
     .update(updateData);
 
   return getProfile(userId);
+}
+
+export async function updateCompany(userId, data) {
+  const knex = getKnex();
+  const updatedAt = new Date().toISOString();
+
+  const updatedVacancies = await knex.transaction(async (trx) => {
+    const vacancies = await trx('vacancies')
+      .where({ user_id: userId })
+      .whereNull('deleted_at')
+      .count('* as total');
+    const total = Number(vacancies[0].total);
+
+    if (total === 0) {
+      const err = new Error('Publique uma vaga antes de editar os dados da empresa.');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    return trx('vacancies')
+      .where({ user_id: userId })
+      .whereNull('deleted_at')
+      .update({
+        company_name: data.company_name,
+        company_sector: data.company_sector.trim() || null,
+        location: data.location.trim() || null,
+        updated_at: updatedAt,
+      });
+  });
+
+  return {
+    message: 'Dados da empresa atualizados com sucesso.',
+    updated_vacancies: Number(updatedVacancies),
+  };
+}
+
+export async function updateCompanyLogo(userId, filename) {
+  const knex = getKnex();
+  const user = await knex('users')
+    .where({ id: userId, user_type: 'RECRUITER' })
+    .whereNull('deleted_at')
+    .first('company_logo_url');
+
+  if (!user) {
+    const err = new Error('Perfil de recrutador não encontrado');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  await knex('users')
+    .where({ id: userId, user_type: 'RECRUITER' })
+    .update({
+      company_logo_url: filename,
+      updated_at: new Date().toISOString(),
+    });
+
+  if (user.company_logo_url && user.company_logo_url !== filename) {
+    const oldPath = resolve(process.cwd(), env.UPLOAD_DIR, user.company_logo_url);
+    if (existsSync(oldPath)) {
+      unlinkSync(oldPath);
+    }
+  }
+
+  return {
+    company_logo_url: `/uploads/${filename}`,
+    message: 'Ícone da empresa atualizado com sucesso.',
+  };
 }
 
 export async function createVacancy(userId, data) {

@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 // IP da sua máquina na rede local
 const API_URL = 'http://192.168.101.144:3000/api';
@@ -86,7 +89,7 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -98,7 +101,7 @@ export default function RegisterScreen() {
         >
           <View style={styles.headerGroup}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Feather name="arrow-left" size={24} color="#1A202C" />
+              <Feather name="arrow-left" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.title}>Criar Conta</Text>
             <Text style={styles.subtitle}>Informe seus dados para se cadastrar</Text>
@@ -106,22 +109,22 @@ export default function RegisterScreen() {
 
           <View style={styles.formSection}>
             <View style={styles.inputWrapper}>
-              <Feather name="user" size={19} color="#718096" />
+              <Feather name="user" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Nome completo *"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={nome}
                 onChangeText={setNome}
               />
             </View>
 
             <View style={styles.inputWrapper}>
-              <Feather name="mail" size={19} color="#718096" />
+              <Feather name="mail" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="E-mail *"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -130,26 +133,26 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Feather name="lock" size={19} color="#718096" />
+              <Feather name="lock" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Senha *"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={senha}
                 onChangeText={setSenha}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color="#718096" />
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={colors.muted} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputWrapper}>
-              <Feather name="phone" size={19} color="#718096" />
+              <Feather name="phone" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Telefone (opcional)"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="phone-pad"
@@ -157,11 +160,11 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Feather name="book" size={19} color="#718096" />
+              <Feather name="book" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Curso (opcional)"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={curso}
                 onChangeText={setCurso}
               />
@@ -184,13 +187,13 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7FAFC' },
+  container: { flex: 1, backgroundColor: colors.background },
   keyboardAvoidingView: { flex: 1 },
   scrollContent: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 20 },
   headerGroup: { marginBottom: 24 },
   backButton: { width: 40, height: 40, justifyContent: 'center', marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1A202C' },
-  subtitle: { fontSize: 16, color: '#718096', marginTop: 4 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text },
+  subtitle: { fontSize: 16, color: colors.muted, marginTop: 4 },
   formSection: { width: '100%' },
   inputWrapper: {
     width: '100%',
@@ -198,17 +201,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#DCE5EE',
+    borderColor: colors.line,
     borderRadius: 14,
     paddingHorizontal: 16,
     marginBottom: 13,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
   },
-  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: '#1A202C' },
+  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: colors.text },
   submitButton: {
     width: '100%',
     height: 54,
-    backgroundColor: '#2F80ED',
+    backgroundColor: colors.primaryDark,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',

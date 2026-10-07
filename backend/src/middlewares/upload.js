@@ -6,17 +6,6 @@ import { extname } from 'node:path';
 // Ensure upload directory exists
 mkdirSync(env.UPLOAD_DIR, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, env.UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = extname(file.originalname).toLowerCase();
-    cb(null, `avatar-${uniqueSuffix}${ext}`);
-  },
-});
-
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (allowedTypes.includes(file.mimetype)) {
@@ -28,10 +17,26 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: env.MAX_AVATAR_MB * 1024 * 1024,
-  },
-});
+function createImageUpload(prefix) {
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, env.UPLOAD_DIR);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const ext = extname(file.originalname).toLowerCase();
+      cb(null, `${prefix}-${uniqueSuffix}${ext}`);
+    },
+  });
+
+  return multer({
+    storage,
+    fileFilter,
+    limits: {
+      fileSize: env.MAX_AVATAR_MB * 1024 * 1024,
+    },
+  });
+}
+
+export const upload = createImageUpload('avatar');
+export const uploadCompanyLogo = createImageUpload('company');

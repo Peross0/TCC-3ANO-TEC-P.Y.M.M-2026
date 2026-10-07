@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 // Substitua pelo mesmo IP utilizado no cadastro.js
 const API_URL = 'http://192.168.101.144:3000/api';export default function LoginScreen() {
@@ -70,7 +73,7 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -87,11 +90,11 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
 
           <View style={styles.formSection}>
             <View style={styles.inputWrapper}>
-              <Feather name="mail" size={19} color="#718096" />
+              <Feather name="mail" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="E-mail *"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -100,17 +103,17 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
             </View>
 
             <View style={styles.inputWrapper}>
-              <Feather name="lock" size={19} color="#718096" />
+              <Feather name="lock" size={19} color={colors.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Senha *"
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={colors.muted}
                 value={senha}
                 onChangeText={setSenha}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color="#718096" />
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={colors.muted} />
               </TouchableOpacity>
             </View>
 
@@ -138,12 +141,12 @@ const API_URL = 'http://192.168.101.144:3000/api';export default function LoginS
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7FAFC' },
+  container: { flex: 1, backgroundColor: colors.background },
   keyboardAvoidingView: { flex: 1 },
   scrollContent: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20 },
   headerGroup: { marginBottom: 32 },
-  title: { fontSize: 32, fontWeight: '800', color: '#1A202C' },
-  subtitle: { fontSize: 16, color: '#718096', marginTop: 6 },
+  title: { fontSize: 32, fontWeight: '800', color: colors.text },
+  subtitle: { fontSize: 16, color: colors.muted, marginTop: 6 },
   formSection: { width: '100%' },
   inputWrapper: {
     width: '100%',
@@ -151,17 +154,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#DCE5EE',
+    borderColor: colors.line,
     borderRadius: 14,
     paddingHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
   },
-  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: '#1A202C' },
+  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: colors.text },
   submitButton: {
     width: '100%',
     height: 54,
-    backgroundColor: '#2F80ED',
+    backgroundColor: colors.primaryDark,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
@@ -175,6 +178,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
-  footerText: { fontSize: 15, color: '#718096' },
-  registerLink: { fontSize: 15, fontWeight: '700', color: '#2F80ED' },
+  footerText: { fontSize: 15, color: colors.muted },
+  registerLink: { fontSize: 15, fontWeight: '700', color: colors.primaryDark },
 });

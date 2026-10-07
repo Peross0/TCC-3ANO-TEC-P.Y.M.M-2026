@@ -1,9 +1,17 @@
 import { Tabs } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Colors } from '../../constants/theme';
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.light.primaryDark,
+        tabBarInactiveTintColor: Colors.light.muted,
+        tabBarStyle: { backgroundColor: Colors.light.surface, borderTopColor: Colors.light.line },
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{

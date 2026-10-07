@@ -1,14 +1,16 @@
 import { StyleSheet, Text, View, Image, StatusBar } from "react-native";
+import { Colors } from '../../constants/theme';
 
+const colors = Colors.light;
 const CN_COLORS = {
-  PRIMARY_BLUE: "#00B0FF", 
-  SECONDARY_PURPLE: "#8E24AA", 
-  ACCENT_YELLOW: "#FFD700",
-  OUTLINE_BLACK: "#000000", 
-  TEXT_DARK: "#212121", 
-  TEXT_LIGHT: "#FFFFFF", 
-  BRIGHT_WHITE: "#FAFAFA",
-  BACKGROUND_LIGHT: "#E0F7FA",
+  PRIMARY_BLUE: colors.tint,
+  SECONDARY_PURPLE: colors.accent,
+  ACCENT_YELLOW: colors.lime,
+  OUTLINE_BLACK: colors.text,
+  TEXT_DARK: colors.text,
+  TEXT_LIGHT: colors.surface,
+  BRIGHT_WHITE: colors.surface,
+  BACKGROUND_LIGHT: colors.background,
 };
 
 export default function Home() {

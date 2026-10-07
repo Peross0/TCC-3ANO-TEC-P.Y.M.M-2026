@@ -154,7 +154,7 @@ export default function LoginScreen() {
         <Feather name={icon} size={17} color={colors.muted} />
         <TextInput
           style={styles.input}
-          placeholderTextColor="#98A39C"
+          placeholderTextColor={colors.muted}
           value={value}
           onChangeText={onChangeText}
           {...props}
@@ -180,14 +180,14 @@ export default function LoginScreen() {
                 <Text style={styles.introText}>Entre na sua conta para cuidar do perfil da empresa e das vagas publicadas.</Text>
               </View>
               <View style={styles.securityNote}>
-                <Feather name="shield" size={17} color={colors.primary} />
+                <Feather name="shield" size={17} color={colors.primaryDark} />
                 <Text style={styles.securityText}>Acesso protegido para sua equipe.</Text>
               </View>
             </View>
 
             <View style={styles.formColumn}>
               <Pressable style={styles.backLink} onPress={() => router.replace('/')} accessibilityRole="button">
-                <Feather name="arrow-left" size={16} color={colors.primary} />
+                <Feather name="arrow-left" size={16} color={colors.primaryDark} />
                 <Text style={styles.backLinkText}>Voltar ao início</Text>
               </Pressable>
               <View style={styles.formCard}>
@@ -217,7 +217,7 @@ export default function LoginScreen() {
                   </View>
                   <View style={styles.inputRow}>
                     <Feather name="lock" size={17} color={colors.muted} />
-                    <TextInput style={styles.input} placeholder="Mínimo de 8 caracteres" placeholderTextColor="#98A39C" secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
+                    <TextInput style={styles.input} placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
                     <Pressable onPress={() => setShowPassword((visible) => !visible)} hitSlop={10} accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                       <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.muted} />
                     </Pressable>
@@ -254,33 +254,33 @@ const styles = StyleSheet.create({
   intro: { padding: 22, paddingBottom: 8 },
   introWide: { flex: 0.88, justifyContent: 'space-between', padding: 42, backgroundColor: colors.surfaceSoft },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start' },
-  brandMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center' },
   brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   introCopy: { marginTop: 34, maxWidth: 450 },
-  eyebrow: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 13 },
+  eyebrow: { color: colors.primaryDark, fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 13 },
   introTitle: { color: colors.ink, fontSize: 31, lineHeight: 39, fontWeight: '700', letterSpacing: -0.8 },
   introText: { color: colors.inkSoft, fontSize: 15, lineHeight: 23, marginTop: 13, maxWidth: 420 },
   securityNote: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 24 },
   securityText: { color: colors.inkSoft, fontSize: 13, fontWeight: '600' },
   formColumn: { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18 },
   backLink: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', paddingVertical: 8, marginBottom: 12 },
-  backLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  backLinkText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   formCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 22, borderWidth: 1, borderColor: colors.line },
-  formEyebrow: { color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 9 },
+  formEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 9 },
   title: { color: colors.ink, fontSize: 27, lineHeight: 34, fontWeight: '700', letterSpacing: -0.6 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 21 },
   fieldGroup: { marginBottom: 15 },
   labelLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 },
   label: { color: colors.ink, fontSize: 13, fontWeight: '700', marginBottom: 7 },
-  forgotPassword: { color: colors.primary, fontSize: 12, fontWeight: '700', marginBottom: 7 },
-  inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: '#FCFCFA' },
+  forgotPassword: { color: colors.primaryDark, fontSize: 12, fontWeight: '700', marginBottom: 7 },
+  inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: colors.surface },
   input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14, outlineStyle: 'none' },
-  submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
+  submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primaryDark, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
   pressedButton: { opacity: 0.88 },
   disabledButton: { opacity: 0.58 },
   submitText: { color: colors.surface, fontSize: 14, fontWeight: '800' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 20 },
   switchText: { color: colors.muted, fontSize: 13 },
-  switchLink: { color: colors.primary, fontSize: 13, fontWeight: '800' },
+  switchLink: { color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
   terms: { color: colors.muted, fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 15, paddingHorizontal: 8 },
 });

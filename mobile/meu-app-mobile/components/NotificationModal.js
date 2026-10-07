@@ -1,5 +1,8 @@
 import React from 'react';
 import { View, Text, Modal, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function NotificationModal({ visible, onClose }) {
   return (
@@ -38,7 +41,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 80,
-    backgroundColor: '#EBEBEB',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 10,
     width: 180,
@@ -51,12 +54,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     marginBottom: 6,
-    color: '#333',
+    color: colors.text,
   },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#D9D9D9',
+    backgroundColor: colors.primaryWash,
     padding: 6,
     borderRadius: 8,
     gap: 8,
@@ -65,11 +68,11 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#1E4620',
+    backgroundColor: colors.lime,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
-  notifCompany: { fontSize: 11, fontWeight: 'bold', color: '#222' },
-  notifSub: { fontSize: 9, color: '#666' },
+  badgeText: { color: colors.text, fontSize: 10, fontWeight: 'bold' },
+  notifCompany: { fontSize: 11, fontWeight: 'bold', color: colors.text },
+  notifSub: { fontSize: 9, color: colors.muted },
 });

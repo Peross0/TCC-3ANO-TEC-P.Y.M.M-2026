@@ -1,6 +1,9 @@
 import React from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Colors } from '../constants/theme';
+
+const colors = Colors.light;
 
 export default function MessageInput({ value, onChangeText, onSend }) {
   return (
@@ -8,12 +11,12 @@ export default function MessageInput({ value, onChangeText, onSend }) {
       <TextInput
         style={styles.textInput}
         placeholder="Escreva uma mensagem..."
-        placeholderTextColor="#8E8E93"
+        placeholderTextColor={colors.muted}
         value={value}
         onChangeText={onChangeText}
       />
       <TouchableOpacity style={styles.sendButton} onPress={onSend}>
-        <Feather name="send" size={18} color="#FFFFFF" />
+        <Feather name="send" size={18} color={colors.surface} />
       </TouchableOpacity>
     </View>
   );
@@ -25,26 +28,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#EAEAEA',
+    borderTopColor: colors.line,
     gap: 10,
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: colors.surfaceSoft,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#333333',
+    color: colors.text,
     maxHeight: 100,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3BB7FF',
+    backgroundColor: colors.primaryDark,
     justifyContent: 'center',
     alignItems: 'center',
   },

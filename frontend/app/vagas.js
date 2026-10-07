@@ -35,7 +35,7 @@ export default function VagasScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headingRow}>
           <Pressable onPress={() => router.replace({ pathname: '/home', params: { nome, email } })} style={styles.backButton} accessibilityLabel="Voltar para início">
-            <Feather name="arrow-left" size={20} color="#14213D" />
+            <Feather name="arrow-left" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headingText}>
             <Text style={styles.eyebrow}>GESTÃO DE OPORTUNIDADES</Text>
@@ -45,23 +45,23 @@ export default function VagasScreen() {
         </View>
 
         <View style={styles.searchBox}>
-          <Feather name="search" size={18} color="#8293A8" />
-          <TextInput value={busca} onChangeText={setBusca} placeholder="Buscar vaga ou empresa" placeholderTextColor="#9AA8B8" style={styles.searchInput} />
+          <Feather name="search" size={18} color={colors.muted} />
+          <TextInput value={busca} onChangeText={setBusca} placeholder="Buscar vaga ou empresa" placeholderTextColor={colors.muted} style={styles.searchInput} />
         </View>
 
-        {carregando ? <ActivityIndicator color="#2E56D9" size="large" style={styles.loader} /> : vagasFiltradas.length === 0 ? (
+        {carregando ? <ActivityIndicator color={colors.primaryDark} size="large" style={styles.loader} /> : vagasFiltradas.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}><Feather name="briefcase" size={28} color="#2E56D9" /></View>
+            <View style={styles.emptyIcon}><Feather name="briefcase" size={28} color={colors.primaryDark} /></View>
             <Text style={styles.emptyTitle}>Nenhuma vaga encontrada</Text>
             <Text style={styles.emptyText}>Novas oportunidades cadastradas pelas empresas aparecerão aqui.</Text>
           </View>
         ) : vagasFiltradas.map((vaga) => (
           <View key={vaga.id} style={styles.jobCard}>
-            <View style={styles.jobIcon}><Feather name="briefcase" size={20} color="#2E56D9" /></View>
+            <View style={styles.jobIcon}><Feather name="briefcase" size={20} color={colors.primaryDark} /></View>
             <View style={styles.jobBody}>
               <View style={styles.jobHeader}><Text style={styles.jobTitle}>{vaga.job_title}</Text></View>
               <Text style={styles.companyName}>{vaga.company_name}</Text>
-              <Text style={styles.location}><Feather name="map-pin" size={13} color="#8293A8" /> {vaga.location || 'Local não informado'}</Text>
+              <Text style={styles.location}><Feather name="map-pin" size={13} color={colors.muted} /> {vaga.location || 'Local não informado'}</Text>
               <Text style={styles.jobDescription}>{vaga.job_description}</Text>
               <View style={styles.requirements}><Text style={styles.requirementsLabel}>Requisitos</Text><Text style={styles.requirementsText}>{vaga.requirements || 'Não informado'}</Text></View>
               <Pressable style={styles.applyButton} onPress={() => Alert.alert('Acompanhamento de candidatos', 'O acompanhamento individual das candidaturas ainda não está disponível nesta área.')}>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 22 },
   backButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headingText: { flex: 1 },
-  eyebrow: { color: colors.primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginBottom: 5 },
+  eyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginBottom: 5 },
   title: { color: colors.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20, marginTop: 5 },
   searchBox: { minHeight: 50, borderWidth: 1, borderColor: colors.line, borderRadius: 11, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, marginBottom: 18 },
@@ -92,13 +92,13 @@ const styles = StyleSheet.create({
   jobBody: { flex: 1 },
   jobHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   jobTitle: { flex: 1, color: colors.ink, fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
-  companyName: { color: colors.primary, fontSize: 13, fontWeight: '700', marginTop: 6 },
+  companyName: { color: colors.primaryDark, fontSize: 13, fontWeight: '700', marginTop: 6 },
   location: { color: colors.muted, fontSize: 12, marginTop: 5 },
   jobDescription: { color: colors.inkSoft, fontSize: 13, lineHeight: 20, marginTop: 12 },
   requirements: { backgroundColor: colors.surfaceSoft, borderRadius: 10, padding: 12, marginTop: 11 },
-  requirementsLabel: { color: colors.primary, fontSize: 11, fontWeight: '800', marginBottom: 3 },
+  requirementsLabel: { color: colors.primaryDark, fontSize: 11, fontWeight: '800', marginBottom: 3 },
   requirementsText: { color: colors.inkSoft, fontSize: 12, lineHeight: 18 },
-  applyButton: { minHeight: 43, borderRadius: 10, backgroundColor: colors.primary, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 13, paddingHorizontal: 12 },
+  applyButton: { minHeight: 43, borderRadius: 10, backgroundColor: colors.primaryDark, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 13, paddingHorizontal: 12 },
   applyText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   emptyState: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 30, marginTop: 16 },
   emptyIcon: { width: 56, height: 56, borderRadius: 17, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
