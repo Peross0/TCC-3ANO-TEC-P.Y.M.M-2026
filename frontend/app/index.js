@@ -1,267 +1,221 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { apiFetch, saveSession } from '../lib/api';
+import { colors } from '../lib/theme';
 
-export default function LoginScreen() {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [documentNumber, setDocumentNumber] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationPending, setVerificationPending] = useState(false);
+const benefits = [
+  {
+    icon: 'briefcase',
+    title: 'Oportunidades mais claras',
+    text: 'Apresente vagas com informações objetivas para que cada pessoa entenda o que a empresa procura.',
+  },
+  {
+    icon: 'users',
+    title: 'Conexões com propósito',
+    text: 'Organize a presença da sua empresa e facilite o encontro com profissionais em busca do próximo passo.',
+  },
+  {
+    icon: 'compass',
+    title: 'Gestão sem complicação',
+    text: 'Cuide do perfil e das oportunidades em um só lugar, com um fluxo simples para o dia a dia.',
+  },
+];
 
-  const clearFields = () => {
-    setName('');
-    setEmail('');
-    setPassword('');
-    setDocumentNumber('');
-    setVerificationCode('');
-    setVerificationPending(false);
-    setShowPassword(false);
-  };
+export default function LandingPage() {
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef(null);
+  const [benefitsY, setBenefitsY] = useState(0);
+  const isWide = width >= 760;
 
-  const isValidCnpj = (value) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (isRegistering && !name.trim()) {
-      Alert.alert('Nome obrigatório', 'Digite seu nome completo para continuar.');
-      return;
-    }
-    if (isRegistering && !isValidCnpj(documentNumber)) {
-      Alert.alert('CNPJ inválido', 'Digite um CNPJ válido com 14 números.');
-      return;
-    }
-    if (!normalizedEmail) {
-      Alert.alert('E-mail obrigatório', 'Digite seu e-mail para continuar.');
-      return;
-    }
-    if (!normalizedEmail.includes('@')) {
-      Alert.alert('E-mail inválido', 'Digite um e-mail válido para continuar.');
-      return;
-    }
-    if (!password.trim()) {
-      Alert.alert('Senha obrigatória', 'Digite sua senha para continuar.');
-      return;
-    }
-    if (password.trim().length < 8) {
-      Alert.alert('Senha inválida', 'A senha deve ter pelo menos 8 caracteres.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      if (isRegistering) {
-        const data = await apiFetch('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({
-            full_name: name.trim(),
-            email: normalizedEmail,
-            password,
-            user_type: 'RECRUITER',
-            document_type: 'CNPJ',
-            document_number: documentNumber.replace(/\D/g, ''),
-          }),
-        });
-
-        Alert.alert('Cadastro realizado', data.message || 'Seu cadastro foi concluído com sucesso.');
-        setVerificationPending(false);
-        setIsRegistering(false);
-        setName('');
-        setPassword('');
-        setDocumentNumber('');
-        setEmail(normalizedEmail);
-        return;
-      }
-
-      const data = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: normalizedEmail, password }),
-      });
-      if (data.user.user_type !== 'RECRUITER') throw new Error('Esta conta não possui acesso de recrutador.');
-      await saveSession(data.token, data.user);
-      console.log(data.token, data.user)
-      router.replace({ pathname: '/home', params: { nome: data.user.full_name, email: data.user.email } });
-    } catch (error) {
-      const message = error instanceof TypeError
-        ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
-        : error.message;
-      Alert.alert(isRegistering ? 'Não foi possível cadastrar' : 'Não foi possível entrar', message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerifyEmail = async () => {
-    if (verificationCode.trim().length !== 6) {
-      Alert.alert('Código inválido', 'Digite o código de 6 números recebido por e-mail.');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await apiFetch('/auth/verify-email', {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
-      });
-      Alert.alert('E-mail verificado', 'Agora você já pode entrar na sua conta.');
-      setVerificationPending(false);
-      setIsRegistering(false);
-      setPassword('');
-      setVerificationCode('');
-    } catch (error) {
-      Alert.alert('Não foi possível verificar', error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const toggleMode = () => {
-    setIsRegistering((currentMode) => !currentMode);
-    clearFields();
-  };
+  const scrollToBenefits = () => scrollRef.current?.scrollTo({ y: benefitsY, animated: true });
+  const goToRegister = () => router.push({ pathname: '/login', params: { cadastro: '1' } });
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
-      <View style={styles.backgroundShapeTop} />
-      <View style={styles.backgroundShapeBottom} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.brandBlock}>
-            <View style={styles.brandMark}><Feather name="link-2" size={25} color="#FFFFFF" /></View>
+      <StatusBar style="dark" />
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Pressable style={styles.brand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button" accessibilityLabel="Conecta Fácil, início">
+            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.surface} /></View>
             <Text style={styles.brandName}>Conecta Fácil</Text>
-            <Text style={styles.brandCaption}>Área exclusiva para empresas</Text>
+          </Pressable>
+          {isWide && (
+            <View style={styles.navLinks}>
+              <Pressable onPress={scrollToBenefits} accessibilityRole="button"><Text style={styles.navText}>A plataforma</Text></Pressable>
+              <Pressable onPress={() => router.push('/login')} accessibilityRole="button"><Text style={styles.navText}>Para empresas</Text></Pressable>
+            </View>
+          )}
+          <Pressable style={styles.loginButton} onPress={() => router.push('/login')} accessibilityRole="button">
+            <Text style={styles.loginButtonText}>Entrar</Text>
+            <Feather name="arrow-up-right" size={16} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        <View style={[styles.hero, isWide && styles.heroWide]}>
+          <View style={styles.heroCopy}>
+            <View style={styles.kicker}><View style={styles.kickerDot} /><Text style={styles.kickerText}>TALENTOS E EMPRESAS, MAIS PERTO</Text></View>
+            <Text style={styles.heroTitle}>O próximo bom encontro profissional pode começar aqui.</Text>
+            <Text style={styles.heroDescription}>O Conecta Fácil ajuda empresas a apresentar oportunidades e a encontrar pessoas prontas para crescer junto.</Text>
+            <View style={styles.heroActions}>
+              <Pressable style={styles.primaryButton} onPress={goToRegister} accessibilityRole="button">
+                <Text style={styles.primaryButtonText}>Cadastrar minha empresa</Text>
+                <Feather name="arrow-right" size={17} color={colors.surface} />
+              </Pressable>
+              <Pressable style={styles.secondaryButton} onPress={scrollToBenefits} accessibilityRole="button">
+                <Text style={styles.secondaryButtonText}>Conhecer a plataforma</Text>
+              </Pressable>
+            </View>
+            <View style={styles.trustNote}><Feather name="check-circle" size={15} color={colors.success} /><Text style={styles.trustText}>Um espaço simples para criar conexões de trabalho.</Text></View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.title}>{isRegistering ? 'Crie sua conta' : 'Bem-vindo de volta'}</Text>
-            <Text style={styles.subtitle}>
-              {isRegistering ? 'Crie o acesso da sua empresa para encontrar novos talentos.' : 'Entre para gerenciar sua empresa e suas oportunidades.'}
-            </Text>
-
-            {isRegistering && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Nome do responsável</Text>
-                <View style={styles.inputRow}>
-                  <Feather name="user" size={19} color="#718096" />
-                  <TextInput style={styles.input} placeholder="Nome do responsável" placeholderTextColor="#A0AEC0" value={name} onChangeText={setName} autoCapitalize="words" />
+          <View style={styles.visualWrap} accessible accessibilityLabel="Ilustração das etapas para conectar uma empresa a profissionais">
+            <View style={styles.visualCard}>
+              <View style={styles.visualTopline}><Text style={styles.visualEyebrow}>CONEXÕES QUE MOVEM</Text><Feather name="more-horizontal" size={19} color={colors.muted} /></View>
+              <Text style={styles.visualTitle}>Da oportunidade à conversa</Text>
+              <Text style={styles.visualSubtitle}>Um caminho direto, sem etapas desnecessárias.</Text>
+              <View style={styles.flowLine}>
+                <View style={styles.flowItem}>
+                  <View style={[styles.flowIcon, styles.flowIconGreen]}><Feather name="briefcase" size={17} color={colors.primary} /></View>
+                  <Text style={styles.flowLabel}>Empresa</Text>
+                </View>
+                <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.accent} /></View>
+                <View style={styles.flowItem}>
+                  <View style={[styles.flowIcon, styles.flowIconWarm]}><Feather name="file-text" size={17} color={colors.accent} /></View>
+                  <Text style={styles.flowLabel}>Oportunidade</Text>
+                </View>
+                <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.accent} /></View>
+                <View style={styles.flowItem}>
+                  <View style={[styles.flowIcon, styles.flowIconGreen]}><Feather name="users" size={17} color={colors.primary} /></View>
+                  <Text style={styles.flowLabel}>Talento</Text>
                 </View>
               </View>
-            )}
-
-            {isRegistering && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>CNPJ da empresa</Text>
-                <View style={styles.inputRow}>
-                  <Feather name="briefcase" size={19} color="#718096" />
-                  <TextInput style={styles.input} placeholder="00.000.000/0000-00" placeholderTextColor="#A0AEC0" keyboardType="number-pad" value={documentNumber} onChangeText={setDocumentNumber} />
-                </View>
-              </View>
-            )}
-
-            {verificationPending && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Código de verificação</Text>
-                <View style={styles.inputRow}>
-                  <Feather name="check-circle" size={19} color="#718096" />
-                  <TextInput style={styles.input} placeholder="Código com 6 números" placeholderTextColor="#A0AEC0" keyboardType="number-pad" maxLength={6} value={verificationCode} onChangeText={setVerificationCode} />
-                </View>
-              </View>
-            )}
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>E-mail</Text>
-              <View style={styles.inputRow}>
-                <Feather name="mail" size={19} color="#718096" />
-                <TextInput style={styles.input} placeholder="voce@exemplo.com" placeholderTextColor="#A0AEC0" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={email} onChangeText={setEmail} />
-              </View>
+              <View style={styles.visualFooter}><View style={styles.visualFooterIcon}><Feather name="heart" size={14} color={colors.primary} /></View><Text style={styles.visualFooterText}>Mais clareza para os dois lados.</Text></View>
             </View>
-
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelLine}>
-                <Text style={styles.label}>Senha</Text>
-                {!isRegistering && <Pressable onPress={() => Alert.alert('Recuperar senha', 'Em breve você poderá redefinir sua senha por e-mail.')}><Text style={styles.forgotPassword}>Esqueci minha senha</Text></Pressable>}
-              </View>
-              <View style={styles.inputRow}>
-                <Feather name="lock" size={19} color="#718096" />
-                <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor="#A0AEC0" secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
-                <Pressable onPress={() => setShowPassword((visible) => !visible)} hitSlop={10} accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color="#718096" />
-                </Pressable>
-              </View>
-            </View>
-
-            <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={verificationPending ? handleVerifyEmail : handleSubmit} disabled={isSubmitting} accessibilityRole="button">
-              <Text style={styles.submitText}>{isSubmitting ? 'Aguarde...' : (verificationPending ? 'Verificar e-mail' : (isRegistering ? 'Criar minha conta' : 'Entrar'))}</Text>
-              {!isSubmitting && <Feather name="arrow-right" size={19} color="#FFFFFF" />}
-            </Pressable>
-
-            <View style={styles.dividerRow}><View style={styles.divider} /><Text style={styles.dividerText}>ou</Text><View style={styles.divider} /></View>
-
-            <Pressable onPress={toggleMode} style={styles.switchButton} accessibilityRole="button">
-              <Text style={styles.switchText}>{isRegistering ? 'Já possui uma conta? ' : 'Ainda não possui uma conta? '}</Text>
-              <Text style={styles.switchLink}>{isRegistering ? 'Entrar' : 'Cadastre-se'}</Text>
-            </Pressable>
+            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.surface} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
           </View>
+        </View>
 
-          <Text style={styles.terms}>Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.</Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <View style={styles.benefitSection} onLayout={(event) => setBenefitsY(event.nativeEvent.layout.y)}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionEyebrow}>FEITO PARA O DIA A DIA</Text>
+            <Text style={styles.sectionTitle}>Menos ruído. Mais boas conexões.</Text>
+            <Text style={styles.sectionDescription}>Uma experiência pensada para aproximar quem oferece uma oportunidade de quem pode fazer parte dela.</Text>
+          </View>
+          <View style={[styles.benefitGrid, isWide && styles.benefitGridWide]}>
+            {benefits.map((benefit, index) => (
+              <View key={benefit.title} style={[styles.benefitItem, isWide && styles.benefitItemWide, index === 0 && styles.firstBenefit]}>
+                <View style={[styles.benefitIcon, index === 1 && styles.benefitIconWarm]}><Feather name={benefit.icon} size={19} color={index === 1 ? colors.accent : colors.primary} /></View>
+                <Text style={styles.benefitTitle}>{benefit.title}</Text>
+                <Text style={styles.benefitText}>{benefit.text}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.closing, isWide && styles.closingWide]}>
+          <View style={styles.closingCopy}>
+            <Text style={styles.closingEyebrow}>SUA PRÓXIMA OPORTUNIDADE COMEÇA COM UM PASSO</Text>
+            <Text style={styles.closingTitle}>Vamos criar conexões que fazem sentido?</Text>
+            <Text style={styles.closingText}>Crie o acesso da sua empresa e comece a organizar suas oportunidades.</Text>
+          </View>
+          <Pressable style={styles.closingButton} onPress={goToRegister} accessibilityRole="button">
+            <Text style={styles.closingButtonText}>Começar agora</Text><Feather name="arrow-right" size={17} color={colors.ink} />
+          </Pressable>
+        </View>
+
+        <View style={styles.footer}>
+          <Pressable style={styles.footerBrand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button">
+            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.surface} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
+          </Pressable>
+          <Text style={styles.footerText}>Conexões profissionais começam com proximidade.</Text>
+          <Text style={styles.copyright}>© 2026 Conecta Fácil</Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: '#102A43' },
-  backgroundShapeTop: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: '#1E4E79', top: -105, right: -80, opacity: 0.8 },
-  backgroundShapeBottom: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: '#0B1F33', bottom: -95, left: -75, opacity: 0.9 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 34 },
-  brandBlock: { alignItems: 'center', marginBottom: 24 },
-  brandMark: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#2F80ED', justifyContent: 'center', alignItems: 'center', marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  brandName: { color: '#FFFFFF', fontSize: 27, fontWeight: '800' },
-  brandCaption: { color: '#B8D4ED', fontSize: 14, marginTop: 5 },
-  card: { width: '100%', maxWidth: 470, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 26, shadowColor: '#000000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.22, shadowRadius: 22, elevation: 10 },
-  title: { color: '#102A43', fontSize: 27, fontWeight: '800', textAlign: 'center' },
-  subtitle: { color: '#627D98', fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 8, marginBottom: 24 },
-  fieldGroup: { marginBottom: 17 },
-  labelLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 },
-  label: { color: '#243B53', fontSize: 13, fontWeight: '700', marginBottom: 7 },
-  forgotPassword: { color: '#2F80ED', fontSize: 12, fontWeight: '700' },
-  inputRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#D9E2EC', borderRadius: 13, paddingHorizontal: 15, backgroundColor: '#F8FAFC' },
-  input: { flex: 1, height: 52, paddingHorizontal: 11, color: '#102A43', fontSize: 15 },
-  submitButton: { height: 54, borderRadius: 13, backgroundColor: '#2F80ED', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 4, shadowColor: '#2F80ED', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 4 },
-  pressedButton: { opacity: 0.84, transform: [{ scale: 0.99 }] },
-  disabledButton: { opacity: 0.6 },
-  submitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 22 },
-  divider: { flex: 1, height: 1, backgroundColor: '#E6EDF3' },
-  dividerText: { color: '#9FB3C8', fontSize: 12 },
-  switchButton: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 4 },
-  switchText: { color: '#627D98', fontSize: 13 },
-  switchLink: { color: '#2F80ED', fontSize: 13, fontWeight: '800' },
-  terms: { maxWidth: 390, alignSelf: 'center', color: '#9FB3C8', fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 20 },
+  safeArea: { flex: 1, backgroundColor: colors.paper },
+  scrollContent: { flexGrow: 1, alignItems: 'center' },
+  header: { width: '100%', maxWidth: 1180, minHeight: 76, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.line },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandMark: { width: 37, height: 37, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
+  navLinks: { flexDirection: 'row', alignItems: 'center', gap: 32 },
+  navText: { color: colors.inkSoft, fontSize: 13, fontWeight: '600' },
+  loginButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 10, backgroundColor: colors.surface },
+  loginButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  hero: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingTop: 45, paddingBottom: 56 },
+  heroWide: { minHeight: 560, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 46, paddingTop: 68, paddingBottom: 74 },
+  heroCopy: { flex: 1, maxWidth: 590 },
+  kicker: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 19 },
+  kickerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
+  kickerText: { color: colors.primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+  heroTitle: { color: colors.ink, fontSize: 43, lineHeight: 51, fontWeight: '700', letterSpacing: -1.25 },
+  heroDescription: { maxWidth: 520, color: colors.inkSoft, fontSize: 16, lineHeight: 25, marginTop: 17 },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 25 },
+  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.surface, fontSize: 13, fontWeight: '800' },
+  secondaryButton: { minHeight: 45, justifyContent: 'center', paddingHorizontal: 8 },
+  secondaryButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  trustNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25 },
+  trustText: { color: colors.muted, fontSize: 12 },
+  visualWrap: { flex: 0.9, alignItems: 'center', justifyContent: 'center', minHeight: 330, marginTop: 28 },
+  visualCard: { width: '100%', maxWidth: 470, padding: 24, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 20 },
+  visualTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  visualEyebrow: { color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
+  visualTitle: { color: colors.ink, fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: 19 },
+  visualSubtitle: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 5 },
+  flowLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 25 },
+  flowItem: { alignItems: 'center', gap: 8 },
+  flowIcon: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  flowIconGreen: { backgroundColor: colors.primaryWash },
+  flowIconWarm: { backgroundColor: colors.accentWash },
+  flowLabel: { color: colors.inkSoft, fontSize: 10, fontWeight: '700' },
+  flowConnector: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 6 },
+  flowDash: { flex: 1, height: 1, backgroundColor: colors.line },
+  visualFooter: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 22, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.line },
+  visualFooterIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.primaryWash },
+  visualFooterText: { color: colors.inkSoft, fontSize: 12, fontWeight: '600' },
+  visualNote: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 11, marginTop: 13 },
+  visualNoteText: { color: colors.surface, fontSize: 11, fontWeight: '600' },
+  benefitSection: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingVertical: 52, borderTopWidth: 1, borderTopColor: colors.line },
+  sectionHeading: { maxWidth: 650 },
+  sectionEyebrow: { color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },
+  sectionTitle: { color: colors.ink, fontSize: 31, lineHeight: 39, fontWeight: '700', letterSpacing: -0.7 },
+  sectionDescription: { color: colors.inkSoft, fontSize: 14, lineHeight: 22, marginTop: 10 },
+  benefitGrid: { marginTop: 25 },
+  benefitGridWide: { flexDirection: 'row', gap: 0 },
+  benefitItem: { paddingVertical: 20, borderTopWidth: 1, borderTopColor: colors.line },
+  benefitItemWide: { flex: 1, paddingHorizontal: 22, paddingVertical: 22, borderTopWidth: 1 },
+  firstBenefit: { borderTopColor: colors.primary },
+  benefitIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryWash, marginBottom: 15 },
+  benefitIconWarm: { backgroundColor: colors.accentWash },
+  benefitTitle: { color: colors.ink, fontSize: 16, fontWeight: '700', marginBottom: 7 },
+  benefitText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
+  closing: { width: '92%', maxWidth: 1132, padding: 25, backgroundColor: colors.primaryWash, borderRadius: 18, gap: 20 },
+  closingWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 34, paddingVertical: 30 },
+  closingCopy: { maxWidth: 650 },
+  closingEyebrow: { color: colors.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.35, marginBottom: 9 },
+  closingTitle: { color: colors.ink, fontSize: 22, lineHeight: 29, fontWeight: '700', letterSpacing: -0.4 },
+  closingText: { color: colors.inkSoft, fontSize: 13, lineHeight: 19, marginTop: 6 },
+  closingButton: { minHeight: 45, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 15, borderRadius: 10, backgroundColor: '#D6E2D5' },
+  closingButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
+  footer: { width: '100%', maxWidth: 1180, marginTop: 39, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, borderTopWidth: 1, borderTopColor: colors.line, gap: 9 },
+  footerBrand: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
+  footerMark: { width: 25, height: 25, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  footerName: { color: colors.ink, fontSize: 13, fontWeight: '800' },
+  footerText: { color: colors.muted, fontSize: 11 },
+  copyright: { color: colors.muted, fontSize: 10, marginTop: 3 },
 });
