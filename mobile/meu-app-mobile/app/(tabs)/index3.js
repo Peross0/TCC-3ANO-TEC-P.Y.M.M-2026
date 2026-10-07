@@ -4,7 +4,7 @@ import { Colors } from '../../constants/theme';
 const colors = Colors.light;
 const CN_COLORS = {
   PRIMARY_BLUE: colors.tint,
-  SECONDARY_PURPLE: colors.accent,
+  SECONDARY_PURPLE: colors.accentWash,
   ACCENT_YELLOW: colors.lime,
   OUTLINE_BLACK: colors.text,
   TEXT_DARK: colors.text,

@@ -164,14 +164,14 @@ const styles = StyleSheet.create({
   submitButton: {
     width: '100%',
     height: 54,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.tint,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   disabledButton: { opacity: 0.6 },
-  submitButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  submitButtonText: { color: colors.text, fontSize: 17, fontWeight: '700' },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

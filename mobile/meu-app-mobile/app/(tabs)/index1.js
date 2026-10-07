@@ -26,7 +26,7 @@ const INITIAL_CONVERSATIONS = [
     timeAgo: 'Agora',
     unreadCount: 1,
     logoBg: colors.primaryWash,
-    logoTextColor: colors.tint,
+    logoTextColor: colors.text,
   },
   {
     id: '2',
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.tint,
     borderBottomRightRadius: 2,
   },
   companyBubble: {
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   userMessageText: {
-    color: '#FFFFFF',
+    color: colors.text,
   },
   messageTime: {
     fontSize: 10,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userMessageTime: {
-    color: colors.primaryWash,
+    color: colors.text,
   },
   emptyContainer: {
     paddingVertical: 60,

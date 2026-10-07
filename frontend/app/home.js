@@ -10,14 +10,12 @@ import {
   TextInput,
   ScrollView,
   Modal,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { API_URL, apiFetch, clearSession, getSession } from '../lib/api';
 import { colors } from '../lib/theme';
-
-const { width } = Dimensions.get('window');
 
 function getImageUri(value) {
   if (!value) return null;
@@ -28,8 +26,9 @@ function getImageUri(value) {
 
 export default function Home() {
   const { nome, email } = useLocalSearchParams();
+  const { width } = useWindowDimensions();
+  const summaryCardWidth = width >= 900 ? '23%' : width >= 600 ? '47%' : '100%';
   const [menuAberto, setMenuAberto] = useState(false);
-  const [empresaModalAberto, setEmpresaModalAberto] = useState(false);
   const [editarEmpresaModalAberto, setEditarEmpresaModalAberto] = useState(false);
   const [vagaModalAberto, setVagaModalAberto] = useState(false);
   const [vagasModalAberto, setVagasModalAberto] = useState(false);
@@ -38,25 +37,13 @@ export default function Home() {
   const [erroEmpresas, setErroEmpresas] = useState('');
   const [empresas, setEmpresas] = useState([]);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [carregandoDashboard, setCarregandoDashboard] = useState(true);
+  const [erroDashboard, setErroDashboard] = useState('');
   const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
   const [vaga, setVaga] = useState({ titulo: '', descricao: '', requisitos: '' });
   const [vagasEmpresa, setVagasEmpresa] = useState([]);
   const [empresa, setEmpresa] = useState({ nome: '', telefone: '' });
-
-  useFocusEffect(useCallback(() => {
-    let active = true;
-    getSession().then(({ token }) => {
-      if (!active) return;
-      if (!token) {
-        router.replace('/login');
-        return;
-      }
-      carregarEmpresas();
-    });
-    return () => {
-      active = false;
-    };
-  }, []));
 
   const fecharTudo = () => setMenuAberto(false);
 
@@ -68,7 +55,13 @@ export default function Home() {
 
   const navegarMenu = (rota) => {
     fecharTudo();
-    router.push({ pathname: rota, params: { nome, email } });
+    router.push({
+      pathname: rota,
+      params: {
+        nome: empresas[0]?.nome || nome,
+        email: empresas[0]?.email || email,
+      },
+    });
   };
 
   const atualizarEmpresa = (campo, valor) => {
@@ -85,10 +78,18 @@ export default function Home() {
 
   async function carregarEmpresas() {
     setCarregandoEmpresas(true);
+    setCarregandoDashboard(true);
     setErroEmpresas('');
-    try {
-      const dados = await apiFetch('/recruiters/profile');
-      const recrutador = dados.recruiter;
+    setErroDashboard('');
+    setEmpresas([]);
+    setDashboard(null);
+    const [profileResult, dashboardResult] = await Promise.allSettled([
+      apiFetch('/recruiters/profile'),
+      apiFetch('/recruiters/dashboard'),
+    ]);
+
+    if (profileResult.status === 'fulfilled') {
+      const recrutador = profileResult.value.recruiter;
       setAvatarUrl(getImageUri(recrutador.avatar_url));
       setEmpresas([{
         id: recrutador.id,
@@ -96,39 +97,40 @@ export default function Home() {
         email: recrutador.email,
         telefone: recrutador.phone || '',
       }]);
-    } catch (erro) {
+    } else {
+      const erro = profileResult.reason;
       setErroEmpresas(erro instanceof TypeError
         ? 'Não foi possível conectar ao servidor. Tente novamente.'
         : erro.message || 'Não foi possível carregar o perfil agora.');
-    } finally {
-      setCarregandoEmpresas(false);
     }
+
+    if (dashboardResult.status === 'fulfilled') {
+      setDashboard(dashboardResult.value);
+    } else {
+      const erro = dashboardResult.reason;
+      setErroDashboard(erro instanceof TypeError
+        ? 'Não foi possível conectar ao servidor.'
+        : erro.message || 'Não foi possível carregar o resumo.');
+    }
+
+    setCarregandoEmpresas(false);
+    setCarregandoDashboard(false);
   }
 
-  const cadastrarEmpresa = async () => {
-    if (!empresa.nome.trim()) {
-      Alert.alert('Nome obrigatório', 'Informe o nome do responsável para continuar.');
-      return;
-    }
-    setCadastrandoEmpresa(true);
-    try {
-      await apiFetch('/recruiters/profile', {
-        method: 'PUT',
-        body: JSON.stringify({ full_name: empresa.nome, phone: empresa.telefone }),
-      });
-      Alert.alert('Perfil atualizado', 'Os dados do responsável foram salvos.');
-      setEmpresa({ nome: '', telefone: '' });
-      setEmpresaModalAberto(false);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    getSession().then(({ token }) => {
+      if (!active) return;
+      if (!token) {
+        router.replace('/login');
+        return;
+      }
       carregarEmpresas();
-    } catch (erro) {
-      const mensagem = erro instanceof TypeError
-        ? 'Não foi possível conectar ao servidor. Verifique se o backend está ativo.'
-        : erro.message;
-      Alert.alert('Não foi possível atualizar', mensagem);
-    } finally {
-      setCadastrandoEmpresa(false);
-    }
-  };
+    });
+    return () => {
+      active = false;
+    };
+  }, []));
 
   const abrirEdicao = (empresaAtual) => {
     setEmpresaSelecionada(empresaAtual);
@@ -199,6 +201,7 @@ export default function Home() {
       });
       Alert.alert('Vaga adicionada', 'A vaga foi publicada para os candidatos.');
       setVagaModalAberto(false);
+      carregarEmpresas();
     } catch (erro) {
       Alert.alert('Cadastro não realizado', erro instanceof TypeError ? 'Não foi possível conectar ao servidor.' : erro.message);
     } finally {
@@ -217,7 +220,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <View style={styles.headerBrand}>
-          <View style={styles.headerMark}><Feather name="link-2" size={15} color="#FFFFFF" /></View>
+          <View style={styles.headerMark}><Feather name="link-2" size={15} color={colors.ink} /></View>
           <Text style={styles.headerTitle}>Conecta Fácil</Text>
         </View>
 
@@ -237,31 +240,17 @@ export default function Home() {
       >
 
         <Text style={styles.welcome}>
-          Bem-vindo{nome ? `, ${nome}` : ''}!
+          {empresas[0]?.nome ? `Bem-vindo, ${empresas[0].nome}!` : 'Bem-vindo!'}
         </Text>
 
         <Text style={styles.description}>
-          {email ? `Sua conta empresarial · ${email}` : 'Gerencie o perfil da empresa e as oportunidades em um só lugar.'}
+          {empresas[0]?.email ? `Sua conta empresarial · ${empresas[0].email}` : 'Painel do recrutador'}
         </Text>
-
-        <TouchableOpacity style={styles.companyCta} onPress={() => {
-          setEmpresa({ nome: empresas[0]?.nome || nome || '', telefone: empresas[0]?.telefone || '' });
-          setEmpresaModalAberto(true);
-        }} activeOpacity={0.85}>
-          <View style={styles.companyCtaIcon}>
-            <Feather name="plus" size={22} color="#FFFFFF" />
-          </View>
-          <View style={styles.companyCtaContent}>
-            <Text style={styles.companyCtaTitle}>Atualize os dados do perfil</Text>
-            <Text style={styles.companyCtaDescription}>Revise o nome e o telefone de contato antes de publicar oportunidades.</Text>
-          </View>
-          <Feather name="chevron-right" size={22} color={colors.primaryDark} />
-        </TouchableOpacity>
 
         <View style={styles.section}>
           <View style={styles.companyListHeader}>
             <Text style={styles.sectionTitle}>Perfil do recrutador</Text>
-            <Text style={styles.companyCount}>{carregandoEmpresas ? '…' : erroEmpresas ? '—' : empresas.length}</Text>
+            <Text style={styles.companyCount}>{carregandoEmpresas ? '…' : erroEmpresas || !dashboard ? '—' : dashboard.profileCount}</Text>
           </View>
           {carregandoEmpresas ? (
             <View style={styles.profileLoading}><Feather name="loader" size={16} color={colors.primaryDark} /><Text style={styles.emptyCompanyText}>Carregando perfil…</Text></View>
@@ -270,25 +259,27 @@ export default function Home() {
           ) : empresas.length === 0 ? (
             <Text style={styles.emptyCompanyText}>Não foi possível carregar o perfil agora. Tente novamente em instantes.</Text>
           ) : empresas.map((empresaAtual) => (
-            <View style={styles.companyItem} key={empresaAtual.id}>
-              <View style={styles.companyAvatar}>
-                {avatarUrl
-                  ? <Image source={{ uri: avatarUrl }} style={styles.companyAvatarImage} onError={() => setAvatarUrl(null)} accessibilityLabel="Foto do recrutador" />
-                  : <Feather name="briefcase" size={20} color={colors.primaryDark} />}
-              </View>
-              <View style={styles.companyItemContent}>
-                <Text style={styles.companyItemTitle}>{empresaAtual.nome}</Text>
-                <Text style={styles.companyItemDetails}>{empresaAtual.email}</Text>
-                <Text style={styles.companyItemViews}>Painel do recrutador</Text>
+            <View style={[styles.companyItem, width < 600 && styles.companyItemMobile]} key={empresaAtual.id}>
+              <View style={styles.companyIdentity}>
+                <View style={styles.companyAvatar}>
+                  {avatarUrl
+                    ? <Image source={{ uri: avatarUrl }} style={styles.companyAvatarImage} onError={() => setAvatarUrl(null)} accessibilityLabel="Foto do recrutador" />
+                    : <Feather name="briefcase" size={20} color={colors.ink} />}
+                </View>
+                <View style={styles.companyItemContent}>
+                  <Text style={styles.companyItemTitle}>{empresaAtual.nome}</Text>
+                  <Text style={styles.companyItemDetails}>{empresaAtual.email}</Text>
+                  {empresaAtual.telefone ? <Text style={styles.companyItemViews}>{empresaAtual.telefone}</Text> : null}
+                </View>
               </View>
               <View style={styles.companyActions}>
-                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirEdicao(empresaAtual)} accessibilityLabel="Editar empresa">
+                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirEdicao(empresaAtual)} accessibilityRole="button" accessibilityLabel="Editar perfil do recrutador">
                   <Feather name="edit-2" size={17} color={colors.inkSoft} />
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.companyActionButton, styles.addJobButton]} onPress={() => abrirCadastroVaga(empresaAtual)} accessibilityLabel="Adicionar vaga">
+                <TouchableOpacity style={[styles.companyActionButton, styles.addJobButton]} onPress={() => abrirCadastroVaga(empresaAtual)} accessibilityRole="button" accessibilityLabel="Adicionar vaga">
                   <Feather name="plus" size={18} color={colors.primaryDark} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirVagas(empresaAtual)} accessibilityLabel="Ver vagas cadastradas">
+                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirVagas(empresaAtual)} accessibilityRole="button" accessibilityLabel="Gerenciar vagas cadastradas">
                   <Feather name="list" size={17} color={colors.inkSoft} />
                 </TouchableOpacity>
               </View>
@@ -296,51 +287,75 @@ export default function Home() {
           ))}
         </View>
 
-      </ScrollView>
-
-      <Modal visible={empresaModalAberto} transparent animationType="slide" onRequestClose={() => setEmpresaModalAberto(false)}>
-        <View style={styles.companyModalOverlay}>
-          <View style={styles.companyModal}>
-            <View style={styles.companyModalHeader}>
-              <View>
-                <Text style={styles.companyModalTitle}>Atualizar perfil</Text>
-                <Text style={styles.companyModalSubtitle}>Revise o nome e o telefone de contato.</Text>
-              </View>
-              <TouchableOpacity onPress={() => setEmpresaModalAberto(false)} style={styles.modalCloseButton} accessibilityLabel="Fechar cadastro">
-                <Feather name="x" size={23} color={colors.ink} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {[
-                ['nome', 'Nome do responsável', 'Nome completo', 'user'],
-                ['telefone', 'Telefone de contato', '(00) 00000-0000', 'phone'],
-              ].map(([campo, rotulo, placeholder, icone]) => (
-                <View style={styles.companyField} key={campo}>
-                  <Text style={styles.companyLabel}>{rotulo}</Text>
-                  <View style={styles.companyInputRow}>
-                    <Feather name={icone} size={18} color={colors.muted} />
-                    <TextInput
-                      style={styles.companyInput}
-                      placeholder={placeholder}
-                      placeholderTextColor={colors.muted}
-                      value={empresa[campo]}
-                      onChangeText={(valor) => atualizarEmpresa(campo, campo === 'telefone' ? formatarTelefone(valor) : valor)}
-                      keyboardType={campo === 'telefone' ? 'phone-pad' : 'default'}
-                      autoCapitalize="words"
-                    />
+        <View style={styles.dashboardSection}>
+          <Text style={styles.sectionTitle}>Resumo</Text>
+          {carregandoDashboard ? (
+            <View style={styles.summaryGrid}>
+              {['Vagas ativas', 'Candidaturas recebidas', 'Processos em andamento', 'Vagas encerradas'].map((label) => (
+                <View key={label} style={[styles.summaryLoading, { width: summaryCardWidth }]}>
+                  <Text style={styles.summaryLabel}>{label}</Text>
+                  <View style={styles.summaryLoadingStatus}>
+                    <Feather name="loader" size={15} color={colors.primary} />
+                    <Text style={styles.summaryHint}>Carregando dados</Text>
                   </View>
                 </View>
               ))}
-
-              <TouchableOpacity style={[styles.companySubmit, cadastrandoEmpresa && styles.companySubmitDisabled]} onPress={cadastrarEmpresa} disabled={cadastrandoEmpresa}>
-                <Text style={styles.companySubmitText}>{cadastrandoEmpresa ? 'Salvando...' : 'Salvar perfil'}</Text>
-                {!cadastrandoEmpresa && <Feather name="arrow-right" size={19} color="#FFFFFF" />}
+            </View>
+          ) : erroDashboard ? (
+            <View style={styles.dashboardMessage}>
+              <Text style={styles.emptyCompanyText}>Não foi possível carregar o resumo.</Text>
+              <TouchableOpacity onPress={carregarEmpresas} style={styles.retryButton} accessibilityRole="button">
+                <Text style={styles.retryText}>Tentar novamente</Text>
               </TouchableOpacity>
-            </ScrollView>
-          </View>
+            </View>
+          ) : (
+            <View style={styles.summaryGrid}>
+              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
+                <Text style={styles.summaryLabel}>Vagas ativas</Text>
+                <Text style={styles.summaryValue}>{dashboard?.vacancies?.open ?? '—'}</Text>
+                {dashboard?.vacancies?.open === 0 ? <Text style={styles.summaryHint}>Você ainda não possui vagas ativas.</Text> : null}
+              </View>
+              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
+                <Text style={styles.summaryLabel}>Candidaturas recebidas</Text>
+                <Text style={styles.summaryValue}>{dashboard?.applications?.total ?? '—'}</Text>
+                {dashboard?.applications?.total === 0 ? <Text style={styles.summaryHint}>Nenhuma candidatura recebida.</Text> : null}
+              </View>
+              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
+                <Text style={styles.summaryLabel}>Processos em andamento</Text>
+                <Text style={styles.summaryUnavailable}>Não disponível</Text>
+                <Text style={styles.summaryHint}>O sistema não registra essa etapa.</Text>
+              </View>
+              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
+                <Text style={styles.summaryLabel}>Vagas encerradas</Text>
+                <Text style={styles.summaryValue}>{dashboard?.vacancies?.closed ?? '—'}</Text>
+              </View>
+            </View>
+          )}
         </View>
-      </Modal>
+
+        {!carregandoDashboard && !erroDashboard ? (
+          <View style={styles.dashboardSection}>
+            <Text style={styles.sectionTitle}>Atividades recentes</Text>
+            {!dashboard?.activities?.length ? (
+              <View style={styles.dashboardMessage}>
+                <Text style={styles.emptyCompanyText}>Nenhuma atividade recente.</Text>
+              </View>
+            ) : dashboard.activities.map((activity, index) => (
+              <View key={`${activity.type}-${activity.created_at}-${index}`} style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Feather name={activity.type === 'VACANCY_CREATED' ? 'briefcase' : 'file-text'} size={16} color={colors.ink} />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityDescription}>{activity.description}</Text>
+                </View>
+                <Text style={styles.activityDate}>{activity.created_at ? new Date(activity.created_at).toLocaleDateString('pt-BR') : ''}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+      </ScrollView>
 
       <Modal visible={editarEmpresaModalAberto} transparent animationType="fade" onRequestClose={() => setEditarEmpresaModalAberto(false)}>
         <View style={styles.companyModalOverlay}>
@@ -377,7 +392,7 @@ export default function Home() {
               ))}
               <TouchableOpacity style={[styles.companySubmit, cadastrandoEmpresa && styles.companySubmitDisabled]} onPress={salvarEdicao} disabled={cadastrandoEmpresa}>
                 <Text style={styles.companySubmitText}>{cadastrandoEmpresa ? 'Salvando...' : 'Salvar alterações'}</Text>
-                {!cadastrandoEmpresa && <Feather name="check" size={19} color="#FFFFFF" />}
+                {!cadastrandoEmpresa && <Feather name="check" size={19} color={colors.ink} />}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -408,7 +423,7 @@ export default function Home() {
               <TextInput style={styles.textArea} placeholder="Informe os requisitos necessários" placeholderTextColor={colors.muted} value={vaga.requisitos} onChangeText={(valor) => setVaga((atual) => ({ ...atual, requisitos: valor }))} multiline textAlignVertical="top" />
               <TouchableOpacity style={[styles.companySubmit, cadastrandoEmpresa && styles.companySubmitDisabled]} onPress={cadastrarVaga} disabled={cadastrandoEmpresa}>
                 <Text style={styles.companySubmitText}>{cadastrandoEmpresa ? 'Publicando...' : 'Publicar vaga'}</Text>
-                {!cadastrandoEmpresa && <Feather name="send" size={18} color="#FFFFFF" />}
+                {!cadastrandoEmpresa && <Feather name="send" size={18} color={colors.ink} />}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -427,7 +442,7 @@ export default function Home() {
                 <Text style={styles.jobsBadgeText}>{vagasEmpresa.length}</Text>
               </View>
               <TouchableOpacity onPress={() => setVagasModalAberto(false)} style={styles.modalCloseButton} accessibilityLabel="Fechar vagas">
-                <Feather name="x" size={23} color="#243630" />
+                <Feather name="x" size={23} color={colors.ink} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -472,7 +487,7 @@ export default function Home() {
 
             <View style={styles.sidebarHeader}>
 
-              <View style={styles.sidebarBrand}><View style={styles.headerMark}><Feather name="link-2" size={14} color="#FFFFFF" /></View><Text style={styles.sidebarTitle}>Conecta Fácil</Text></View>
+              <View style={styles.sidebarBrand}><View style={styles.headerMark}><Feather name="link-2" size={14} color={colors.ink} /></View><Text style={styles.sidebarTitle}>Conecta Fácil</Text></View>
 
               <TouchableOpacity
                 onPress={fecharTudo}
@@ -528,7 +543,7 @@ export default function Home() {
               style={styles.menuItem}
               onPress={sair}
             >
-              <Feather style={styles.menuIcon} name="log-out" size={17} color="#B64F46" />
+              <Feather style={styles.menuIcon} name="log-out" size={17} color={colors.danger} />
               <Text style={styles.menuText}>
                 Sair
               </Text>
@@ -588,7 +603,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
 
   headerTitle: {
@@ -626,48 +641,135 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
 
-  companyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryWash,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 14,
-    padding: 17,
-    marginBottom: 23,
-  },
-
-  companyCtaIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: colors.primaryDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-
-  companyCtaContent: {
-    flex: 1,
-  },
-
-  companyCtaTitle: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 3,
-  },
-
-  companyCtaDescription: {
-    color: colors.inkSoft,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
   companyListHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+
+  dashboardSection: {
+    marginTop: 6,
+    marginBottom: 22,
+  },
+
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
+  summaryCard: {
+    minHeight: 120,
+    justifyContent: 'center',
+    padding: 17,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    borderRadius: 14,
+  },
+
+  summaryLabel: {
+    color: colors.inkSoft,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+
+  summaryValue: {
+    color: colors.primary,
+    fontSize: 28,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+
+  summaryUnavailable: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+
+  summaryHint: {
+    color: colors.inkSoft,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 5,
+  },
+
+  summaryLoading: {
+    minHeight: 120,
+    justifyContent: 'center',
+    padding: 17,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+
+  summaryLoadingStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+
+  dashboardMessage: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    gap: 10,
+  },
+
+  activityItem: {
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+
+  activityIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+
+  activityContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  activityTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  activityDescription: {
+    color: colors.inkSoft,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+
+  activityDate: {
+    color: colors.inkSoft,
+    fontSize: 11,
   },
 
   profileLoading: {
@@ -718,8 +820,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: colors.primaryWash,
-    color: colors.primaryDark,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '800',
     textAlign: 'center',
@@ -739,11 +843,24 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
   },
 
+  companyItemMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 12,
+  },
+
+  companyIdentity: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
   companyAvatar: {
     width: 42,
     height: 42,
     borderRadius: 13,
-    backgroundColor: colors.primaryWash,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 11,
@@ -788,7 +905,7 @@ const styles = StyleSheet.create({
   },
 
   addJobButton: {
-    backgroundColor: colors.primaryWash,
+    backgroundColor: colors.primary,
   },
 
   jobItem: {
@@ -823,7 +940,7 @@ const styles = StyleSheet.create({
   },
 
   jobLabel: {
-    color: colors.primaryDark,
+    color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
     marginTop: 4,
@@ -869,7 +986,8 @@ const styles = StyleSheet.create({
   },
 
   sidebar: {
-    width: Math.min(width * 0.78, 310),
+    width: '78%',
+    maxWidth: 310,
     backgroundColor: colors.surface,
     paddingTop: 28,
     paddingHorizontal: 20,
@@ -924,7 +1042,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(36, 54, 48, 0.46)',
+    backgroundColor: 'rgba(0, 0, 0, 0.46)',
     padding: 18,
   },
 
@@ -1016,7 +1134,7 @@ const styles = StyleSheet.create({
   companySubmit: {
     height: 53,
     borderRadius: 12,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1029,7 +1147,7 @@ const styles = StyleSheet.create({
   },
 
   companySubmitText: {
-    color: '#FFFFFF',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '800',
   },

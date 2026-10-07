@@ -40,7 +40,7 @@ export default function PerfilScreen() {
             <FontAwesome5 name="user-alt" size={40} color={colors.muted} />
           </View>
           <TouchableOpacity style={styles.camBadge}>
-            <Feather name="camera" size={14} color={colors.surface} />
+            <Feather name="camera" size={14} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.tint,
     padding: 8,
     borderRadius: 15,
   },
@@ -149,10 +149,10 @@ const styles = StyleSheet.create({
   },
   cardText: { flex: 1, fontSize: 14, color: colors.text },
   saveBtn: {
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.tint,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  saveText: { color: colors.surface, fontWeight: '700', fontSize: 15 },
+  saveText: { color: colors.text, fontWeight: '700', fontSize: 15 },
 });

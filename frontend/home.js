@@ -36,14 +36,14 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 10,
   },
 
   buttonText: {
-    color: colors.surface,
+    color: colors.ink,
     fontSize: 16,
     fontWeight: 'bold',
   },

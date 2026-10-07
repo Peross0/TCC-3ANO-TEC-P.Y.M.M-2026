@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.primaryDark,
+    color: colors.primary,
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
 
   button: {
     height: 55,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.surface,
+    color: colors.ink,
     fontSize: 17,
     fontWeight: 'bold',
   },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   registerText: {
     textAlign: 'center',
     marginTop: 20,
-    color: colors.primaryDark,
+    color: colors.primary,
     fontSize: 15,
     fontWeight: '600',
   },

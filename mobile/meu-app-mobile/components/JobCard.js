@@ -11,7 +11,7 @@ export default function JobCard({ item }) {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={[styles.companyLogo, { backgroundColor: item.logoBg }]}>
-          <Text style={[styles.logoText, { color: item.logoTextColor || colors.tint }]}>
+          <Text style={[styles.logoText, { color: item.logoTextColor || colors.text }]}>
             {item.company}
           </Text>
           </View>
