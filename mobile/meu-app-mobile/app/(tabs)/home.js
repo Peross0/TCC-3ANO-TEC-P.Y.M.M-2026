@@ -80,7 +80,7 @@ export default function HomeScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [jobs, setJobs] = useState([]);
-  const [employerJobs, setEmployerJobs] = useState([]); // Inicia vazio para mostrar o layout da foto
+  const [employerJobs,setEmployerJobs] = useState([]); // Inicia vazio para mostrar o layout da foto
 
   const router = useRouter();
 
