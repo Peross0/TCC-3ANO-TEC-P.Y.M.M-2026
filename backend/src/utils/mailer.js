@@ -48,19 +48,6 @@ export async function sendEmail({ to, subject, text, html }) {
   });
 }
 
-export async function sendVerificationEmail(email, code) {
-  return sendEmail({
-    to: email,
-    subject: 'Verifique seu e-mail - ConectaFácil',
-    text: `Seu código de verificação é: ${code}. Válido por 10 minutos.`,
-    html: `
-      <h2>Verificação de E-mail</h2>
-      <p>Seu código de verificação é: <strong>${code}</strong></p>
-      <p>Este código expira em 10 minutos.</p>
-    `,
-  });
-}
-
 export async function sendPasswordResetEmail(email, code) {
   return sendEmail({
     to: email,

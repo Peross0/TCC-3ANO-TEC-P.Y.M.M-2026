@@ -13,14 +13,13 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import MessageHeader from '../../components/MessageHeader';
-import MessageInput from '../../components/MessageInput';
+import MessageHeader from '../../components/messages/MessageHeader';
+import MessageInput from '../../components/messages/MessageInput';
 import { SessionContext } from '../../context/SessionContext';
 import { apiFetch } from '../../lib/api';
 import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
-<<<<<<< HEAD
 
 function formatTime(value) {
   if (!value) return '';
@@ -29,40 +28,6 @@ function formatTime(value) {
     ? ''
     : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
-=======
-const INITIAL_CONVERSATIONS = [
-  {
-    id: '1',
-    company: 'Pires',
-    jobTitle: 'Vaga de Caixa',
-    lastMessage: 'Oi, você ainda está interessado na vaga?',
-    timeAgo: 'Agora',
-    unreadCount: 1,
-    logoBg: colors.primaryWash,
-    logoTextColor: colors.text,
-  },
-  {
-    id: '2',
-    company: 'Pinheirão',
-    jobTitle: 'Repositor',
-    lastMessage: 'Você pode comparecer à entrevista na quinta?',
-    timeAgo: '10 min',
-    unreadCount: 0,
-    logoBg: colors.limeWash,
-    logoTextColor: colors.limeDark,
-  },
-  {
-    id: '3',
-    company: 'iFood',
-    jobTitle: 'Entregador',
-    lastMessage: 'Parabéns, seu perfil foi aprovado!',
-    timeAgo: '1h',
-    unreadCount: 2,
-    logoBg: colors.accentWash,
-    logoTextColor: colors.primaryDark,
-  },
-];
->>>>>>> e3a87ae647cdd02b539d83b578774a6203be129d
 
 export default function MessagesScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
@@ -242,7 +207,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-<<<<<<< HEAD
   avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E5F5FD' },
   avatarText: { fontSize: 18, fontWeight: 'bold', color: '#168AC7' },
   conversationContent: { flex: 1, marginLeft: 12 },
@@ -265,103 +229,3 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'center' },
   emptySubText: { fontSize: 13, color: colors.muted, textAlign: 'center', paddingHorizontal: 12 },
 });
-=======
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  conversationContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  conversationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  companyName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  timeAgo: {
-    fontSize: 11,
-    color: colors.muted,
-  },
-  jobTitleTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primaryDark,
-    marginVertical: 2,
-  },
-  lastMessage: {
-    fontSize: 13,
-    color: colors.inkSoft,
-  },
-  chatBody: {
-    flex: 1,
-  },
-  messagesList: {
-    padding: 16,
-    gap: 10,
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 4,
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.tint,
-    borderBottomRightRadius: 2,
-  },
-  companyBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderBottomLeftRadius: 2,
-  },
-  messageText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 18,
-  },
-  userMessageText: {
-    color: colors.text,
-  },
-  messageTime: {
-    fontSize: 10,
-    color: colors.muted,
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  userMessageTime: {
-    color: colors.text,
-  },
-  emptyContainer: {
-    paddingVertical: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: colors.muted,
-    textAlign: 'center',
-  },
-});
->>>>>>> e3a87ae647cdd02b539d83b578774a6203be129d

@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { getKnex } from '../../config/database.js';
-import { signToken, generateVerificationCode, createAuthTokens } from '../../utils/jwt.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../../utils/mailer.js';
+import { generatePasswordResetCode, createAuthTokens } from '../../utils/jwt.js';
+import { sendPasswordResetEmail } from '../../utils/mailer.js';
 
 const CODE_EXPIRY_MINUTES = 10;
 
@@ -25,8 +25,6 @@ export async function registerUser(data) {
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12);
-  const code = generateVerificationCode();
-  const codeExpiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
   const [user] = await knex('users').insert({
     email: data.email,
@@ -36,6 +34,7 @@ export async function registerUser(data) {
     document_type: data.document_type,
     document_number: data.document_number,
     phone: data.phone || null,
+    course: data.course || null,
     avatar_url: null,
     verified_email: true,
     code_email_verification: null,
@@ -46,6 +45,8 @@ export async function registerUser(data) {
     deleted_at: null,
   }).returning(['id', 'email', 'full_name', 'user_type', 'verified_email']);
 
+  const tokens = createAuthTokens(user);
+
   return {
     user: {
       id: user.id,
@@ -54,65 +55,9 @@ export async function registerUser(data) {
       user_type: user.user_type,
       verified_email: user.verified_email,
     },
-    message: 'Cadastro realizado com sucesso. Agora você pode entrar com seu e-mail e senha.',
+    ...tokens,
+    message: 'Cadastro realizado com sucesso.',
   };
-}
-
-export async function verifyEmail(email, code) {
-  const knex = getKnex();
-
-  const user = await knex('users')
-    .where({ email })
-    .where('code_email_verification', code)
-    .where('code_expires_at', '>', new Date().toISOString())
-    .first();
-
-  if (!user) {
-    const err = new Error('Código inválido ou expirado');
-    err.statusCode = 400;
-    throw err;
-  }
-
-  await knex('users')
-    .where({ id: user.id })
-    .update({
-      verified_email: true,
-      code_email_verification: null,
-      code_expires_at: null,
-      updated_at: new Date().toISOString(),
-    });
-
-  return { message: 'E-mail verificado com sucesso. Agora você pode fazer login.' };
-}
-
-export async function resendVerification(email) {
-  const knex = getKnex();
-
-  const user = await knex('users').where({ email }).first();
-
-  if (!user) {
-    // Don't reveal if email exists
-    return { message: 'Se o e-mail estiver cadastrado, um novo código será enviado.' };
-  }
-
-  if (user.verified_email) {
-    return { message: 'E-mail já verificado. Você pode fazer login.' };
-  }
-
-  const code = generateVerificationCode();
-  const codeExpiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
-
-  await knex('users')
-    .where({ id: user.id })
-    .update({
-      code_email_verification: code,
-      code_expires_at: codeExpiresAt,
-      updated_at: new Date().toISOString(),
-    });
-
-  await sendVerificationEmail(email, code);
-
-  return { message: 'Novo código de verificação enviado.' };
 }
 
 export async function loginUser(email, password) {
@@ -126,12 +71,6 @@ export async function loginUser(email, password) {
   if (!user) {
     const err = new Error('Credenciais inválidas');
     err.statusCode = 401;
-    throw err;
-  }
-
-  if (!user.verified_email) {
-    const err = new Error('E-mail não verificado. Verifique sua caixa de entrada.');
-    err.statusCode = 403;
     throw err;
   }
 
@@ -168,7 +107,7 @@ export async function forgotPassword(email) {
     return { message: 'Se o e-mail estiver cadastrado, um código de recuperação será enviado.' };
   }
 
-  const code = generateVerificationCode();
+  const code = generatePasswordResetCode();
   const codeExpiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
   await knex('users')
@@ -220,7 +159,7 @@ export async function getMe(userId) {
   const user = await knex('users')
     .where({ id: userId })
     .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'user_type', 'verified_email', 'avatar_url', 'active_notification', 'phone', 'document_type', 'document_number', 'created_at');
+    .first('id', 'email', 'full_name', 'user_type', 'verified_email', 'avatar_url', 'active_notification', 'phone', 'course', 'document_type', 'document_number', 'created_at');
 
   if (!user) {
     const err = new Error('Usuário não encontrado');

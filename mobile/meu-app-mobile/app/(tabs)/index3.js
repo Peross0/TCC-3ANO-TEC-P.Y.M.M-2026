@@ -20,6 +20,7 @@ export default function Home() {
 
       <Image
         style={styles.logo}
+        resizeMode="contain"
         source={{
           uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Cartoon_network_modified_logo.PNG/1200px-Cartoon_network_modified_logo.PNG",
         }}
@@ -53,7 +54,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 300, 
     height: 150,
-    resizeMode: "contain",
     marginTop: 20,
   },
 

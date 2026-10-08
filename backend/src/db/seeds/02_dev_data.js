@@ -15,12 +15,28 @@ export async function seed(knex) {
   const devUserIds = devUsers.map(({ id }) => id);
 
   if (devUserIds.length > 0) {
-    const devApplicationIds = await knex('interests').whereIn('user_id', devUserIds).pluck('id');
-    if (devApplicationIds.length > 0) {
-      await knex('messages').whereIn('application_id', devApplicationIds).delete();
+    const devVacancyIds = await knex('vacancies')
+      .whereIn('user_id', devUserIds)
+      .pluck('id');
+    const devApplications = await knex('interests')
+      .whereIn('user_id', devUserIds)
+      .orWhereIn('vacancy_id', devVacancyIds)
+      .pluck('id');
+
+    const messages = knex('messages');
+    if (devApplications.length > 0) {
+      messages.whereIn('application_id', devApplications).orWhereIn('sender_id', devUserIds);
+    } else {
+      messages.whereIn('sender_id', devUserIds);
     }
-    await knex('interests').whereIn('id', devApplicationIds).delete();
-    await knex('vacancies').whereIn('user_id', devUserIds).delete();
+    await messages.delete();
+
+    if (devApplications.length > 0) {
+      await knex('interests').whereIn('id', devApplications).delete();
+    }
+    if (devVacancyIds.length > 0) {
+      await knex('vacancies').whereIn('id', devVacancyIds).delete();
+    }
     await knex('users').whereIn('id', devUserIds).delete();
   }
 

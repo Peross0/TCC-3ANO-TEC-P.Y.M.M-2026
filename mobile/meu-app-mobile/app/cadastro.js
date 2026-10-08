@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -14,10 +14,35 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
-import { apiFetch } from '../lib/api';
+import { apiFetch, saveToken } from '../lib/api';
 
-const colors = Colors.light;
+const BRAND = {
+  blue: '#38B6F5',
+  black: '#111111',
+  gray: '#777777',
+  line: '#E7E9EC',
+  background: '#F6F8FA',
+  white: '#FFFFFF',
+};
+function FormField({ label, icon, children }) {
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.inputWrapper}>
+        <Feather name={icon} size={18} color={BRAND.gray} />
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function formatCpf(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
 
 export default function RegisterScreen() {
   const [nome, setNome] = useState('');
@@ -28,33 +53,34 @@ export default function RegisterScreen() {
   const [cpf, setCpf] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
   const handleRegister = async () => {
+    setErrorMessage('');
+
     const nomeLimpo = nome.trim();
     const emailLimpo = email.trim().toLowerCase();
+    const documento = cpf.replace(/\D/g, '');
 
-    if (!nomeLimpo) {
-      Alert.alert('Campo obrigatório', 'Por favor, informe seu nome.');
+    if (nomeLimpo.length < 2) {
+      setErrorMessage('Informe seu nome completo.');
       return;
     }
-    if (!emailLimpo || !emailLimpo.includes('@')) {
-      Alert.alert('E-mail inválido', 'Informe um e-mail válido.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
+      setErrorMessage('Informe um e-mail válido.');
       return;
     }
     if (senha.length < 8) {
-      Alert.alert('Senha fraca', 'A senha deve conter no mínimo 8 caracteres.');
+      setErrorMessage('A senha deve conter no mínimo 8 caracteres.');
       return;
     }
-    const documento = cpf.replace(/\D/g, '');
     if (documento.length !== 11) {
-      Alert.alert('CPF inválido', 'Informe um CPF válido com 11 números.');
+      setErrorMessage('Informe um CPF com 11 números.');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const data = await apiFetch('/auth/register', {
         method: 'POST',
@@ -63,25 +89,23 @@ export default function RegisterScreen() {
           email: emailLimpo,
           password: senha,
           phone: telefone.trim() || undefined,
+          course: curso.trim() || undefined,
           user_type: 'CANDIDATE',
           document_type: 'CPF',
           document_number: documento,
         }),
+        token: null,
       });
-
-      Alert.alert(
-        'Conta criada!',
-        data.message || 'Cadastro realizado com sucesso. Agora faça login.',
-        [{ text: 'Ir para Login', onPress: () => router.back() }]
-      );
+      await saveToken(data.token);
+      router.replace('/carregando');
     } catch (error) {
-      console.error('Erro na requisição:', error);
-      Alert.alert(
-        'Erro de Conexão',
-        error instanceof TypeError
-          ? 'Não foi possível conectar ao servidor. Verifique a rede e se o backend está ativo.'
-          : error.message
-      );
+      if (error.status === 409) {
+        setErrorMessage('Este e-mail ou CPF já está cadastrado. Entre com sua conta ou confira os dados.');
+      } else if (error instanceof TypeError) {
+        setErrorMessage('Não foi possível conectar ao servidor. Confira se o backend está ativo.');
+      } else {
+        setErrorMessage(error.message || 'Não foi possível criar sua conta. Tente novamente.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -89,109 +113,140 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={BRAND.background} />
       <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerGroup}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Feather name="arrow-left" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Criar Conta</Text>
-            <Text style={styles.subtitle}>Informe seus dados para se cadastrar</Text>
+          <View style={styles.brandLine}>
+            <View style={styles.brandIcon}>
+              <Feather name="link" size={19} color={BRAND.white} />
+            </View>
+            <Text style={styles.brandName}>Conecta<Text style={styles.brandAccent}>Fácil</Text></Text>
           </View>
 
-          <View style={styles.formSection}>
-            <View style={styles.inputWrapper}>
-              <Feather name="user" size={19} color={colors.muted} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nome completo *"
-                placeholderTextColor={colors.muted}
-                value={nome}
-                onChangeText={setNome}
-              />
-            </View>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
+            <Feather name="arrow-left" size={19} color={BRAND.black} />
+            <Text style={styles.backText}>Voltar</Text>
+          </TouchableOpacity>
 
-            <View style={styles.inputWrapper}>
-              <Feather name="mail" size={19} color={colors.muted} />
+          <Text style={styles.title}>Crie sua conta</Text>
+          <Text style={styles.subtitle}>Preencha seus dados para encontrar sua próxima oportunidade.</Text>
+
+          <View style={styles.formCard}>
+            <Text style={styles.sectionTitle}>Seus dados</Text>
+            <Text style={styles.sectionSubtitle}>Os campos com * são obrigatórios.</Text>
+            <FormField label="Nome completo *" icon="user">
               <TextInput
                 style={styles.input}
-                placeholder="E-mail *"
-                placeholderTextColor={colors.muted}
+                placeholder="Como podemos chamar você?"
+                placeholderTextColor="#A0A4A8"
+                value={nome}
+                onChangeText={(value) => { setNome(value); setErrorMessage(''); }}
+                autoComplete="name"
+                returnKeyType="next"
+              />
+            </FormField>
+            <FormField label="E-mail *" icon="mail">
+              <TextInput
+                style={styles.input}
+                placeholder="seuemail@exemplo.com"
+                placeholderTextColor="#A0A4A8"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => { setEmail(value); setErrorMessage(''); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoComplete="email"
+                returnKeyType="next"
               />
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Feather name="lock" size={19} color={colors.muted} />
+            </FormField>
+            <FormField label="Senha *" icon="lock">
               <TextInput
                 style={styles.input}
-                placeholder="Senha *"
-                placeholderTextColor={colors.muted}
+                placeholder="Mínimo de 8 caracteres"
+                placeholderTextColor="#A0A4A8"
                 value={senha}
-                onChangeText={setSenha}
+                onChangeText={(value) => { setSenha(value); setErrorMessage(''); }}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="new-password"
+                returnKeyType="next"
               />
-              <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={colors.muted} />
+              <TouchableOpacity
+                onPress={() => setShowPassword((visible) => !visible)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={BRAND.gray} />
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Feather name="phone" size={19} color={colors.muted} />
+            </FormField>
+            <FormField label="CPF *" icon="credit-card">
               <TextInput
                 style={styles.input}
-                placeholder="Telefone (opcional)"
-                placeholderTextColor={colors.muted}
+                placeholder="000.000.000-00"
+                placeholderTextColor="#A0A4A8"
+                value={cpf}
+                onChangeText={(value) => { setCpf(formatCpf(value)); setErrorMessage(''); }}
+                keyboardType="number-pad"
+                maxLength={14}
+                returnKeyType="next"
+              />
+            </FormField>
+            <FormField label="Telefone (opcional)" icon="phone">
+              <TextInput
+                style={styles.input}
+                placeholder="(00) 00000-0000"
+                placeholderTextColor="#A0A4A8"
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="phone-pad"
+                autoComplete="tel"
+                returnKeyType="next"
               />
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Feather name="credit-card" size={19} color={colors.muted} />
+            </FormField>
+            <FormField label="Curso (opcional)" icon="book-open">
               <TextInput
                 style={styles.input}
-                placeholder="CPF *"
-                placeholderTextColor={colors.muted}
-                value={cpf}
-                onChangeText={setCpf}
-                keyboardType="number-pad"
-                maxLength={14}
-              />
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Feather name="book" size={19} color={colors.muted} />
-              <TextInput
-                style={styles.input}
-                placeholder="Curso (opcional)"
-                placeholderTextColor={colors.muted}
+                placeholder="Ex.: Técnico em Informática"
+                placeholderTextColor="#A0A4A8"
                 value={curso}
                 onChangeText={setCurso}
+                returnKeyType="done"
               />
-            </View>
-
+            </FormField>
+            {!!errorMessage && <Text style={styles.errorMessage} accessibilityRole="alert">{errorMessage}</Text>}
             <TouchableOpacity
-              style={[styles.submitButton, isSubmitting && styles.disabledButton]}
+              style={[styles.primaryButton, isSubmitting && styles.disabledButton]}
               onPress={handleRegister}
               disabled={isSubmitting}
+              accessibilityRole="button"
             >
-              <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Cadastrando...' : 'Finalizar Cadastro'}
-              </Text>
+              {isSubmitting
+                ? <ActivityIndicator color={BRAND.white} />
+                : <Text style={styles.primaryButtonText}>Criar conta</Text>}
+              {!isSubmitting && <Feather name="arrow-right" size={18} color={BRAND.white} />}
             </TouchableOpacity>
+            <View style={styles.loginLine}>
+              <Text style={styles.loginText}>Já tem uma conta? </Text>
+              <TouchableOpacity onPress={() => router.back()} accessibilityRole="button">
+                <Text style={styles.loginLink}>Faça login</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.secureNote}>
+            <Feather name="lock" size={14} color={BRAND.gray} />
+            <Text style={styles.secureNoteText}>Seus dados estão protegidos</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -200,36 +255,75 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  keyboardAvoidingView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 20 },
-  headerGroup: { marginBottom: 24 },
-  backButton: { width: 40, height: 40, justifyContent: 'center', marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
-  subtitle: { fontSize: 16, color: colors.muted, marginTop: 4 },
-  formSection: { width: '100%' },
+  flex: { flex: 1 },
+  container: { flex: 1, backgroundColor: BRAND.background },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
+  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 28 },
+  brandIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BRAND.blue,
+  },
+  brandName: { color: BRAND.black, fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  brandAccent: { color: BRAND.blue },
+  backButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, marginBottom: 16, paddingVertical: 4 },
+  backText: { color: BRAND.gray, fontSize: 14, fontWeight: '600' },
+  title: { color: BRAND.black, fontSize: 30, lineHeight: 37, fontWeight: '800', letterSpacing: -0.8 },
+  subtitle: { color: BRAND.gray, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
+  formCard: { backgroundColor: BRAND.white, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#EEF0F2' },
+  sectionTitle: { color: BRAND.black, fontSize: 19, fontWeight: '800' },
+  sectionSubtitle: { color: BRAND.gray, fontSize: 13, lineHeight: 19, marginTop: 5, marginBottom: 14 },
+  fieldGroup: { marginBottom: 12 },
+  fieldLabel: { color: BRAND.black, fontSize: 13, fontWeight: '700', marginBottom: 7 },
   inputWrapper: {
-    width: '100%',
-    minHeight: 56,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    marginBottom: 13,
-    backgroundColor: colors.surface,
+    borderColor: BRAND.line,
+    borderRadius: 12,
+    paddingHorizontal: 13,
+    backgroundColor: BRAND.white,
   },
-  input: { flex: 1, height: 54, paddingHorizontal: 12, fontSize: 16, color: colors.text },
-  submitButton: {
-    width: '100%',
-    height: 54,
-    backgroundColor: colors.tint,
-    borderRadius: 14,
-    justifyContent: 'center',
+  input: { flex: 1, minWidth: 0, height: 50, paddingHorizontal: 10, color: BRAND.black, fontSize: 14 },
+  errorMessage: {
+    color: '#B42318',
+    backgroundColor: '#FEF3F2',
+    borderWidth: 1,
+    borderColor: '#FECDCA',
+    borderRadius: 10,
+    padding: 11,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  primaryButton: {
+    minHeight: 52,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    justifyContent: 'center',
+    gap: 9,
+    backgroundColor: BRAND.blue,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginTop: 4,
   },
-  disabledButton: { opacity: 0.6 },
-  submitButtonText: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  primaryButtonText: { color: BRAND.white, fontSize: 15, fontWeight: '700' },
+  disabledButton: { opacity: 0.65 },
+  loginLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+    paddingTop: 17,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF0F2',
+  },
+  loginText: { color: BRAND.gray, fontSize: 13 },
+  loginLink: { color: '#168AC7', fontSize: 13, fontWeight: '700' },
+  secureNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 22 },
+  secureNoteText: { color: BRAND.gray, fontSize: 12 },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../constants/theme';
+import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 

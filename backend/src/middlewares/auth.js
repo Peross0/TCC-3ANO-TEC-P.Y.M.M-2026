@@ -21,19 +21,12 @@ export async function authMiddleware(req, res, next) {
     const user = await knex('users')
       .where({ id: payload.sub })
       .whereNull('deleted_at')
-      .first('id', 'user_type', 'verified_email');
+      .first('id', 'user_type');
 
     if (!user) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Usuário não encontrado',
-      });
-    }
-
-    if (!user.verified_email) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'E-mail não verificado',
       });
     }
 

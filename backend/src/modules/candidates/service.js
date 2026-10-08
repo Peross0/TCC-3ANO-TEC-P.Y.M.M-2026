@@ -7,7 +7,7 @@ export async function getProfile(userId) {
   const user = await knex('users')
     .where({ id: userId, user_type: 'CANDIDATE' })
     .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'phone', 'avatar_url', 'document_type', 'document_number', 'active_notification', 'created_at');
+    .first('id', 'email', 'full_name', 'phone', 'course', 'avatar_url', 'document_type', 'document_number', 'active_notification', 'created_at');
 
   if (!user) {
     const err = new Error('Perfil de candidato não encontrado');
@@ -21,7 +21,7 @@ export async function getProfile(userId) {
 export async function updateProfile(userId, data) {
   const knex = getKnex();
 
-  const allowedFields = ['full_name', 'phone', 'active_notification'];
+  const allowedFields = ['full_name', 'phone', 'course', 'active_notification'];
   const updateData = {};
   for (const field of allowedFields) {
     if (data[field] !== undefined) {

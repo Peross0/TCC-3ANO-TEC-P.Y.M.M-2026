@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, Platform } from 'react-native';
-import { Colors } from '../constants/theme';
+import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 

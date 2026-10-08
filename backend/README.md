@@ -7,11 +7,16 @@ Backend unico do projeto, com Express, JWT, SQLite nativo do Node 24 e Knex.
 ```powershell
 npm install
 npm run migrate:latest
-npm run seed
+npm run seed # somente para criar/recriar os dados de demonstração
 npm start
 ```
 
 A API fica em `http://localhost:3000`.
+As migrations são verificadas ao iniciar o backend; os seeds não são executados automaticamente para evitar recriar contas e apagar dados relacionados a vagas de demonstração a cada reinicialização. Em desenvolvimento, execute `npm run seed` manualmente apenas quando quiser repor os dados de teste.
+
+## Cadastro
+
+O cadastro cria a conta e inicia a sessão imediatamente; a confirmação de e-mail não é exigida. A recuperação de senha continua usando código temporário enviado por e-mail.
 
 ## Testes
 
@@ -23,7 +28,6 @@ npm run test:smoke
 
 - `GET /health`
 - `POST /api/auth/register`
-- `POST /api/auth/verify-email`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET/POST /api/messages` (mensagens vinculadas a candidaturas)

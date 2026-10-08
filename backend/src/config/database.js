@@ -21,10 +21,6 @@ export async function ensureDatabaseReady() {
 
   try {
     await knex.migrate.latest();
-
-    if (process.env.NODE_ENV !== 'production') {
-      await knex.seed.run();
-    }
   } catch (error) {
     console.error('❌ Falha ao inicializar o banco de dados:', error);
     throw error;

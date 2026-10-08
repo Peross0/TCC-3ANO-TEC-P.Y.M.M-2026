@@ -21,6 +21,7 @@ export default function PerfilScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [curso, setCurso] = useState('');
   const [genero, setGenero] = useState('');
   const [descricao, setDescricao] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -29,6 +30,7 @@ export default function PerfilScreen() {
   useEffect(() => {
     setNome(sessionData?.profile?.full_name || '');
     setTelefone(sessionData?.profile?.phone || '');
+    setCurso(sessionData?.profile?.course || '');
   }, [sessionData?.profile]);
 
   const handleSave = async () => {
@@ -49,6 +51,7 @@ export default function PerfilScreen() {
         body: JSON.stringify({
           full_name: nome.trim(),
           ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+          ...(user?.user_type === 'CANDIDATE' ? { course: curso.trim() || null } : {}),
         }),
       });
       const profile = result.candidate || result.recruiter || result.user;
@@ -58,12 +61,14 @@ export default function PerfilScreen() {
           ...current.user,
           full_name: nome.trim(),
           ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+          ...(user?.user_type === 'CANDIDATE' ? { course: curso.trim() || null } : {}),
         },
         profile: {
           ...current.profile,
           ...profile,
           full_name: nome.trim(),
           ...(telefone.trim() ? { phone: telefone.trim() } : {}),
+          ...(user?.user_type === 'CANDIDATE' ? { course: curso.trim() || null } : {}),
         },
       }));
       Alert.alert('Perfil atualizado', 'Seus dados foram salvos com sucesso.');
@@ -117,6 +122,15 @@ export default function PerfilScreen() {
             editable={false}
           />
 
+          <Text style={styles.label}>
+            {sessionData?.profile?.document_type === 'CNPJ' ? 'CNPJ' : 'CPF'}
+          </Text>
+          <TextInput
+            style={[styles.input, styles.readOnlyInput]}
+            value={sessionData?.profile?.document_number || ''}
+            editable={false}
+          />
+
           <Text style={styles.label}>Telefone</Text>
           <TextInput
             style={styles.input}
@@ -125,6 +139,18 @@ export default function PerfilScreen() {
             placeholder="Seu telefone"
             keyboardType="phone-pad"
           />
+
+          {sessionData?.user?.user_type === 'CANDIDATE' && (
+            <>
+              <Text style={styles.label}>Curso</Text>
+              <TextInput
+                style={styles.input}
+                value={curso}
+                onChangeText={setCurso}
+                placeholder="Seu curso"
+              />
+            </>
+          )}
 
           <Text style={styles.label}>Gênero</Text>
           <TextInput

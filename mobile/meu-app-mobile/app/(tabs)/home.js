@@ -17,10 +17,10 @@ import { Colors } from '../../constants/theme';
 import { SessionContext } from '../../context/SessionContext';
 import { clearToken } from '../../lib/api';
 
-import Header from '../../components/Header';
-import NotificationModal from '../../components/NotificationModal';
-import ProfileMenuModal from '../../components/ProfileMenuModal';
-import JobCard from '../../components/JobCard';
+import Header from '../../components/layout/Header';
+import NotificationModal from '../../components/modals/NotificationModal';
+import ProfileMenuModal from '../../components/modals/ProfileMenuModal';
+import JobCard from '../../components/jobs/JobCard';
 
 const colors = Colors.light;
 
