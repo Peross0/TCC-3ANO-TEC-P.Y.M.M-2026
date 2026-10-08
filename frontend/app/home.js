@@ -41,7 +41,7 @@ export default function Home() {
   const [carregandoDashboard, setCarregandoDashboard] = useState(true);
   const [erroDashboard, setErroDashboard] = useState('');
   const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
-  const [vaga, setVaga] = useState({ titulo: '', descricao: '', requisitos: '' });
+  const [vaga, setVaga] = useState({ nomeEmpresa: '', descricaoEmpresa: '', titulo: '', descricao: '', requisitos: '' });
   const [vagasEmpresa, setVagasEmpresa] = useState([]);
   const [empresa, setEmpresa] = useState({ nome: '', telefone: '' });
 
@@ -165,7 +165,7 @@ export default function Home() {
 
   const abrirCadastroVaga = (empresaAtual) => {
     setEmpresaSelecionada(empresaAtual);
-    setVaga({ titulo: '', descricao: '', requisitos: '' });
+    setVaga({ nomeEmpresa: '', descricaoEmpresa: '', titulo: '', descricao: '', requisitos: '' });
     setVagaModalAberto(true);
   };
 
@@ -174,8 +174,9 @@ export default function Home() {
     setVagasEmpresa([]);
     setVagasModalAberto(true);
     try {
-      const dados = await apiFetch('/recruiters/vacancies?limit=50');
-      setVagasEmpresa(dados.vacancies || dados.vagas || []);
+      const dados = await apiFetch('/recruiters/vacancies?limit=50&status=OPEN');
+      const ativas = (dados.vacancies || dados.vagas || []).filter((vaga) => vaga.status === 'OPEN' || !vaga.status);
+      setVagasEmpresa(ativas);
     } catch (erro) {
       setVagasModalAberto(false);
       Alert.alert('Erro', erro instanceof TypeError ? 'Não foi possível conectar ao servidor.' : erro.message);
@@ -194,7 +195,8 @@ export default function Home() {
         method: 'POST',
         body: JSON.stringify({
           job_title: vaga.titulo,
-          company_name: empresaSelecionada.nome,
+          company_name: vaga.nomeEmpresa.trim(),
+          company_description: vaga.descricaoEmpresa.trim(),
           job_description: vaga.descricao,
           requirements: vaga.requisitos,
         }),
@@ -405,13 +407,29 @@ export default function Home() {
             <View style={styles.companyModalHeader}>
               <View>
                 <Text style={styles.companyModalTitle}>Adicionar vaga</Text>
-                <Text style={styles.companyModalSubtitle}>{empresaSelecionada?.nome}</Text>
+                <Text style={styles.companyModalSubtitle}>Informe os dados da empresa e da oportunidade.</Text>
               </View>
               <TouchableOpacity onPress={() => setVagaModalAberto(false)} style={styles.modalCloseButton} accessibilityLabel="Fechar cadastro de vaga">
                 <Feather name="x" size={23} color={colors.ink} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.companyLabel}>Nome da empresa</Text>
+              <View style={styles.companyInputRow}>
+                <Feather name="briefcase" size={18} color={colors.muted} />
+                <TextInput style={styles.companyInput} placeholder="Ex.: Mercado Central" placeholderTextColor={colors.muted} value={vaga.nomeEmpresa} onChangeText={(valor) => setVaga((atual) => ({ ...atual, nomeEmpresa: valor }))} autoCapitalize="words" />
+              </View>
+              <Text style={styles.companyLabel}>Breve apresentação da empresa</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Conte em poucas frases o que a empresa faz."
+                placeholderTextColor={colors.muted}
+                value={vaga.descricaoEmpresa}
+                onChangeText={(valor) => setVaga((atual) => ({ ...atual, descricaoEmpresa: valor }))}
+                multiline
+                maxLength={1000}
+                textAlignVertical="top"
+              />
               <Text style={styles.companyLabel}>Título da vaga</Text>
               <View style={styles.companyInputRow}>
                 <Feather name="briefcase" size={18} color={colors.muted} />
@@ -435,7 +453,7 @@ export default function Home() {
           <View style={styles.viewersModal}>
             <View style={styles.companyModalHeader}>
               <View>
-                <Text style={styles.companyModalTitle}>Vagas cadastradas</Text>
+                <Text style={styles.companyModalTitle}>Vagas ativas</Text>
                 <Text style={styles.companyModalSubtitle}>{empresaSelecionada?.nome}</Text>
               </View>
               <View style={styles.jobsBadge}>
@@ -449,7 +467,7 @@ export default function Home() {
               {vagasEmpresa.length === 0 ? (
                 <View style={styles.emptyJobs}>
                   <Feather name="briefcase" size={32} color={colors.muted} />
-                  <Text style={styles.emptyCompanyText}>Nenhuma vaga cadastrada para esta empresa.</Text>
+                  <Text style={styles.emptyCompanyText}>Nenhuma vaga ativa cadastrada para esta empresa.</Text>
                 </View>
               ) : vagasEmpresa.map((vagaAtual) => (
                 <View style={styles.jobItem} key={vagaAtual.id}>
@@ -524,6 +542,16 @@ export default function Home() {
               <Feather style={styles.menuIcon} name="briefcase" size={17} color={colors.muted} />
               <Text style={styles.menuText}>
                 Vagas
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navegarMenu('/mensagens')}
+            >
+              <Feather style={styles.menuIcon} name="message-circle" size={17} color={colors.muted} />
+              <Text style={styles.menuText}>
+                Mensagens
               </Text>
             </TouchableOpacity>
 

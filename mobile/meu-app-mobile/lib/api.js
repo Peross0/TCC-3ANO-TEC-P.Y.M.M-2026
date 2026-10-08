@@ -20,6 +20,13 @@ function getApiUrl() {
 
 export const API_URL = getApiUrl();
 
+export function getAssetUrl(value) {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  const path = value.startsWith('/') ? value : `/uploads/${value}`;
+  return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
+}
+
 async function readStoredValue(key) {
   if (Platform.OS === 'web') return globalThis.localStorage?.getItem(key) ?? null;
   return SecureStore.getItemAsync(key);

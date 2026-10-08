@@ -121,6 +121,7 @@ export async function seed(knex) {
   await knex('interests').insert({
     user_id: candidateId,
     vacancy_id: vacancy2Id,
+    origin: 'DEMO',
     status: 'PENDING',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

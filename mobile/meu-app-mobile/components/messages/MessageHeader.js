@@ -1,12 +1,14 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 
 export default function MessageHeader({ activeChat, onBack }) {
+  const [failedLogoUri, setFailedLogoUri] = useState(null);
   if (!activeChat) return null;
+  const showLogo = activeChat.companyLogoUri && failedLogoUri !== activeChat.companyLogoUri;
 
   return (
     <View style={styles.chatHeader}>
@@ -15,9 +17,9 @@ export default function MessageHeader({ activeChat, onBack }) {
       </TouchableOpacity>
 
       <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || colors.primaryWash }]}>
-        <Text style={[styles.avatarTextSmall, { color: activeChat.logoTextColor || colors.text }]}>
-          {activeChat.company ? activeChat.company.charAt(0) : 'C'}
-        </Text>
+        {showLogo
+          ? <Image source={{ uri: activeChat.companyLogoUri }} style={styles.companyLogoImage} onError={() => setFailedLogoUri(activeChat.companyLogoUri)} />
+          : <Feather name="briefcase" size={18} color={colors.primaryDark} />}
       </View>
 
       <View style={styles.chatHeaderInfo}>
@@ -48,10 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarTextSmall: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+  companyLogoImage: { width: '100%', height: '100%', borderRadius: 18 },
   chatHeaderInfo: {
     marginLeft: 10,
   },

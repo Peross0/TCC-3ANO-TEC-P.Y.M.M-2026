@@ -15,6 +15,11 @@ export async function listVacancies(req, res) {
   res.json(result);
 }
 
+export async function listCompanies(req, res) {
+  const result = await candidateService.listCompanies();
+  res.json(result);
+}
+
 export async function getVacancy(req, res) {
   const { id } = req.params;
   const result = await candidateService.getVacancy(req.user.id, Number(id));

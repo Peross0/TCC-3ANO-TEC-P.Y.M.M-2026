@@ -1,20 +1,20 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 
-export default function JobCard({ item }) {
+export default function JobCard({ item, onApply, isApplied = false, isApplying = false }) {
   return (
 
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={[styles.companyLogo, { backgroundColor: item.logoBg }]}>
-          <Text style={[styles.logoText, { color: item.logoTextColor || colors.text }]}>
-            {item.company}
-          </Text>
-          </View>
+          {item.logoUri
+            ? <Image source={{ uri: item.logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
+            : <Feather name="briefcase" size={19} color={colors.primaryDark} />}
+        </View>
 
         <View style={styles.companyInfo}>
           <Text style={styles.companyName}>{item.company}</Text>
@@ -38,8 +38,15 @@ export default function JobCard({ item }) {
           <TouchableOpacity style={styles.bookmarkButton}>
             <Feather name="bookmark" size={18} color={colors.muted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.interestButton}>
-            <Text style={styles.interestButtonText}>Tenho interesse</Text>
+          <TouchableOpacity
+            style={[styles.interestButton, (isApplied || isApplying) && styles.interestButtonDisabled]}
+            onPress={() => onApply?.(item.vacancyId)}
+            disabled={isApplied || isApplying}
+            accessibilityRole="button"
+          >
+            <Text style={styles.interestButtonText}>
+              {isApplying ? 'Enviando...' : isApplied ? 'Candidatado' : 'Tenho interesse'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -68,10 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
+  companyLogoImage: { width: '100%', height: '100%', borderRadius: 22 },
   companyInfo: {
     flex: 1,
     marginLeft: 12,
@@ -144,6 +148,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
+  },
+  interestButtonDisabled: {
+    opacity: 0.6,
   },
   interestButtonText: {
     fontSize: 12,

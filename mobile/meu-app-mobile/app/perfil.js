@@ -1,6 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -13,7 +17,7 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
 import { SessionContext } from '../context/SessionContext';
-import { apiFetch } from '../lib/api';
+import { apiFetch, getAssetUrl } from '../lib/api';
 
 const colors = Colors.light;
 
@@ -25,13 +29,57 @@ export default function PerfilScreen() {
   const [genero, setGenero] = useState('');
   const [descricao, setDescricao] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUri, setAvatarUri] = useState(getAssetUrl(sessionData?.profile?.avatar_url || sessionData?.user?.avatar_url));
   const router = useRouter();
 
   useEffect(() => {
     setNome(sessionData?.profile?.full_name || '');
     setTelefone(sessionData?.profile?.phone || '');
     setCurso(sessionData?.profile?.course || '');
+    setAvatarUri(getAssetUrl(sessionData?.profile?.avatar_url || sessionData?.user?.avatar_url));
   }, [sessionData?.profile]);
+
+  const changeAvatar = async () => {
+    if (isUploadingAvatar) return;
+
+    try {
+      const selection = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (selection.canceled || !selection.assets?.length) return;
+
+      const asset = selection.assets[0];
+      const formData = new FormData();
+      if (Platform.OS === 'web' && asset.file) {
+        formData.append('avatar', asset.file, asset.fileName || 'avatar.jpg');
+      } else {
+        formData.append('avatar', {
+          uri: asset.uri,
+          name: asset.fileName || 'avatar.jpg',
+          type: asset.mimeType || 'image/jpeg',
+        });
+      }
+
+      setIsUploadingAvatar(true);
+      const result = await apiFetch('/users/me/avatar', { method: 'POST', body: formData });
+      const updatedAvatarUrl = result.user?.avatar_url;
+      setAvatarUri(getAssetUrl(updatedAvatarUrl));
+      setSessionData((current) => ({
+        ...current,
+        user: { ...current.user, avatar_url: updatedAvatarUrl },
+        profile: { ...current.profile, avatar_url: updatedAvatarUrl },
+      }));
+      Alert.alert('Foto atualizada', 'Sua foto foi salva no perfil.');
+    } catch (error) {
+      Alert.alert('Não foi possível atualizar a foto', error.message || 'Tente novamente.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!nome.trim()) {
@@ -98,10 +146,14 @@ export default function PerfilScreen() {
         {/* Avatar */}
         <View style={styles.avatarWrap}>
           <View style={styles.avatar}>
-            <FontAwesome5 name="user-alt" size={40} color={colors.muted} />
+            {avatarUri
+              ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} onError={() => setAvatarUri(null)} />
+              : <FontAwesome5 name="user-alt" size={40} color={colors.muted} />}
           </View>
-          <TouchableOpacity style={styles.camBadge}>
-            <Feather name="camera" size={14} color={colors.text} />
+          <TouchableOpacity style={styles.camBadge} onPress={changeAvatar} disabled={isUploadingAvatar} accessibilityRole="button" accessibilityLabel="Alterar foto do perfil">
+            {isUploadingAvatar
+              ? <ActivityIndicator size="small" color={colors.text} />
+              : <Feather name="camera" size={14} color={colors.text} />}
           </TouchableOpacity>
         </View>
 
@@ -212,7 +264,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryWash,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 45 },
   camBadge: {
     position: 'absolute',
     bottom: 0,

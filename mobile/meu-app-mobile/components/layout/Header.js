@@ -1,5 +1,5 @@
-import React from 'react';
-import { Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 
@@ -12,7 +12,11 @@ export default function Header({
   isSettingsActive,
   onToggleProfileMenu,
   onOpenMessages,
+  avatarUri,
 }) {
+  const [failedAvatarUri, setFailedAvatarUri] = useState(null);
+  const showAvatar = avatarUri && failedAvatarUri !== avatarUri;
+
   return (
     <View style={styles.header}>
       <View style={styles.searchBar}>
@@ -59,7 +63,9 @@ export default function Header({
         style={styles.avatarContainer}
         onPress={onToggleProfileMenu}
       >
-        <Feather name="user" size={24} color={colors.inkSoft} />
+        {showAvatar
+          ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} onError={() => setFailedAvatarUri(avatarUri)} />
+          : <Feather name="user" size={24} color={colors.inkSoft} />}
       </TouchableOpacity>
     </View>
   );
@@ -113,4 +119,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+  avatarImage: { width: '100%', height: '100%' },
 });

@@ -64,7 +64,8 @@ export async function listVacancies(userId, filters) {
     .select(
       'vacancies.*',
       'users.email as company_email',
-      'users.full_name as company_name'
+      'users.company_logo_url as company_logo_url',
+      'users.full_name as recruiter_name'
     );
 
   if (job_title) {
@@ -107,6 +108,33 @@ export async function listVacancies(userId, filters) {
   };
 }
 
+export async function listCompanies() {
+  const knex = getKnex();
+  const rows = await knex('vacancies')
+    .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
+    .whereNull('vacancies.deleted_at')
+    .whereNull('recruiters.deleted_at')
+    .select(
+      'vacancies.user_id as id',
+      'vacancies.company_name',
+      'vacancies.company_description',
+      'vacancies.company_sector',
+      'vacancies.location',
+      'recruiters.company_logo_url as company_logo_url',
+      'vacancies.created_at'
+    )
+    .orderBy('vacancies.created_at', 'desc');
+
+  const seenRecruiters = new Set();
+  const companies = rows.filter((company) => {
+    if (seenRecruiters.has(company.id)) return false;
+    seenRecruiters.add(company.id);
+    return true;
+  }).map(({ created_at, ...company }) => company);
+
+  return { companies };
+}
+
 export async function getVacancy(userId, vacancyId) {
   const knex = getKnex();
 
@@ -118,7 +146,7 @@ export async function getVacancy(userId, vacancyId) {
     .select(
       'vacancies.*',
       'users.email as company_email',
-      'users.full_name as company_name',
+      'users.full_name as recruiter_name',
       'users.phone as company_phone'
     )
     .first();
@@ -176,6 +204,7 @@ export async function applyToVacancy(userId, vacancyId) {
   await knex('interests').insert({
     user_id: userId,
     vacancy_id: vacancyId,
+    origin: 'MOBILE',
     status: 'PENDING',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -226,7 +255,7 @@ export async function listApplications(userId) {
       'vacancies.salary_min',
       'vacancies.salary_max',
       'recruiters.email as company_email',
-      'recruiters.full_name as company_name'
+      'recruiters.full_name as recruiter_name'
     )
     .orderBy('interests.created_at', 'desc');
 

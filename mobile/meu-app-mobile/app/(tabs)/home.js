@@ -10,12 +10,13 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { SessionContext } from '../../context/SessionContext';
-import { clearToken } from '../../lib/api';
+import { clearToken, apiFetch, getAssetUrl } from '../../lib/api';
 
 import Header from '../../components/layout/Header';
 import NotificationModal from '../../components/modals/NotificationModal';
@@ -24,50 +25,43 @@ import JobCard from '../../components/jobs/JobCard';
 
 const colors = Colors.light;
 
-const INITIAL_JOBS_CANDIDATE = [
-  {
-    id: '1',
-    company: 'Pires',
-    category: 'Supermercado',
-    timeAgo: 'Há 1 semana',
-    createdAt: new Date('2026-07-24T10:00:00'),
-    title: 'VAGA DE CAIXA',
-    description: 'Procuramos jovens interessados e capacitados de preferência mulher',
-    salary: 'R$ 2.120',
-    vacancies: '3 vagas',
-    logoBg: colors.primaryWash,
-    logoTextColor: colors.text,
-    isRemote: false,
-  },
-  {
-    id: '2',
-    company: 'Pinheirão',
-    category: 'Supermercado',
-    timeAgo: 'Há 2 dias',
-    createdAt: new Date('2026-07-29T10:00:00'),
-    title: 'VAGA DE REPOSITOR',
-    description: 'Procuramos jovens interessados e capacitados para a vaga',
-    salary: 'R$ 1.520',
-    vacancies: '7 vagas',
-    logoBg: colors.limeWash,
-    logoTextColor: colors.limeDark,
-    isRemote: false,
-  },
-  {
-    id: '3',
-    company: 'iFood',
-    category: 'Restaurante',
-    timeAgo: 'Há 5 dias',
-    createdAt: new Date('2026-07-26T10:00:00'),
-    title: 'VAGA DE ENTREGADOR',
-    description: 'Procuramos telemotos capacitados para ficar a noite inteira fazendo entregas',
-    salary: 'R$ 1.000',
-    vacancies: '2 vagas',
-    logoBg: colors.accentWash,
-    logoTextColor: colors.primaryDark,
-    isRemote: false,
-  },
-];
+const formatCurrency = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return 'Salário a combinar';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(amount);
+};
+
+const formatTimeAgo = (value) => {
+  if (!value) return 'Recente';
+
+  const diffMs = Date.now() - new Date(value).getTime();
+  const diffHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+
+  if (diffHours < 24) return `Há ${diffHours}h`;
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 30) return `Há ${diffDays} dia${diffDays === 1 ? '' : 's'}`;
+  const diffMonths = Math.round(diffDays / 30);
+  return `Há ${diffMonths} mês${diffMonths === 1 ? '' : 'es'}`;
+};
+
+const normalizeJob = (vacancy) => ({
+  id: String(vacancy.id),
+  vacancyId: vacancy.id,
+  company: vacancy.company_name || 'Empresa',
+  logoUri: getAssetUrl(vacancy.company_logo_url),
+  category: vacancy.company_sector || 'Empresa',
+  timeAgo: formatTimeAgo(vacancy.created_at),
+  createdAt: vacancy.created_at ? new Date(vacancy.created_at) : new Date(),
+  title: (vacancy.job_title || 'Vaga disponível').toUpperCase(),
+  description: vacancy.job_description || 'Descrição não informada.',
+  salary: vacancy.salary_min || vacancy.salary_max
+    ? `${formatCurrency(vacancy.salary_min || vacancy.salary_max)}${vacancy.salary_min && vacancy.salary_max ? ` - ${formatCurrency(vacancy.salary_max)}` : ''}`
+    : 'Salário a combinar',
+  vacancies: '1 vaga',
+  logoBg: colors.primaryWash,
+  logoTextColor: colors.text,
+  isRemote: vacancy.work_model === 'REMOTE',
+});
 
 export default function HomeScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
@@ -80,13 +74,48 @@ export default function HomeScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [jobs, setJobs] = useState([]);
-  const [employerJobs, setEmployerJobs] = useState([]); // Inicia vazio para mostrar o layout da foto
+  const [employerJobs, setEmployerJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [applyingToJob, setApplyingToJob] = useState(null);
+  const [appliedVacancyIds, setAppliedVacancyIds] = useState([]);
 
   const router = useRouter();
 
   useEffect(() => {
-    setJobs(INITIAL_JOBS_CANDIDATE);
+    const carregarVagas = async () => {
+      try {
+        setLoadingJobs(true);
+        const [data, applicationsData] = await Promise.all([
+          apiFetch('/candidates/vacancies?limit=20'),
+          apiFetch('/candidates/applications'),
+        ]);
+        setJobs((data.vacancies || []).map(normalizeJob));
+        setAppliedVacancyIds((applicationsData.applications || []).map((application) => String(application.vacancy_id)));
+      } catch (error) {
+        setJobs([]);
+        Alert.alert('Erro ao carregar vagas', error.message || 'Não foi possível conectar ao servidor.');
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+
+    carregarVagas();
   }, []);
+
+  const applyToJob = async (vacancyId) => {
+    if (applyingToJob !== null) return;
+
+    setApplyingToJob(String(vacancyId));
+    try {
+      await apiFetch(`/candidates/vacancies/${vacancyId}/apply`, { method: 'POST' });
+      setAppliedVacancyIds((current) => [...new Set([...current, String(vacancyId)])]);
+      Alert.alert('Candidatura enviada', 'A empresa poderá conversar com você pela aba Mensagens.');
+    } catch (error) {
+      Alert.alert('Não foi possível se candidatar', error.message || 'Tente novamente.');
+    } finally {
+      setApplyingToJob(null);
+    }
+  };
 
   const handleLogout = async () => {
     setShowProfileMenu(false);
@@ -159,6 +188,7 @@ export default function HomeScreen() {
       </Modal>
 
       <Header
+        avatarUri={getAssetUrl(sessionData?.profile?.avatar_url || sessionData?.user?.avatar_url)}
         showNotification={showNotification}
         onToggleNotification={() => {
           setShowProfileMenu(false);
@@ -243,7 +273,12 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            {filteredJobs.length > 0 ? (
+            {loadingJobs ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator size="large" color={colors.tint} />
+                <Text style={styles.emptySubText}>Carregando vagas do portal…</Text>
+              </View>
+            ) : filteredJobs.length > 0 ? (
               filteredJobs.map((job, index) => {
                 const isHighlight = selectedFilter === 'Recentes' && index === 0;
 
@@ -257,7 +292,12 @@ export default function HomeScreen() {
                         <Text style={styles.recentBadgeText}>Mais recente</Text>
                       </View>
                     )}
-                    <JobCard item={job} />
+                    <JobCard
+                      item={job}
+                      onApply={applyToJob}
+                      isApplied={appliedVacancyIds.includes(String(job.vacancyId))}
+                      isApplying={applyingToJob === String(job.vacancyId)}
+                    />
                   </View>
                 );
               })

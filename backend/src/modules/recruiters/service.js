@@ -157,15 +157,20 @@ export async function updateCompany(userId, data) {
       throw err;
     }
 
+    const updateData = {
+      company_name: data.company_name,
+      company_sector: data.company_sector.trim() || null,
+      location: data.location.trim() || null,
+      updated_at: updatedAt,
+    };
+    if (data.company_description !== undefined) {
+      updateData.company_description = data.company_description.trim() || null;
+    }
+
     return trx('vacancies')
       .where({ user_id: userId })
       .whereNull('deleted_at')
-      .update({
-        company_name: data.company_name,
-        company_sector: data.company_sector.trim() || null,
-        location: data.location.trim() || null,
-        updated_at: updatedAt,
-      });
+      .update(updateData);
   });
 
   return {
@@ -214,6 +219,7 @@ export async function createVacancy(userId, data) {
     user_id: userId,
     job_title: data.job_title,
     company_name: data.company_name,
+    company_description: data.company_description?.trim() || null,
     company_sector: data.company_sector || null,
     job_description: data.job_description,
     requirements: data.requirements || null,
@@ -235,11 +241,15 @@ export async function createVacancy(userId, data) {
 export async function listMyVacancies(userId, filters) {
   const knex = getKnex();
 
-  const { page = 1, limit = 10 } = filters;
+  const { page = 1, limit = 10, status = 'ALL' } = filters;
 
   let query = knex('vacancies')
     .where({ user_id: userId })
     .whereNull('deleted_at');
+
+  if (status && status !== 'ALL') {
+    query = query.where({ status });
+  }
 
   const countQuery = query.clone().clearSelect().clearOrder().count('* as total');
   const [{ total }] = await countQuery;
@@ -287,6 +297,22 @@ export async function updateVacancy(userId, vacancyId, data) {
 
   if (Object.keys(updateData).length === 0) {
     return getMyVacancy(userId, vacancyId);
+  }
+
+  const hasFieldUpdate = Object.keys(updateData).some((field) => field !== 'status');
+  const requestedStatus = updateData.status;
+  const isStatusToggle = requestedStatus !== undefined;
+
+  if (vacancy.status === 'OPEN' && (hasFieldUpdate || (isStatusToggle && requestedStatus === 'OPEN'))) {
+    const err = new Error('Para editar esta vaga, primeiro desative-a.');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  if (vacancy.status === 'CLOSED' && requestedStatus === 'OPEN' && hasFieldUpdate) {
+    const err = new Error('Para reativar esta vaga, use a ação de reativar sem alterar os outros campos da vaga.');
+    err.statusCode = 409;
+    throw err;
   }
 
   updateData.updated_at = new Date().toISOString();

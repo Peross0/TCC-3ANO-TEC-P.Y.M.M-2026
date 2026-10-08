@@ -34,7 +34,15 @@
           "backgroundColor": "#FFFFFF"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita que o Conecta Fácil escolha sua foto de perfil.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

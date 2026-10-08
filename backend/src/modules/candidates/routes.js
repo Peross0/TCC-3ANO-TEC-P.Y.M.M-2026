@@ -13,6 +13,7 @@ router.use(authMiddleware, requireRole('CANDIDATE'));
 router.get('/profile', candidateController.getProfile);
 router.put('/profile', validate(candidateSchemas.updateProfileSchema), candidateController.updateProfile);
 
+router.get('/companies', candidateController.listCompanies);
 router.get('/vacancies', validate(candidateSchemas.vacancyFiltersSchema), candidateController.listVacancies);
 router.get('/vacancies/:id', validate(candidateSchemas.applyVacancySchema), candidateController.getVacancy);
 router.post('/vacancies/:id/apply', validate(candidateSchemas.applyVacancySchema), candidateController.applyToVacancy);

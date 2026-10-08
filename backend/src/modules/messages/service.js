@@ -8,6 +8,7 @@ export async function listMessages(userId) {
     .join('users as candidates', 'interests.user_id', 'candidates.id')
     .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
     .whereNull('vacancies.deleted_at')
+    .where('interests.origin', 'MOBILE')
     .where((query) => query
       .where('interests.user_id', userId)
       .orWhere('vacancies.user_id', userId))
@@ -17,6 +18,8 @@ export async function listMessages(userId) {
       'candidates.full_name as candidate_name',
       'vacancies.user_id as recruiter_id',
       'recruiters.full_name as recruiter_name',
+      'vacancies.company_name',
+      'recruiters.company_logo_url as company_logo_url',
       'vacancies.job_title'
     )
     .orderBy('interests.created_at', 'desc');
@@ -27,6 +30,7 @@ export async function listMessages(userId) {
     .join('users as candidates', 'interests.user_id', 'candidates.id')
     .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
     .whereNull('vacancies.deleted_at')
+    .where('interests.origin', 'MOBILE')
     .where((query) => query
       .where('interests.user_id', userId)
       .orWhere('vacancies.user_id', userId))

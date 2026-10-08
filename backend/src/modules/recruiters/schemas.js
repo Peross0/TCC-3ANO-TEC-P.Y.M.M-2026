@@ -11,6 +11,7 @@ export const updateProfileSchema = z.object({
 export const updateCompanySchema = z.object({
   body: z.object({
     company_name: z.string().trim().min(2).max(255),
+    company_description: z.string().trim().max(1000).optional(),
     company_sector: z.string().max(100),
     location: z.string().max(255),
   }),
@@ -20,6 +21,7 @@ export const createVacancySchema = z.object({
   body: z.object({
     job_title: z.string().min(3).max(255),
     company_name: z.string().min(2).max(255),
+    company_description: z.string().trim().max(1000).optional(),
     company_sector: z.string().max(100).optional(),
     job_description: z.string().min(10),
     requirements: z.string().max(1000).optional(),
@@ -88,5 +90,6 @@ export const listCandidatesSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(50).default(10),
+    status: z.enum(['ALL', 'OPEN', 'CLOSED']).default('ALL'),
   }),
 });

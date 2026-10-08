@@ -73,7 +73,7 @@ export default function PerfilScreen() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ full_name: '', phone: '' });
   const [companyEditing, setCompanyEditing] = useState(false);
-  const [companyDraft, setCompanyDraft] = useState({ company_name: '', company_sector: '', location: '' });
+  const [companyDraft, setCompanyDraft] = useState({ company_name: '', company_description: '', company_sector: '', location: '' });
   const [feedback, setFeedback] = useState(null);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordStep, setPasswordStep] = useState('request');
@@ -147,11 +147,13 @@ export default function PerfilScreen() {
     [vacancies]
   );
   const companyName = latestVacancy?.company_name || '';
+  const companyDescription = latestVacancy?.company_description || '';
   const companySector = latestVacancy?.company_sector || '';
   const companyLocation = latestVacancy?.location || '';
   const beginCompanyEditing = () => {
     setCompanyDraft({
       company_name: companyName,
+      company_description: companyDescription,
       company_sector: companySector,
       location: companyLocation,
     });
@@ -161,6 +163,7 @@ export default function PerfilScreen() {
   const cancelCompanyEditing = () => {
     setCompanyDraft({
       company_name: companyName,
+      company_description: companyDescription,
       company_sector: companySector,
       location: companyLocation,
     });
@@ -172,8 +175,8 @@ export default function PerfilScreen() {
       setFeedback({ type: 'error', message: 'Informe o nome da empresa com pelo menos 2 caracteres.' });
       return;
     }
-    if (companyDraft.company_sector.trim().length > 100 || companyDraft.location.trim().length > 255) {
-      setFeedback({ type: 'error', message: 'Confira os limites de caracteres do segmento e da localização.' });
+    if (companyDraft.company_description.trim().length > 1000 || companyDraft.company_sector.trim().length > 100 || companyDraft.location.trim().length > 255) {
+      setFeedback({ type: 'error', message: 'Confira os limites de caracteres da apresentação, segmento e localização.' });
       return;
     }
 
@@ -184,6 +187,7 @@ export default function PerfilScreen() {
         method: 'PUT',
         body: JSON.stringify({
           company_name: companyDraft.company_name.trim(),
+          company_description: companyDraft.company_description.trim(),
           company_sector: companyDraft.company_sector.trim(),
           location: companyDraft.location.trim(),
         }),
@@ -191,6 +195,7 @@ export default function PerfilScreen() {
       setVacancies((current) => current.map((vacancy) => ({
         ...vacancy,
         company_name: companyDraft.company_name.trim(),
+        company_description: companyDraft.company_description.trim() || null,
         company_sector: companyDraft.company_sector.trim() || null,
         location: companyDraft.location.trim() || null,
       })));
@@ -605,6 +610,20 @@ export default function PerfilScreen() {
                           maxLength={100}
                         />
                       </View>
+                      <View style={[styles.formField, styles.companyDescriptionField]}>
+                        <Text style={styles.fieldLabel}>Apresentação da empresa</Text>
+                        <TextInput
+                          style={[styles.input, styles.companyDescriptionInput]}
+                          value={companyDraft.company_description}
+                          onChangeText={(value) => setCompanyDraft((current) => ({ ...current, company_description: value }))}
+                          placeholder="Conte brevemente sobre a empresa, sua atuação e seus valores."
+                          placeholderTextColor={colors.muted}
+                          maxLength={1000}
+                          multiline
+                          textAlignVertical="top"
+                        />
+                        <Text style={styles.descriptionCounter}>{companyDraft.company_description.length}/1000</Text>
+                      </View>
                       <View style={styles.formField}>
                         <Text style={styles.fieldLabel}>Localização</Text>
                         <TextInput
@@ -824,10 +843,13 @@ const styles = StyleSheet.create({
   formGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 },
   infoField: { flexBasis: '50%', minWidth: 190, paddingRight: 14 },
   formField: { flexBasis: '50%', minWidth: 210, paddingRight: 14 },
+  companyDescriptionField: { flexBasis: '100%' },
   fieldLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', marginBottom: 5 },
   fieldValue: { color: colors.ink, fontSize: 13, lineHeight: 19 },
   emptyValue: { color: colors.muted, fontStyle: 'italic', fontSize: 12 },
   input: { minHeight: 42, borderWidth: 1, borderColor: colors.line, borderRadius: 9, paddingHorizontal: 11, color: colors.ink, fontSize: 13, backgroundColor: colors.surface, outlineStyle: 'none' },
+  companyDescriptionInput: { minHeight: 96, paddingVertical: 10 },
+  descriptionCounter: { alignSelf: 'flex-end', color: colors.muted, fontSize: 10, marginTop: 4 },
   readOnly: { color: colors.muted, backgroundColor: colors.surfaceSoft },
   formActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 9, marginTop: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.line },
   secondaryButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.surface },
