@@ -14,9 +14,12 @@ router.get('/profile', candidateController.getProfile);
 router.put('/profile', validate(candidateSchemas.updateProfileSchema), candidateController.updateProfile);
 
 router.get('/companies', candidateController.listCompanies);
+router.get('/favorites', candidateController.listFavorites);
 router.get('/vacancies', validate(candidateSchemas.vacancyFiltersSchema), candidateController.listVacancies);
 router.get('/vacancies/:id', validate(candidateSchemas.applyVacancySchema), candidateController.getVacancy);
 router.post('/vacancies/:id/apply', validate(candidateSchemas.applyVacancySchema), candidateController.applyToVacancy);
+router.put('/vacancies/:id/favorite', validate(candidateSchemas.favoriteVacancySchema), candidateController.addFavorite);
+router.delete('/vacancies/:id/favorite', validate(candidateSchemas.favoriteVacancySchema), candidateController.removeFavorite);
 
 router.get('/applications', candidateController.listApplications);
 router.delete('/applications/:vacancyId', validate(candidateSchemas.deleteApplicationSchema), candidateController.deleteApplication);

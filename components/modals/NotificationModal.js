@@ -4,7 +4,13 @@ import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 
-export default function NotificationModal({ visible, onClose }) {
+const applicationStatus = {
+  PENDING: 'Em análise',
+  ACCEPTED: 'Aprovado',
+  REJECTED: 'Reprovado',
+};
+
+export default function NotificationModal({ visible, onClose, applications = [] }) {
   return (
     <Modal
       visible={visible}
@@ -15,16 +21,16 @@ export default function NotificationModal({ visible, onClose }) {
       <View style={styles.modalOverlay}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar notificações" />
         <View style={styles.notificationDropdown}>
-          <Text style={styles.notificationTitle}>1 Notificação</Text>
-          <View style={styles.notificationCard}>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>P</Text>
+          <Text style={styles.notificationTitle}>Atualizações de candidaturas</Text>
+          {applications.length ? applications.slice(0, 5).map((application) => (
+            <View key={application.id} style={styles.notificationCard}>
+              <View style={styles.notificationBadge}><Text style={styles.badgeText}>V</Text></View>
+              <View style={styles.applicationInfo}>
+                <Text style={styles.notifCompany} numberOfLines={1}>{application.job_title}</Text>
+                <Text style={styles.notifSub}>{application.company_name} · {applicationStatus[application.status] || application.status}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.notifCompany}>Pinheirão</Text>
-              <Text style={styles.notifSub}>Supermercado</Text>
-            </View>
-          </View>
+          )) : <Text style={styles.emptyText}>Você ainda não tem candidaturas para acompanhar.</Text>}
         </View>
       </View>
     </Modal>
@@ -65,6 +71,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
+  applicationInfo: { flex: 1 },
+  emptyText: { color: colors.muted, fontSize: 12, lineHeight: 17, paddingVertical: 8 },
   notificationBadge: {
     width: 24,
     height: 24,

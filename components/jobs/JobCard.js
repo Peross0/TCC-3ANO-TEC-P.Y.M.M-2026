@@ -5,7 +5,7 @@ import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 
-export default function JobCard({ item, onApply, isApplied = false, isApplying = false }) {
+export default function JobCard({ item, onApply, onSave, onOpenDetails, isSaved = false, isApplied = false, isApplying = false, isSaving = false }) {
   return (
 
     <View style={styles.card}>
@@ -18,25 +18,37 @@ export default function JobCard({ item, onApply, isApplied = false, isApplying =
 
         <View style={styles.companyInfo}>
           <Text style={styles.companyName}>{item.company}</Text>
-          <Text style={styles.companyCategory}>{item.category}</Text>
+          {item.category ? <Text style={styles.companyCategory}>{item.category}</Text> : null}
         </View>
         <Text style={styles.timeAgo}>{item.timeAgo}</Text>
       </View>
 
-      <Text style={styles.jobTitle}>{item.title}</Text>
-      <Text style={styles.jobDescription}>{item.description}</Text>
-      <Text style={styles.salary}>{item.salary}</Text>
+      <TouchableOpacity onPress={() => onOpenDetails?.(item)} accessibilityRole="button" accessibilityLabel={`Ver detalhes de ${item.title}`}>
+        <Text style={styles.jobTitle}>{item.title}</Text>
+      </TouchableOpacity>
+      <Text style={styles.jobDescription} numberOfLines={3}>{item.description}</Text>
+      {item.salary ? <Text style={styles.salary}>{item.salary}</Text> : null}
+      <View style={styles.metadataRow}>
+        {item.location ? <Text style={styles.metadata}>{item.location}</Text> : null}
+        {item.workModel ? <Text style={styles.metadata}>{item.workModel}</Text> : null}
+        {item.contractType ? <Text style={styles.metadata}>{item.contractType}</Text> : null}
+      </View>
 
       <View style={styles.cardFooter}>
-        <View style={styles.vacancyInfo}>
-          <Feather name="users" size={16} color={colors.muted} />
-          <Text style={styles.vacancyText}>{item.vacancies}</Text>
-        </View>
+        <TouchableOpacity onPress={() => onOpenDetails?.(item)} accessibilityRole="button">
+          <Text style={styles.detailsText}>Ver detalhes</Text>
+        </TouchableOpacity>
 
         
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.bookmarkButton}>
-            <Feather name="bookmark" size={18} color={colors.muted} />
+          <TouchableOpacity
+            style={[styles.bookmarkButton, isSaved && styles.bookmarkButtonSaved]}
+            onPress={() => onSave?.(item)}
+            disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? `Remover ${item.title} das vagas salvas` : `Salvar ${item.title}`}
+          >
+            <Feather name="bookmark" size={18} color={isSaved ? colors.primaryDark : colors.muted} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.interestButton, (isApplied || isApplying) && styles.interestButtonDisabled]}
@@ -120,15 +132,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
     paddingTop: 12,
   },
-  vacancyInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  vacancyText: {
-    fontSize: 12,
-    color: colors.muted,
-  },
+  metadataRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 12 },
+  metadata: { color: colors.muted, fontSize: 11, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, backgroundColor: colors.surfaceSoft },
+  detailsText: { color: colors.primaryDark, fontSize: 12, fontWeight: '700' },
+  bookmarkButtonSaved: { backgroundColor: colors.primaryWash },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',

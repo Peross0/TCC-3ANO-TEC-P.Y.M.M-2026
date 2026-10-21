@@ -49,6 +49,8 @@ export async function listVacancies(userId, filters) {
   const {
     job_title,
     company_sector,
+    location,
+    q,
     salary_min,
     salary_max,
     work_model,
@@ -73,6 +75,20 @@ export async function listVacancies(userId, filters) {
   }
   if (company_sector) {
     query = query.where('vacancies.company_sector', 'like', `%${company_sector}%`);
+  }
+  if (location) {
+    query = query.where('vacancies.location', 'like', `%${location.trim()}%`);
+  }
+  if (q) {
+    const term = `%${q.trim()}%`;
+    query = query.where((builder) => builder
+      .where('vacancies.job_title', 'like', term)
+      .orWhere('vacancies.company_name', 'like', term)
+      .orWhere('vacancies.company_sector', 'like', term)
+      .orWhere('vacancies.job_description', 'like', term)
+      .orWhere('vacancies.requirements', 'like', term)
+      .orWhere('vacancies.benefits', 'like', term)
+      .orWhere('vacancies.location', 'like', term));
   }
   if (salary_min !== undefined) {
     query = query.where('vacancies.salary_max', '>=', salary_min);
@@ -106,6 +122,53 @@ export async function listVacancies(userId, filters) {
       totalPages: Math.ceil(Number(total) / limit),
     },
   };
+}
+
+export async function listFavorites(userId) {
+  const knex = getKnex();
+  const favorites = await knex('saved_vacancies')
+    .join('vacancies', 'saved_vacancies.vacancy_id', 'vacancies.id')
+    .join('users', 'vacancies.user_id', 'users.id')
+    .where({ 'saved_vacancies.user_id': userId, 'vacancies.status': 'OPEN' })
+    .whereNull('vacancies.deleted_at')
+    .select('vacancies.*', 'users.company_logo_url', 'saved_vacancies.created_at as saved_at')
+    .orderBy('saved_vacancies.created_at', 'desc');
+
+  return { favorites };
+}
+
+export async function addFavorite(userId, vacancyId) {
+  const knex = getKnex();
+  const vacancy = await knex('vacancies')
+    .where({ id: vacancyId, status: 'OPEN' })
+    .whereNull('deleted_at')
+    .first('id');
+
+  if (!vacancy) {
+    const err = new Error('Vaga não encontrada ou não está aberta');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  await knex('saved_vacancies')
+    .insert({ user_id: userId, vacancy_id: vacancyId })
+    .onConflict(['user_id', 'vacancy_id'])
+    .ignore();
+  return { message: 'Vaga salva com sucesso' };
+}
+
+export async function removeFavorite(userId, vacancyId) {
+  const deleted = await getKnex()('saved_vacancies')
+    .where({ user_id: userId, vacancy_id: vacancyId })
+    .delete();
+
+  if (!deleted) {
+    const err = new Error('Vaga não encontrada nos itens salvos');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return { message: 'Vaga removida dos itens salvos' };
 }
 
 export async function listCompanies() {

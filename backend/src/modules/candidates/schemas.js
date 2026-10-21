@@ -11,8 +11,10 @@ export const updateProfileSchema = z.object({
 
 export const vacancyFiltersSchema = z.object({
   query: z.object({
+    q: z.string().trim().optional(),
     job_title: z.string().optional(),
     company_sector: z.string().optional(),
+    location: z.string().optional(),
     salary_min: z.coerce.number().optional(),
     salary_max: z.coerce.number().optional(),
     work_model: z.enum(['REMOTE', 'HYBRID', 'ONSITE']).optional(),
@@ -37,5 +39,11 @@ export const deleteApplicationSchema = z.object({
 export const toggleNotificationSchema = z.object({
   body: z.object({
     active_notification: z.boolean(),
+  }),
+});
+
+export const favoriteVacancySchema = z.object({
+  params: z.object({
+    id: z.coerce.number().int().positive(),
   }),
 });

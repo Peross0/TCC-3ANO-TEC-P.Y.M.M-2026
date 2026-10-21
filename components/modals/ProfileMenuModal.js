@@ -5,7 +5,7 @@ import { Colors } from '../../constants/theme';
 
 const colors = Colors.light;
 
-export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLogout }) {
+export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onGoToApplications, onLogout }) {
   return (
     <Modal
       visible={visible}
@@ -19,6 +19,11 @@ export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLo
           <TouchableOpacity style={styles.dropdownOption} onPress={onGoToProfile}>
             <Feather name="edit-2" size={16} color={colors.inkSoft} />
             <Text style={styles.dropdownText}>Ver perfil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.dropdownOption} onPress={onGoToApplications}>
+            <Feather name="file-text" size={16} color={colors.inkSoft} />
+            <Text style={styles.dropdownText}>Minhas candidaturas</Text>
           </TouchableOpacity>
 
           <View style={styles.dropdownDivider} />

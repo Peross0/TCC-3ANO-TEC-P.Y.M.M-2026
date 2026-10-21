@@ -13,6 +13,10 @@ export default function Header({
   onToggleProfileMenu,
   onOpenMessages,
   avatarUri,
+  searchText,
+  onSearchChange,
+  onSearchSubmit,
+  onClearSearch,
 }) {
   const [failedAvatarUri, setFailedAvatarUri] = useState(null);
   const showAvatar = avatarUri && failedAvatarUri !== avatarUri;
@@ -25,13 +29,25 @@ export default function Header({
           placeholder="Pesquisa"
           placeholderTextColor={colors.muted}
           style={styles.searchInput}
+          value={searchText}
+          onChangeText={onSearchChange}
+          onSubmitEditing={onSearchSubmit}
+          returnKeyType="search"
+          accessibilityLabel="Pesquisar vagas por cargo, empresa, competência ou localização"
         />
+        {searchText ? (
+          <TouchableOpacity onPress={onClearSearch} accessibilityRole="button" accessibilityLabel="Limpar pesquisa">
+            <Feather name="x-circle" size={18} color={colors.muted} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onOpenMessages}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir mensagens"
       >
         <Feather name="message-square" size={23} color={colors.inkSoft} />
       </TouchableOpacity>
@@ -39,6 +55,8 @@ export default function Header({
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onToggleNotification}
+        accessibilityRole="button"
+        accessibilityLabel="Ver atualizações de candidaturas"
       >
         <Feather
           name="bell"
@@ -51,6 +69,8 @@ export default function Header({
         style={styles.headerIconBtn}
         onPress={onGoToSettings}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir configurações"
       >
         <Ionicons
           name="settings-sharp"
@@ -62,6 +82,8 @@ export default function Header({
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={onToggleProfileMenu}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir menu do perfil"
       >
         {showAvatar
           ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} onError={() => setFailedAvatarUri(avatarUri)} />

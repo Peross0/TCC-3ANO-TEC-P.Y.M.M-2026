@@ -48,3 +48,18 @@ export async function toggleNotification(req, res) {
   const result = await candidateService.toggleNotification(req.user.id, active_notification);
   res.json(result);
 }
+
+export async function listFavorites(req, res) {
+  const result = await candidateService.listFavorites(req.user.id);
+  res.json(result);
+}
+
+export async function addFavorite(req, res) {
+  const result = await candidateService.addFavorite(req.user.id, Number(req.params.id));
+  res.status(201).json(result);
+}
+
+export async function removeFavorite(req, res) {
+  const result = await candidateService.removeFavorite(req.user.id, Number(req.params.id));
+  res.json(result);
+}
