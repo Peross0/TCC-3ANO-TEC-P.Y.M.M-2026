@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
-import { env } from '../config/env.js';
+import nodemailer from "nodemailer";
+import { env } from "../config/env.js";
 
 let transporter = null;
 
@@ -19,12 +19,12 @@ function createTransporter() {
   // Development fallback: log emails to console
   return {
     sendMail: async (mailOptions) => {
-      console.log('📧 [DEV EMAIL] ==============================');
-      console.log('To:', mailOptions.to);
-      console.log('Subject:', mailOptions.subject);
-      console.log('Text:', mailOptions.text);
-      console.log('HTML:', mailOptions.html);
-      console.log('===============================================');
+      console.log("📧 [DEV EMAIL] ==============================");
+      console.log("To:", mailOptions.to);
+      console.log("Subject:", mailOptions.subject);
+      console.log("Text:", mailOptions.text);
+      console.log("HTML:", mailOptions.html);
+      console.log("===============================================");
       return { messageId: `dev-${Date.now()}` };
     },
   };
@@ -48,20 +48,24 @@ export async function sendEmail({ to, subject, text, html }) {
   });
 }
 
-export async function sendPasswordResetEmail(email, code) {
+export async function sendPasswordResetEmail(email) {
   return sendEmail({
     to: email,
-    subject: 'Recuperação de senha - ConectaFácil',
-    text: `Seu código para redefinir a senha é: ${code}. Válido por 10 minutos.`,
+    subject: "Recuperação de senha - ConectaFácil",
+    text: "Recebemos sua solicitação de redefinição de senha. Use o app para criar uma nova senha.",
     html: `
       <h2>Recuperação de Senha</h2>
-      <p>Seu código para redefinir a senha é: <strong>${code}</strong></p>
-      <p>Este código expira em 10 minutos.</p>
+      <p>Recebemos sua solicitação de redefinição de senha.</p>
+      <p>Use o aplicativo para criar uma nova senha segura.</p>
     `,
   });
 }
 
-export async function sendApplicationNotificationEmail(recruiterEmail, candidateName, vacancyTitle) {
+export async function sendApplicationNotificationEmail(
+  recruiterEmail,
+  candidateName,
+  vacancyTitle,
+) {
   return sendEmail({
     to: recruiterEmail,
     subject: `Nova candidatura: ${vacancyTitle} - ConectaFácil`,
@@ -74,8 +78,12 @@ export async function sendApplicationNotificationEmail(recruiterEmail, candidate
   });
 }
 
-export async function sendApplicationStatusEmail(candidateEmail, vacancyTitle, status) {
-  const statusText = status === 'ACCEPTED' ? 'aceita' : 'rejeitada';
+export async function sendApplicationStatusEmail(
+  candidateEmail,
+  vacancyTitle,
+  status,
+) {
+  const statusText = status === "ACCEPTED" ? "aceita" : "rejeitada";
   return sendEmail({
     to: candidateEmail,
     subject: `Sua candidatura foi ${statusText} - ConectaFácil`,

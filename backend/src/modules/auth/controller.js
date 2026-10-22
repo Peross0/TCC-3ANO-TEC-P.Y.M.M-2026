@@ -1,4 +1,4 @@
-import * as authService from './service.js';
+import * as authService from "./service.js";
 
 export async function register(req, res) {
   const result = await authService.registerUser(req.validated.body);
@@ -18,8 +18,8 @@ export async function forgotPassword(req, res) {
 }
 
 export async function resetPassword(req, res) {
-  const { email, code, password } = req.validated.body;
-  const result = await authService.resetPassword(email, code, password);
+  const { email, password } = req.validated.body;
+  const result = await authService.resetPassword(email, password);
   res.json(result);
 }
 

@@ -1,7 +1,10 @@
-import bcrypt from 'bcryptjs';
-import { getKnex } from '../../config/database.js';
-import { generatePasswordResetCode, createAuthTokens } from '../../utils/jwt.js';
-import { sendPasswordResetEmail } from '../../utils/mailer.js';
+import bcrypt from "bcryptjs";
+import { getKnex } from "../../config/database.js";
+import {
+    createAuthTokens,
+    generatePasswordResetCode,
+} from "../../utils/jwt.js";
+import { sendPasswordResetEmail } from "../../utils/mailer.js";
 
 const CODE_EXPIRY_MINUTES = 10;
 
@@ -9,41 +12,47 @@ export async function registerUser(data) {
   const knex = getKnex();
 
   // Check if email already exists
-  const existingEmail = await knex('users').where({ email: data.email }).first();
+  const existingEmail = await knex("users")
+    .where({ email: data.email })
+    .first();
   if (existingEmail) {
-    const err = new Error('E-mail já cadastrado');
-    err.code = 'SQLITE_CONSTRAINT_UNIQUE';
+    const err = new Error("E-mail já cadastrado");
+    err.code = "SQLITE_CONSTRAINT_UNIQUE";
     throw err;
   }
 
   // Check if document already exists
-  const existingDoc = await knex('users').where({ document_number: data.document_number }).first();
+  const existingDoc = await knex("users")
+    .where({ document_number: data.document_number })
+    .first();
   if (existingDoc) {
-    const err = new Error('Documento já cadastrado');
-    err.code = 'SQLITE_CONSTRAINT_UNIQUE';
+    const err = new Error("Documento já cadastrado");
+    err.code = "SQLITE_CONSTRAINT_UNIQUE";
     throw err;
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12);
 
-  const [user] = await knex('users').insert({
-    email: data.email,
-    password_hash: passwordHash,
-    full_name: data.full_name,
-    user_type: data.user_type,
-    document_type: data.document_type,
-    document_number: data.document_number,
-    phone: data.phone || null,
-    course: data.course || null,
-    avatar_url: null,
-    verified_email: true,
-    code_email_verification: null,
-    code_expires_at: null,
-    active_notification: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    deleted_at: null,
-  }).returning(['id', 'email', 'full_name', 'user_type', 'verified_email']);
+  const [user] = await knex("users")
+    .insert({
+      email: data.email,
+      password_hash: passwordHash,
+      full_name: data.full_name,
+      user_type: data.user_type,
+      document_type: data.document_type,
+      document_number: data.document_number,
+      phone: data.phone || null,
+      course: data.course || null,
+      avatar_url: null,
+      verified_email: true,
+      code_email_verification: null,
+      code_expires_at: null,
+      active_notification: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted_at: null,
+    })
+    .returning(["id", "email", "full_name", "user_type", "verified_email"]);
 
   const tokens = createAuthTokens(user);
 
@@ -56,27 +65,27 @@ export async function registerUser(data) {
       verified_email: user.verified_email,
     },
     ...tokens,
-    message: 'Cadastro realizado com sucesso.',
+    message: "Cadastro realizado com sucesso.",
   };
 }
 
 export async function loginUser(email, password) {
   const knex = getKnex();
 
-  const user = await knex('users')
+  const user = await knex("users")
     .where({ email })
-    .whereNull('deleted_at')
+    .whereNull("deleted_at")
     .first();
 
   if (!user) {
-    const err = new Error('Credenciais inválidas');
+    const err = new Error("Credenciais inválidas");
     err.statusCode = 401;
     throw err;
   }
 
   const validPassword = await bcrypt.compare(password, user.password_hash);
   if (!validPassword) {
-    const err = new Error('Credenciais inválidas');
+    const err = new Error("Credenciais inválidas");
     err.statusCode = 401;
     throw err;
   }
@@ -100,69 +109,85 @@ export async function loginUser(email, password) {
 export async function forgotPassword(email) {
   const knex = getKnex();
 
-  const user = await knex('users').where({ email }).whereNull('deleted_at').first();
-
-  if (!user) {
-    // Don't reveal if email exists
-    return { message: 'Se o e-mail estiver cadastrado, um código de recuperação será enviado.' };
-  }
-
-  const code = generatePasswordResetCode();
-  const codeExpiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
-
-  await knex('users')
-    .where({ id: user.id })
-    .update({
-      code_email_verification: code,
-      code_expires_at: codeExpiresAt,
-      updated_at: new Date().toISOString(),
-    });
-
-  await sendPasswordResetEmail(email, code);
-
-  return { message: 'Código de recuperação enviado para o e-mail.' };
-}
-
-export async function resetPassword(email, code, password) {
-  const knex = getKnex();
-
-  const user = await knex('users')
+  const user = await knex("users")
     .where({ email })
-    .where('code_email_verification', code)
-    .where('code_expires_at', '>', new Date().toISOString())
-    .whereNull('deleted_at')
+    .whereNull("deleted_at")
     .first();
 
   if (!user) {
-    const err = new Error('Código inválido ou expirado');
-    err.statusCode = 400;
+    // Don't reveal if email exists
+    return {
+      message: "Se o e-mail estiver cadastrado, a recuperação será iniciada.",
+    };
+  }
+
+  const code = generatePasswordResetCode();
+  const codeExpiresAt = new Date(
+    Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000,
+  ).toISOString();
+
+  await knex("users").where({ id: user.id }).update({
+    code_email_verification: code,
+    code_expires_at: codeExpiresAt,
+    updated_at: new Date().toISOString(),
+  });
+
+  await sendPasswordResetEmail(email);
+
+  return { message: "Recuperação iniciada com sucesso." };
+}
+
+export async function resetPassword(email, password) {
+  const knex = getKnex();
+
+  const user = await knex("users")
+    .where({ email })
+    .whereNull("deleted_at")
+    .first();
+
+  if (!user) {
+    const err = new Error("Usuário não encontrado");
+    err.statusCode = 404;
     throw err;
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await knex('users')
-    .where({ id: user.id })
-    .update({
-      password_hash: passwordHash,
-      code_email_verification: null,
-      code_expires_at: null,
-      updated_at: new Date().toISOString(),
-    });
+  await knex("users").where({ id: user.id }).update({
+    password_hash: passwordHash,
+    code_email_verification: null,
+    code_expires_at: null,
+    updated_at: new Date().toISOString(),
+  });
 
-  return { message: 'Senha redefinida com sucesso. Agora você pode fazer login.' };
+  return {
+    message: "Senha redefinida com sucesso. Agora você pode fazer login.",
+  };
 }
 
 export async function getMe(userId) {
   const knex = getKnex();
 
-  const user = await knex('users')
+  const user = await knex("users")
     .where({ id: userId })
-    .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'user_type', 'verified_email', 'avatar_url', 'active_notification', 'phone', 'course', 'document_type', 'document_number', 'created_at');
+    .whereNull("deleted_at")
+    .first(
+      "id",
+      "email",
+      "full_name",
+      "user_type",
+      "verified_email",
+      "avatar_url",
+      "active_notification",
+      "phone",
+      "course",
+      "document_type",
+      "document_number",
+      "created_at",
+    );
 
   if (!user) {
-    const err = new Error('Usuário não encontrado');
+    const err = new Error("Usuário não encontrado");
     err.statusCode = 404;
     throw err;
   }

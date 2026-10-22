@@ -1,11 +1,12 @@
-import Knex from 'knex';
-import knexConfig from '../../knexfile.js';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import Knex from "knex";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import knexConfig from "../../knexfile.js";
+import { env } from "./env.js";
 
 // Ensure database directory exists
 const dbPath = knexConfig.connection.filename;
-mkdirSync(dirname(dbPath) || '.', { recursive: true });
+mkdirSync(dirname(dbPath) || ".", { recursive: true });
 
 let knexInstance = null;
 
@@ -21,8 +22,12 @@ export async function ensureDatabaseReady() {
 
   try {
     await knex.migrate.latest();
+
+    if (env.NODE_ENV !== "production") {
+      await knex.seed.run();
+    }
   } catch (error) {
-    console.error('❌ Falha ao inicializar o banco de dados:', error);
+    console.error("❌ Falha ao inicializar o banco de dados:", error);
     throw error;
   }
 }
