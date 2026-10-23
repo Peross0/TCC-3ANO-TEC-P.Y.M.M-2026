@@ -18,8 +18,8 @@ export async function forgotPassword(req, res) {
 }
 
 export async function resetPassword(req, res) {
-  const { email, password } = req.validated.body;
-  const result = await authService.resetPassword(email, password);
+  const { email, code, password } = req.validated.body;
+  const result = await authService.resetPassword(email, code, password);
   res.json(result);
 }
 

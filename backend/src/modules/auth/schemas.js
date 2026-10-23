@@ -47,13 +47,14 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email("E-mail inválido"),
+    email: z.string().trim().toLowerCase().email("E-mail inválido"),
   }),
 });
 
 export const resetPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email("E-mail inválido"),
+    email: z.string().trim().toLowerCase().email("E-mail inválido"),
+    code: z.string().regex(/^\d{6}$/, "Informe o código de 6 dígitos enviado por e-mail"),
     password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
   }),
 });

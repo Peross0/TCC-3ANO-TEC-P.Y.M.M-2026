@@ -24,7 +24,12 @@ export async function ensureDatabaseReady() {
     await knex.migrate.latest();
 
     if (env.NODE_ENV !== "production") {
-      await knex.seed.run();
+      const [{ count }] = await knex("users").count({ count: "id" });
+      if (Number(count) === 0) {
+        await knex.seed.run();
+      } else {
+        console.log("⏭️ Skipping development seeds because users already exist");
+      }
     }
   } catch (error) {
     console.error("❌ Falha ao inicializar o banco de dados:", error);

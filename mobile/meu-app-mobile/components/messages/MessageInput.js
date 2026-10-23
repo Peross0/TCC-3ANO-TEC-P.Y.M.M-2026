@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function MessageInput({ value, onChangeText, onSend }) {
+  const { colors, preferences } = useAppPreferences();
+  const styles = makeStyles(colors, preferences.large_text);
+
   return (
     <View style={styles.inputContainer}>
       <TextInput
@@ -22,7 +23,9 @@ export default function MessageInput({ value, onChangeText, onSend }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors, largeText) {
+  const scale = largeText ? 1.12 : 1;
+  return StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -35,11 +38,11 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.background,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    fontSize: 14,
+    fontSize: 14 * scale,
     color: colors.text,
     maxHeight: 100,
   },
@@ -51,4 +54,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-});
+  });
+}

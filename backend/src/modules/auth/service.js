@@ -117,7 +117,7 @@ export async function forgotPassword(email) {
   if (!user) {
     // Don't reveal if email exists
     return {
-      message: "Se o e-mail estiver cadastrado, a recuperação será iniciada.",
+      message: "Se o e-mail estiver cadastrado, você receberá um código de recuperação.",
     };
   }
 
@@ -132,12 +132,14 @@ export async function forgotPassword(email) {
     updated_at: new Date().toISOString(),
   });
 
-  await sendPasswordResetEmail(email);
+  await sendPasswordResetEmail(email, code, CODE_EXPIRY_MINUTES);
 
-  return { message: "Recuperação iniciada com sucesso." };
+  return {
+    message: "Se o e-mail estiver cadastrado, você receberá um código de recuperação.",
+  };
 }
 
-export async function resetPassword(email, password) {
+export async function resetPassword(email, code, password) {
   const knex = getKnex();
 
   const user = await knex("users")
@@ -145,20 +147,38 @@ export async function resetPassword(email, password) {
     .whereNull("deleted_at")
     .first();
 
-  if (!user) {
-    const err = new Error("Usuário não encontrado");
-    err.statusCode = 404;
+  const invalidCode = () => {
+    const err = new Error("Código inválido ou expirado. Solicite um novo código.");
+    err.statusCode = 400;
     throw err;
-  }
+  };
+  const expiresAt = user?.code_expires_at
+    ? new Date(user.code_expires_at).getTime()
+    : Number.NaN;
+  if (
+    !user
+    || user.code_email_verification !== code
+    || !Number.isFinite(expiresAt)
+    || expiresAt <= Date.now()
+  ) invalidCode();
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await knex("users").where({ id: user.id }).update({
-    password_hash: passwordHash,
-    code_email_verification: null,
-    code_expires_at: null,
-    updated_at: new Date().toISOString(),
-  });
+  const updated = await knex("users")
+    .where({
+      id: user.id,
+      code_email_verification: code,
+      code_expires_at: user.code_expires_at,
+    })
+    .whereNull("deleted_at")
+    .where("code_expires_at", ">", new Date().toISOString())
+    .update({
+      password_hash: passwordHash,
+      code_email_verification: null,
+      code_expires_at: null,
+      updated_at: new Date().toISOString(),
+    });
+  if (!updated) invalidCode();
 
   return {
     message: "Senha redefinida com sucesso. Agora você pode fazer login.",

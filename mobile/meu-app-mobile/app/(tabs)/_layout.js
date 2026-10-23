@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Platform } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 function blurFocusedWebElement() {
   if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -10,6 +10,8 @@ function blurFocusedWebElement() {
 }
 
 export default function TabLayout() {
+  const { colors } = useAppPreferences();
+
   return (
     <Tabs
       screenListeners={{
@@ -17,9 +19,9 @@ export default function TabLayout() {
       }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.light.tint,
-        tabBarInactiveTintColor: Colors.light.muted,
-        tabBarStyle: { backgroundColor: Colors.light.surface, borderTopColor: Colors.light.line },
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
       }}
     >
       <Tabs.Screen
@@ -52,9 +54,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index3"
         options={{
-          title: 'Sobre',
+          title: 'Conta',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="info" size={24} color={color} />
+            <MaterialIcons name="person" size={24} color={color} />
           ),
         }}
       />

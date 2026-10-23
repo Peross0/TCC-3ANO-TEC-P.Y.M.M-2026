@@ -22,7 +22,7 @@ export const updateUserSchema = z.object({
   }),
   body: z.object({
     full_name: z.string().min(2).max(255).optional(),
-    phone: z.string().max(20).optional(),
+    phone: z.string().max(20).nullable().optional(),
     active_notification: z.boolean().optional(),
     user_type: z.enum(['CANDIDATE', 'RECRUITER', 'ADMIN']).optional(),
     verified_email: z.boolean().optional(),

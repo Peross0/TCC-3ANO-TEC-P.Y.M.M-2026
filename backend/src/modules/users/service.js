@@ -48,3 +48,45 @@ export async function getUsers() {
   const knex = getKnex();
   return await knex('users').whereNull('deleted_at')
 }
+
+const DEFAULT_PREFERENCES = {
+  theme: 'system',
+  large_text: false,
+  high_contrast: false,
+  reduce_motion: false,
+};
+
+function normalizePreferences(row) {
+  if (!row) return DEFAULT_PREFERENCES;
+  return {
+    theme: row.theme,
+    large_text: Boolean(row.large_text),
+    high_contrast: Boolean(row.high_contrast),
+    reduce_motion: Boolean(row.reduce_motion),
+  };
+}
+
+export async function getPreferences(userId) {
+  const row = await getKnex()('user_preferences').where({ user_id: userId }).first();
+  return normalizePreferences(row);
+}
+
+export async function updatePreferences(userId, updates) {
+  const knex = getKnex();
+  const current = await knex('user_preferences').where({ user_id: userId }).first();
+  const updatedAt = new Date().toISOString();
+  const values = {
+    ...DEFAULT_PREFERENCES,
+    ...normalizePreferences(current),
+    ...updates,
+    updated_at: updatedAt,
+  };
+
+  if (current) {
+    await knex('user_preferences').where({ user_id: userId }).update(values);
+  } else {
+    await knex('user_preferences').insert({ user_id: userId, ...values });
+  }
+
+  return normalizePreferences(values);
+}

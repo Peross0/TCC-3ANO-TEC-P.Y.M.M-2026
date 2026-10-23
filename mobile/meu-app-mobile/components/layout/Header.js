@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function Header({
   showNotification,
@@ -15,7 +13,10 @@ export default function Header({
   avatarUri,
 }) {
   const [failedAvatarUri, setFailedAvatarUri] = useState(null);
+  const { colors, preferences } = useAppPreferences();
+  const styles = makeStyles(colors, preferences.large_text);
   const showAvatar = avatarUri && failedAvatarUri !== avatarUri;
+  const iconColor = colors.inkSoft || colors.text;
 
   return (
     <View style={styles.header}>
@@ -33,7 +34,7 @@ export default function Header({
         onPress={onOpenMessages}
         activeOpacity={0.7}
       >
-        <Feather name="message-square" size={23} color={colors.inkSoft} />
+        <Feather name="message-square" size={23} color={iconColor} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -43,7 +44,7 @@ export default function Header({
         <Feather
           name="bell"
           size={24}
-          color={showNotification ? colors.tint : colors.inkSoft}
+          color={showNotification ? colors.tint : iconColor}
         />
       </TouchableOpacity>
 
@@ -55,7 +56,7 @@ export default function Header({
         <Ionicons
           name="settings-sharp"
           size={24}
-          color={isSettingsActive ? colors.tint : colors.inkSoft}
+          color={isSettingsActive ? colors.tint : iconColor}
         />
       </TouchableOpacity>
 
@@ -65,13 +66,15 @@ export default function Header({
       >
         {showAvatar
           ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} onError={() => setFailedAvatarUri(avatarUri)} />
-          : <Feather name="user" size={24} color={colors.inkSoft} />}
+          : <Feather name="user" size={24} color={iconColor} />}
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors, largeText) {
+  const scale = largeText ? 1.1 : 1;
+  return StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -104,7 +107,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 16,
+    fontSize: 16 * scale,
     color: colors.text,
   },
   headerIconBtn: {
@@ -114,10 +117,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.lime,
+    backgroundColor: colors.primaryWash,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   avatarImage: { width: '100%', height: '100%' },
-});
+  });
+}

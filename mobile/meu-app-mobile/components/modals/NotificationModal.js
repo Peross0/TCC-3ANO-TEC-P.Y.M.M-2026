@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, Platform } from 'react-native';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function NotificationModal({ visible, onClose }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
+
   return (
     <Modal
       visible={visible}
@@ -31,7 +32,8 @@ export default function NotificationModal({ visible, onClose }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -69,11 +71,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.lime,
+    backgroundColor: colors.tint,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: { color: colors.text, fontSize: 10, fontWeight: 'bold' },
   notifCompany: { fontSize: 11, fontWeight: 'bold', color: colors.text },
   notifSub: { fontSize: 9, color: colors.muted },
-});
+  });
+}

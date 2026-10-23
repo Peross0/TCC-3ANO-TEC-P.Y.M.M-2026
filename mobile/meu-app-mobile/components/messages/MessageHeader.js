@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function MessageHeader({ activeChat, onBack }) {
   const [failedLogoUri, setFailedLogoUri] = useState(null);
+  const { colors, preferences } = useAppPreferences();
+  const styles = makeStyles(colors, preferences.large_text);
   if (!activeChat) return null;
   const showLogo = activeChat.companyLogoUri && failedLogoUri !== activeChat.companyLogoUri;
 
@@ -16,7 +16,7 @@ export default function MessageHeader({ activeChat, onBack }) {
         <Feather name="arrow-left" size={22} color={colors.text} />
       </TouchableOpacity>
 
-      <View style={[styles.avatarSmall, { backgroundColor: activeChat.logoBg || colors.primaryWash }]}>
+      <View style={styles.avatarSmall}>
         {showLogo
           ? <Image source={{ uri: activeChat.companyLogoUri }} style={styles.companyLogoImage} onError={() => setFailedLogoUri(activeChat.companyLogoUri)} />
           : <Feather name="briefcase" size={18} color={colors.primaryDark} />}
@@ -30,7 +30,9 @@ export default function MessageHeader({ activeChat, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors, largeText) {
+  const scale = largeText ? 1.12 : 1;
+  return StyleSheet.create({
   chatHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -55,12 +57,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   chatHeaderCompany: {
-    fontSize: 15,
+    fontSize: 15 * scale,
     fontWeight: '700',
     color: colors.text,
   },
   chatHeaderJob: {
-    fontSize: 11,
+    fontSize: 11 * scale,
     color: colors.muted,
   },
-});
+  });
+}

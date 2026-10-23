@@ -10,20 +10,19 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
 import { SessionContext } from '../../context/SessionContext';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { clearToken, apiFetch, getAssetUrl } from '../../lib/api';
+import { formatBrasiliaDateTime, parseApiDate } from '../../lib/dateTime';
+import AnimatedScreen from '../../components/layout/AnimatedScreen';
 
 import Header from '../../components/layout/Header';
 import NotificationModal from '../../components/modals/NotificationModal';
 import ProfileMenuModal from '../../components/modals/ProfileMenuModal';
 import JobCard from '../../components/jobs/JobCard';
-
-const colors = Colors.light;
 
 const formatCurrency = (value) => {
   const amount = Number(value);
@@ -31,40 +30,45 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(amount);
 };
 
-const formatTimeAgo = (value) => {
-  if (!value) return 'Recente';
+const formatTimeAgo = (value, now = Date.now()) => {
+  const date = parseApiDate(value);
+  if (!date) return 'Data indisponível';
 
-  const diffMs = Date.now() - new Date(value).getTime();
-  const diffHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+  const diffMs = now - date.getTime();
+  if (diffMs < 0) return 'Em breve';
+  if (diffMs < 60_000) return 'Agora';
+  if (diffMs < 60 * 60_000) return `Há ${Math.floor(diffMs / 60_000)} min`;
+  if (diffMs < 24 * 60 * 60_000) return `Há ${Math.floor(diffMs / (60 * 60_000))}h`;
+  if (diffMs < 30 * 24 * 60 * 60_000) {
+    const days = Math.floor(diffMs / (24 * 60 * 60_000));
+    return `Há ${days} dia${days === 1 ? '' : 's'}`;
+  }
 
-  if (diffHours < 24) return `Há ${diffHours}h`;
-  const diffDays = Math.round(diffHours / 24);
-  if (diffDays < 30) return `Há ${diffDays} dia${diffDays === 1 ? '' : 's'}`;
-  const diffMonths = Math.round(diffDays / 30);
-  return `Há ${diffMonths} mês${diffMonths === 1 ? '' : 'es'}`;
+  return formatBrasiliaDateTime(date);
 };
 
-const normalizeJob = (vacancy) => ({
+const normalizeJob = (vacancy, now) => ({
   id: String(vacancy.id),
   vacancyId: vacancy.id,
   company: vacancy.company_name || 'Empresa',
   logoUri: getAssetUrl(vacancy.company_logo_url),
   category: vacancy.company_sector || 'Empresa',
-  timeAgo: formatTimeAgo(vacancy.created_at),
-  createdAt: vacancy.created_at ? new Date(vacancy.created_at) : new Date(),
+  timeAgo: formatTimeAgo(vacancy.created_at, now),
+  createdAt: parseApiDate(vacancy.created_at) || new Date(0),
+  dateTimeLabel: formatBrasiliaDateTime(vacancy.created_at),
   title: (vacancy.job_title || 'Vaga disponível').toUpperCase(),
   description: vacancy.job_description || 'Descrição não informada.',
   salary: vacancy.salary_min || vacancy.salary_max
     ? `${formatCurrency(vacancy.salary_min || vacancy.salary_max)}${vacancy.salary_min && vacancy.salary_max ? ` - ${formatCurrency(vacancy.salary_max)}` : ''}`
     : 'Salário a combinar',
   vacancies: '1 vaga',
-  logoBg: colors.primaryWash,
-  logoTextColor: colors.text,
   isRemote: vacancy.work_model === 'REMOTE',
 });
 
 export default function HomeScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  const { colors, preferences, isDark } = useAppPreferences();
+  const styles = makeStyles(colors, preferences.large_text);
   const isEmployer = sessionData?.user?.user_type === 'RECRUITER';
 
   const [selectedFilter, setSelectedFilter] = useState('Para você');
@@ -78,19 +82,50 @@ export default function HomeScreen() {
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [applyingToJob, setApplyingToJob] = useState(null);
   const [appliedVacancyIds, setAppliedVacancyIds] = useState([]);
+  const [favoriteVacancyIds, setFavoriteVacancyIds] = useState([]);
+  const [savingFavoriteIds, setSavingFavoriteIds] = useState([]);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (sessionData?.favoriteVacancyIds) {
+      setFavoriteVacancyIds(sessionData.favoriteVacancyIds);
+    }
+  }, [sessionData?.favoriteVacancyIds]);
 
   useEffect(() => {
     const carregarVagas = async () => {
       try {
         setLoadingJobs(true);
-        const [data, applicationsData] = await Promise.all([
+        if (isEmployer) {
+          const data = await apiFetch('/recruiters/vacancies?status=ALL&limit=20');
+          setEmployerJobs((data.vacancies || []).map((vacancy) => ({
+            id: String(vacancy.id),
+            title: vacancy.job_title || 'Vaga sem título',
+            category: `${vacancy.status === 'OPEN' ? 'Aberta' : 'Fechada'} · ${vacancy.company_name || 'Empresa'}`,
+          })));
+          return;
+        }
+
+        const requests = [
           apiFetch('/candidates/vacancies?limit=20'),
           apiFetch('/candidates/applications'),
-        ]);
-        setJobs((data.vacancies || []).map(normalizeJob));
+          apiFetch('/candidates/favorites'),
+        ];
+        const [data, applicationsData, favoritesData] = await Promise.all(requests);
+        setJobs((data.vacancies || []).map((vacancy) => normalizeJob(vacancy, Date.now())));
         setAppliedVacancyIds((applicationsData.applications || []).map((application) => String(application.vacancy_id)));
+        const favoriteIds = (favoritesData.favorites || []).map((vacancy) => String(vacancy.id));
+        setFavoriteVacancyIds(favoriteIds);
+        setSessionData((current) => current
+          ? { ...current, favoriteVacancyIds: favoriteIds }
+          : current);
       } catch (error) {
         setJobs([]);
         Alert.alert('Erro ao carregar vagas', error.message || 'Não foi possível conectar ao servidor.');
@@ -100,7 +135,14 @@ export default function HomeScreen() {
     };
 
     carregarVagas();
-  }, []);
+  }, [isEmployer, setSessionData]);
+
+  useEffect(() => {
+    setJobs((current) => current.map((job) => ({
+      ...job,
+      timeAgo: formatTimeAgo(job.createdAt, currentTime),
+    })));
+  }, [currentTime]);
 
   const applyToJob = async (vacancyId) => {
     if (applyingToJob !== null) return;
@@ -114,6 +156,41 @@ export default function HomeScreen() {
       Alert.alert('Não foi possível se candidatar', error.message || 'Tente novamente.');
     } finally {
       setApplyingToJob(null);
+    }
+  };
+
+  const toggleFavorite = async (vacancyId) => {
+    const id = String(vacancyId);
+    if (savingFavoriteIds.includes(id)) return;
+
+    const isFavorite = favoriteVacancyIds.includes(id);
+    setSavingFavoriteIds((current) => [...current, id]);
+    try {
+      await apiFetch(`/candidates/vacancies/${vacancyId}/favorite`, {
+        method: isFavorite ? 'DELETE' : 'PUT',
+      });
+      setFavoriteVacancyIds((current) => (
+        isFavorite
+          ? current.filter((favoriteId) => favoriteId !== id)
+          : [...new Set([...current, id])]
+      ));
+      setSessionData((current) => {
+        if (!current) return current;
+        const currentIds = current.favoriteVacancyIds || [];
+        return {
+          ...current,
+          favoriteVacancyIds: isFavorite
+            ? currentIds.filter((favoriteId) => favoriteId !== id)
+            : [...new Set([...currentIds, id])],
+        };
+      });
+    } catch (error) {
+      Alert.alert(
+        isFavorite ? 'Não foi possível remover dos salvos' : 'Não foi possível salvar a vaga',
+        error.message || 'Tente novamente.',
+      );
+    } finally {
+      setSavingFavoriteIds((current) => current.filter((favoriteId) => favoriteId !== id));
     }
   };
 
@@ -174,8 +251,9 @@ export default function HomeScreen() {
   const filteredJobs = getFilteredJobs();
 
   return (
+    <AnimatedScreen>
     <SafeAreaView style={styles.homeContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* Modal de Logout */}
       <Modal visible={isLoggingOut} transparent animationType="fade">
@@ -297,6 +375,9 @@ export default function HomeScreen() {
                       onApply={applyToJob}
                       isApplied={appliedVacancyIds.includes(String(job.vacancyId))}
                       isApplying={applyingToJob === String(job.vacancyId)}
+                      isFavorite={favoriteVacancyIds.includes(String(job.vacancyId))}
+                      isSavingFavorite={savingFavoriteIds.includes(String(job.vacancyId))}
+                      onToggleFavorite={toggleFavorite}
                     />
                   </View>
                 );
@@ -313,10 +394,13 @@ export default function HomeScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </AnimatedScreen>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors, largeText) {
+  const scale = largeText ? 1.12 : 1;
+  return StyleSheet.create({
   homeContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -344,7 +428,7 @@ const styles = StyleSheet.create({
     borderColor: colors.tint,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 14 * scale,
     fontWeight: '600',
     color: colors.muted,
   },
@@ -370,7 +454,7 @@ const styles = StyleSheet.create({
   },
   recentBadgeText: {
     color: colors.text,
-    fontSize: 10,
+    fontSize: 10 * scale,
     fontWeight: 'bold',
   },
   emptyContainer: {
@@ -379,13 +463,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 16 * scale,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 6,
   },
   emptySubText: {
-    fontSize: 13,
+    fontSize: 13 * scale,
     color: colors.muted,
     textAlign: 'center',
   },
@@ -416,7 +500,7 @@ const styles = StyleSheet.create({
   createJobBarContainer: {
     width: '100%',
     height: 54,
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
     borderRadius: 27,
     borderWidth: 1,
     borderColor: colors.line,
@@ -436,7 +520,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   createJobPillText: {
-    fontSize: 15,
+    fontSize: 15 * scale,
     fontWeight: '700',
     color: colors.text,
   },
@@ -445,7 +529,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   emptyEmployerText: {
-    fontSize: 18,
+    fontSize: 18 * scale,
     fontWeight: '700',
     color: colors.muted,
   },
@@ -458,13 +542,14 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   employerJobTitle: {
-    fontSize: 16,
+    fontSize: 16 * scale,
     fontWeight: '700',
     color: colors.text,
   },
   employerJobDetails: {
-    fontSize: 13,
+    fontSize: 13 * scale,
     color: colors.muted,
     marginTop: 4,
   },
-});
+  });
+}

@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, Modal, Pressable, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLogout }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
+  const iconColor = colors.inkSoft || colors.text;
+
   return (
     <Modal
       visible={visible}
@@ -17,14 +19,14 @@ export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLo
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar menu" />
         <View style={styles.profileDropdown}>
           <TouchableOpacity style={styles.dropdownOption} onPress={onGoToProfile}>
-            <Feather name="edit-2" size={16} color={colors.inkSoft} />
+            <Feather name="edit-2" size={16} color={iconColor} />
             <Text style={styles.dropdownText}>Ver perfil</Text>
           </TouchableOpacity>
 
           <View style={styles.dropdownDivider} />
 
           <TouchableOpacity style={styles.dropdownOption} onPress={onLogout}>
-            <Feather name="log-out" size={16} color={colors.inkSoft} />
+            <Feather name="log-out" size={16} color={iconColor} />
             <Text style={styles.dropdownText}>Sair</Text>
           </TouchableOpacity>
         </View>
@@ -33,7 +35,8 @@ export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onLo
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -64,4 +67,5 @@ const styles = StyleSheet.create({
   },
   dropdownText: { fontSize: 14, color: colors.text, fontWeight: '500' },
   dropdownDivider: { height: 1, backgroundColor: colors.line, marginVertical: 2 },
-});
+  });
+}

@@ -1,162 +1,263 @@
 import React, { useContext, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
-  View,
-  Text,
-  StyleSheet,
+  Image,
   SafeAreaView,
-  TouchableOpacity,
   ScrollView,
+  StatusBar,
+  StyleSheet,
   Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
 import { SessionContext } from '../context/SessionContext';
-import { apiFetch } from '../lib/api';
+import { useAppPreferences } from '../context/PreferencesContext';
+import { apiFetch, getAssetUrl } from '../lib/api';
+import AnimatedScreen from '../components/layout/AnimatedScreen';
 
-const colors = Colors.light;
+const settingsItems = [
+  { id: 'preferencias', title: 'Preferências', subtitle: 'Notificações e opções da conta', icon: 'sliders' },
+  { id: 'tema', title: 'Tema', subtitle: 'Claro, escuro ou seguir o sistema', icon: 'moon' },
+  { id: 'acessibilidade', title: 'Acessibilidade', subtitle: 'Texto, contraste e animações', icon: 'eye' },
+  { id: 'ajuda', title: 'Ajuda', subtitle: 'Perguntas e suporte', icon: 'help-circle' },
+  { id: 'sobre', title: 'Sobre', subtitle: 'Informações do ConectaFácil', icon: 'info' },
+];
 
 export default function ConfiguracoesScreen() {
   const router = useRouter();
   const { sessionData, setSessionData } = useContext(SessionContext);
+  const { colors, syncError } = useAppPreferences();
+  const styles = makeStyles(colors);
   const [savingNotifications, setSavingNotifications] = useState(false);
-  const notificationsEnabled = Boolean(sessionData?.settings?.active_notification);
+
+  const user = sessionData?.user;
+  const name = sessionData?.profile?.full_name || user?.full_name || 'Sua conta';
+  const avatar = getAssetUrl(sessionData?.profile?.avatar_url || user?.avatar_url);
+  const notificationsEnabled = Boolean(
+    sessionData?.settings?.active_notification ?? user?.active_notification,
+  );
 
   const updateNotifications = async (activeNotification) => {
-    if (savingNotifications) return;
+    if (savingNotifications || !user) return;
     setSavingNotifications(true);
+
+    const path = user.user_type === 'CANDIDATE'
+      ? '/candidates/notifications'
+      : user.user_type === 'RECRUITER'
+        ? '/recruiters/profile'
+        : `/admin/users/${user.id}`;
+
     try {
-      const user = sessionData?.user;
-      const path = user?.user_type === 'CANDIDATE'
-        ? '/candidates/notifications'
-        : user?.user_type === 'RECRUITER'
-          ? '/recruiters/profile'
-          : `/admin/users/${user?.id}`;
       await apiFetch(path, {
-        method: user?.user_type === 'CANDIDATE' ? 'PATCH' : 'PUT',
+        method: user.user_type === 'CANDIDATE' ? 'PATCH' : 'PUT',
         body: JSON.stringify({ active_notification: activeNotification }),
       });
       setSessionData((current) => ({
         ...current,
         user: { ...current.user, active_notification: activeNotification },
+        profile: { ...current.profile, active_notification: activeNotification },
         settings: { ...current.settings, active_notification: activeNotification },
       }));
     } catch (error) {
-      Alert.alert('Não foi possível atualizar', error instanceof TypeError
-        ? 'Não foi possível conectar ao servidor.'
-        : error.message);
+      Alert.alert(
+        'Não foi possível atualizar',
+        error instanceof TypeError ? 'Não foi possível conectar ao servidor.' : error.message,
+      );
     } finally {
       setSavingNotifications(false);
     }
   };
 
-  const menuItems = [
-    { title: 'Salvos', icon: <Feather name="bookmark" size={22} color={colors.tint} /> },
-    { title: 'Preferencias', icon: <Ionicons name="options-outline" size={22} color={colors.tint} /> },
-    { title: 'Tema', icon: <MaterialCommunityIcons name="format-paint" size={22} color={colors.tint} /> },
-    { title: 'Acessibilidade', icon: <Ionicons name="body-outline" size={22} color={colors.tint} /> },
-    { title: 'Ajuda', icon: <Feather name="help-circle" size={22} color={colors.tint} /> },
-    { title: 'Sobre', icon: <Feather name="info" size={22} color={colors.tint} /> },
-  ];
-
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Botão de Voltar Simples */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Configurações</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.accountCard}>
-          <View style={styles.accountIcon}>
-            <Feather name="user" size={19} color={colors.primaryDark} />
-          </View>
-          <View style={styles.accountDetails}>
-            <Text style={styles.accountName}>{sessionData?.profile?.full_name || sessionData?.user?.full_name}</Text>
-            <Text style={styles.accountEmail}>{sessionData?.profile?.email || sessionData?.user?.email}</Text>
-          </View>
-        </View>
-
-        <View style={styles.notificationCard}>
-          <View style={styles.notificationCopy}>
-            <Text style={styles.notificationTitle}>Notificações de oportunidades</Text>
-            <Text style={styles.notificationSubtitle}>Preferência salva na sua conta</Text>
-          </View>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={updateNotifications}
-            disabled={savingNotifications}
-            trackColor={{ false: colors.line, true: '#9CDCF9' }}
-            thumbColor={notificationsEnabled ? colors.tint : '#FFFFFF'}
-          />
-        </View>
-
-        {menuItems.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.menuCard} activeOpacity={0.7}>
-            <View style={styles.menuLeft}>
-              {item.icon}
-              <Text style={styles.menuText}>{item.title}</Text>
-            </View>
-            <Feather name="chevron-right" size={24} color={colors.muted} />
+    <AnimatedScreen>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle={colors.text === '#F3F7FC' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
+            <Feather name="arrow-left" size={22} color={colors.text} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+          <View>
+            <Text style={styles.title}>Configurações</Text>
+            <Text style={styles.subtitle}>Sua conta, do seu jeito</Text>
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <TouchableOpacity
+            style={styles.accountCard}
+            onPress={() => router.push('/perfil')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <View style={styles.avatar}>
+              {avatar
+                ? <Image source={{ uri: avatar }} style={styles.avatarImage} />
+                : <Feather name="user" size={23} color={colors.tint} />}
+            </View>
+            <View style={styles.accountCopy}>
+              <Text style={styles.accountName} numberOfLines={1}>{name}</Text>
+              <Text style={styles.accountEmail} numberOfLines={1}>
+                {sessionData?.profile?.email || user?.email || ''}
+              </Text>
+              <Text style={styles.accountAction}>Editar dados do perfil</Text>
+            </View>
+            <Feather name="chevron-right" size={21} color={colors.muted} />
+          </TouchableOpacity>
+
+          {user?.user_type === 'CANDIDATE' && (
+            <TouchableOpacity
+              style={styles.savedCard}
+              onPress={() => router.push('/salvos')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
+              <View style={styles.iconBox}><Feather name="bookmark" size={19} color={colors.tint} /></View>
+              <View style={styles.itemCopy}>
+                <Text style={styles.itemTitle}>Vagas salvas</Text>
+                <Text style={styles.itemSubtitle}>Veja e gerencie suas oportunidades favoritas</Text>
+              </View>
+              <Feather name="chevron-right" size={21} color={colors.muted} />
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.notificationCard}>
+            <View style={styles.iconBox}><Feather name="bell" size={19} color={colors.tint} /></View>
+            <View style={styles.itemCopy}>
+              <Text style={styles.itemTitle}>Notificações de oportunidades</Text>
+              <Text style={styles.itemSubtitle}>
+                {savingNotifications ? 'Salvando na sua conta...' : 'Preferência sincronizada com o servidor'}
+              </Text>
+            </View>
+            {savingNotifications
+              ? <ActivityIndicator color={colors.tint} />
+              : (
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={updateNotifications}
+                  disabled={!user}
+                  accessibilityLabel="Notificações de oportunidades"
+                  trackColor={{ false: colors.line, true: colors.tint }}
+                  thumbColor={colors.surface}
+                />
+              )}
+          </View>
+
+          <Text style={styles.sectionTitle}>Personalização e suporte</Text>
+          {settingsItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuCard}
+              onPress={() => router.push(`/configuracoes/${item.id}`)}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+            >
+              <View style={styles.iconBox}><Feather name={item.icon} size={19} color={colors.tint} /></View>
+              <View style={styles.itemCopy}>
+                <Text style={styles.itemTitle}>{item.title}</Text>
+                <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
+              </View>
+              <Feather name="chevron-right" size={21} color={colors.muted} />
+            </TouchableOpacity>
+          ))}
+          {syncError ? <Text style={styles.syncError}>{syncError}</Text> : null}
+        </ScrollView>
+      </SafeAreaView>
+    </AnimatedScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  backBtn: { paddingRight: 16 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-  content: { paddingHorizontal: 24, paddingTop: 20 },
-  accountCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: colors.surface,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.line,
-    marginBottom: 12,
-  },
-  accountIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center' },
-  accountDetails: { flex: 1 },
-  accountName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  accountEmail: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  notificationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.line,
-    marginBottom: 16,
-  },
-  notificationCopy: { flex: 1, paddingRight: 12 },
-  notificationTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  notificationSubtitle: { color: colors.muted, fontSize: 12, marginTop: 4 },
-  menuCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-  },
-  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  menuText: { fontSize: 18, fontWeight: '500', color: colors.text },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    container: { backgroundColor: colors.background, flex: 1 },
+    header: {
+      alignItems: 'center',
+      borderBottomColor: colors.line,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      flexDirection: 'row',
+      gap: 14,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    backButton: { padding: 7 },
+    title: { color: colors.text, fontSize: 22, fontWeight: '800' },
+    subtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
+    content: { gap: 12, padding: 18, paddingBottom: 36 },
+    accountCard: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.line,
+      borderRadius: 18,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 13,
+      marginBottom: 4,
+      padding: 16,
+    },
+    avatar: {
+      alignItems: 'center',
+      backgroundColor: colors.primaryWash,
+      borderRadius: 28,
+      height: 56,
+      justifyContent: 'center',
+      overflow: 'hidden',
+      width: 56,
+    },
+    avatarImage: { height: '100%', width: '100%' },
+    accountCopy: { flex: 1 },
+    accountName: { color: colors.text, fontSize: 16, fontWeight: '800' },
+    accountEmail: { color: colors.muted, fontSize: 12, marginTop: 3 },
+    accountAction: { color: colors.tint, fontSize: 12, fontWeight: '700', marginTop: 7 },
+    savedCard: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.line,
+      borderRadius: 14,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 12,
+      padding: 15,
+    },
+    notificationCard: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.line,
+      borderRadius: 14,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 12,
+      padding: 15,
+    },
+    iconBox: {
+      alignItems: 'center',
+      backgroundColor: colors.primaryWash,
+      borderRadius: 13,
+      height: 42,
+      justifyContent: 'center',
+      width: 42,
+    },
+    itemCopy: { flex: 1 },
+    itemTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+    itemSubtitle: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: 4 },
+    sectionTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: 1, marginTop: 12 },
+    menuCard: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.line,
+      borderRadius: 14,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 12,
+      padding: 14,
+    },
+    syncError: { color: '#D24B4B', fontSize: 12, lineHeight: 18, padding: 4 },
+  });
+}

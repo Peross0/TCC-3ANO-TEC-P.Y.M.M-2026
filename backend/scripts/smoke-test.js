@@ -267,10 +267,21 @@ const forgot = await request('/api/auth/forgot-password', {
   body: { email: 'candidate@test.com' },
 });
 expectStatus(forgot, 200, 'forgot password');
+assert.equal(
+  forgot.data.message,
+  'Se o e-mail estiver cadastrado, você receberá um código de recuperação.',
+);
 
 const db = new DatabaseSync('./data/conectafacil.db');
 const resetCode = db.prepare('SELECT code_email_verification FROM users WHERE email = ?').get('candidate@test.com').code_email_verification;
 db.close();
+const invalidResetCode = resetCode === '000000' ? '000001' : '000000';
+
+const invalidReset = await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', code: invalidResetCode, password: 'SenhaNova123!' },
+});
+expectStatus(invalidReset, 400, 'invalid password reset code');
 
 const reset = await request('/api/auth/reset-password', {
   method: 'POST',

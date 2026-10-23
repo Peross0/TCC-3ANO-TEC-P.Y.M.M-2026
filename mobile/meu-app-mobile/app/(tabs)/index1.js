@@ -18,21 +18,19 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import MessageHeader from '../../components/messages/MessageHeader';
 import MessageInput from '../../components/messages/MessageInput';
 import { SessionContext } from '../../context/SessionContext';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { apiFetch, getAssetUrl } from '../../lib/api';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { formatBrasiliaTime } from '../../lib/dateTime';
+import AnimatedScreen from '../../components/layout/AnimatedScreen';
 
 function formatTime(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatBrasiliaTime(value);
 }
 
 export default function MessagesScreen() {
   const { sessionData } = useContext(SessionContext);
+  const { colors, preferences, isDark } = useAppPreferences();
+  const styles = makeStyles(colors, preferences.large_text);
   const router = useRouter();
   const [authenticatedUserId, setAuthenticatedUserId] = useState(sessionData?.user?.id ?? null);
   const currentUserId = sessionData?.user?.id ?? authenticatedUserId;
@@ -139,8 +137,9 @@ export default function MessagesScreen() {
 
   if (activeChat) {
     return (
+      <AnimatedScreen>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <MessageHeader activeChat={activeChat} onBack={() => setActiveApplicationId(null)} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -172,12 +171,14 @@ export default function MessagesScreen() {
           {isSending && <Text style={styles.sendingText}>Enviando mensagem...</Text>}
         </KeyboardAvoidingView>
       </SafeAreaView>
+      </AnimatedScreen>
     );
   }
 
   return (
+    <AnimatedScreen>
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={styles.header}><Text style={styles.title}>Mensagens</Text></View>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -204,7 +205,7 @@ export default function MessagesScreen() {
             <View style={styles.avatar}>
               {item.companyLogoUri
                 ? <Image source={{ uri: item.companyLogoUri }} style={styles.companyLogoImage} resizeMode="cover" />
-                : <Feather name="briefcase" size={19} color="#168AC7" />}
+                : <Feather name="briefcase" size={19} color={colors.tint} />}
             </View>
             <View style={styles.conversationContent}>
               <View style={styles.conversationHeader}>
@@ -236,13 +237,16 @@ export default function MessagesScreen() {
         refreshing={isLoading}
       />
     </SafeAreaView>
+    </AnimatedScreen>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors, largeText) {
+  const scale = largeText ? 1.12 : 1;
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: colors.text },
+  title: { fontSize: 24 * scale, fontWeight: '800', color: colors.text },
   searchContainer: { paddingHorizontal: 16, marginBottom: 12 },
   searchBar: {
     flexDirection: 'row',
@@ -254,7 +258,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14 * scale, color: colors.text },
   conversationsList: { paddingHorizontal: 16, paddingBottom: 20 },
   conversationItem: {
     flexDirection: 'row',
@@ -266,27 +270,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E5F5FD', overflow: 'hidden' },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primaryWash, overflow: 'hidden' },
   companyLogoImage: { width: '100%', height: '100%' },
   conversationContent: { flex: 1, marginLeft: 12 },
   conversationHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  companyName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  timeAgo: { fontSize: 11, color: colors.muted },
-  jobTitleTag: { fontSize: 11, fontWeight: '700', color: colors.primaryDark, marginVertical: 2 },
-  lastMessage: { fontSize: 13, color: colors.muted },
+  companyName: { fontSize: 15 * scale, fontWeight: '700', color: colors.text },
+  timeAgo: { fontSize: 11 * scale, color: colors.muted },
+  jobTitleTag: { fontSize: 11 * scale, fontWeight: '700', color: colors.primaryDark, marginVertical: 2 },
+  lastMessage: { fontSize: 13 * scale, color: colors.muted },
   chatBody: { flex: 1 },
   messagesList: { padding: 16, gap: 10, flexGrow: 1 },
   messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 16, marginBottom: 4 },
   userBubble: { alignSelf: 'flex-end', backgroundColor: '#147BA3', borderBottomRightRadius: 2 },
   companyBubble: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderBottomLeftRadius: 2 },
-  messageText: { fontSize: 14, color: colors.text, lineHeight: 18 },
+  messageText: { fontSize: 14 * scale, color: colors.text, lineHeight: 18 * scale },
   userMessageText: { color: '#FFFFFF' },
   messageTime: { fontSize: 10, color: colors.muted, alignSelf: 'flex-end', marginTop: 4 },
   userMessageTime: { color: '#EAF7FD' },
-  sendingText: { textAlign: 'center', color: colors.muted, fontSize: 12, paddingBottom: 5 },
+  sendingText: { textAlign: 'center', color: colors.muted, fontSize: 12 * scale, paddingBottom: 5 },
   emptyContainer: { flex: 1, paddingVertical: 60, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  emptySubText: { fontSize: 13, color: colors.muted, textAlign: 'center', paddingHorizontal: 12 },
+  emptyTitle: { fontSize: 16 * scale, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  emptySubText: { fontSize: 13 * scale, color: colors.muted, textAlign: 'center', paddingHorizontal: 12 },
   jobsButton: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18, backgroundColor: colors.tint },
-  jobsButtonText: { fontSize: 13, fontWeight: '700', color: colors.text },
-});
+  jobsButtonText: { fontSize: 13 * scale, fontWeight: '700', color: colors.surface },
+  });
+}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Stack } from 'expo-router';
 import { Platform } from 'react-native';
 import { SessionContext } from '../context/SessionContext';
+import { PreferencesProvider } from '../context/PreferencesContext';
 
 function blurFocusedWebElement() {
   if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -14,14 +15,16 @@ export default function RootLayout() {
 
   return (
     <SessionContext.Provider value={{ sessionData, setSessionData }}>
-      <Stack
-        screenListeners={{ blur: blurFocusedWebElement }}
-        screenOptions={{ headerShown: false }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="carregando" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      <PreferencesProvider userId={sessionData?.user?.id}>
+        <Stack
+          screenListeners={{ blur: blurFocusedWebElement }}
+          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="carregando" />
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </PreferencesProvider>
     </SessionContext.Provider>
   );
 }

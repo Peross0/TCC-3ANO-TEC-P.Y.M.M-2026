@@ -159,8 +159,10 @@ function OnboardingScreen({ onFinish }) {
 function LoginScreen({ startupMessage }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState("login");
@@ -217,6 +219,7 @@ function LoginScreen({ startupMessage }) {
 
     setIsSubmitting(true);
     setLoginError("");
+    setRecoveryMessage("");
 
     try {
       await apiFetch("/auth/forgot-password", {
@@ -225,7 +228,11 @@ function LoginScreen({ startupMessage }) {
         token: null,
       });
 
+      setResetCode("");
       setPasswordRecoveryMode("reset");
+      setRecoveryMessage(
+        "Se o e-mail estiver cadastrado, você receberá um código válido por 10 minutos.",
+      );
     } catch (error) {
       setLoginError(
         error.message || "Não foi possível iniciar a recuperação da senha.",
@@ -247,6 +254,10 @@ function LoginScreen({ startupMessage }) {
       setLoginError("A nova senha deve ter no mínimo 8 caracteres.");
       return;
     }
+    if (!/^\d{6}$/.test(resetCode)) {
+      setLoginError("Informe o código de 6 dígitos enviado por e-mail.");
+      return;
+    }
 
     setIsSubmitting(true);
     setLoginError("");
@@ -256,12 +267,15 @@ function LoginScreen({ startupMessage }) {
         method: "POST",
         body: JSON.stringify({
           email: normalizedEmail,
+          code: resetCode,
           password: newPassword,
         }),
         token: null,
       });
 
       setPasswordRecoveryMode("login");
+      setRecoveryMessage("Senha redefinida com sucesso. Entre com sua nova senha.");
+      setResetCode("");
       setNewPassword("");
       setPassword("");
     } catch (error) {
@@ -302,7 +316,7 @@ function LoginScreen({ startupMessage }) {
           </Text>
           <Text style={styles.loginSubtitle}>
             {isRecoveryView
-              ? "Informe seu e-mail e escolha uma nova senha segura."
+              ? "Digite o código enviado por e-mail e escolha uma nova senha segura."
               : "Entre para encontrar sua próxima oportunidade."}
           </Text>
 
@@ -321,7 +335,9 @@ function LoginScreen({ startupMessage }) {
                 value={email}
                 onChangeText={(value) => {
                   setEmail(value);
+                  setResetCode("");
                   setLoginError("");
+                  setRecoveryMessage("");
                 }}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -368,6 +384,25 @@ function LoginScreen({ startupMessage }) {
 
             {isRecoveryView && (
               <>
+                <Text style={styles.fieldLabel}>Código de recuperação</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="key" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Código de 6 dígitos"
+                    placeholderTextColor="#A0A4A8"
+                    value={resetCode}
+                    onChangeText={(value) => {
+                      setResetCode(value.replace(/\D/g, "").slice(0, 6));
+                      setLoginError("");
+                    }}
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    textContentType="oneTimeCode"
+                    maxLength={6}
+                    returnKeyType="next"
+                  />
+                </View>
                 <Text style={styles.fieldLabel}>Nova senha</Text>
                 <View style={styles.inputWrapper}>
                   <Feather name="lock" size={19} color={BRAND.gray} />
@@ -402,21 +437,44 @@ function LoginScreen({ startupMessage }) {
               </>
             )}
 
-            <View style={styles.forgotPasswordRow}>
+            {!!recoveryMessage && (
+              <Text style={styles.loginNoticeText} accessibilityLiveRegion="polite">
+                {recoveryMessage}
+              </Text>
+            )}
+
+            <View
+              style={[
+                styles.forgotPasswordRow,
+                isRecoveryView && styles.recoveryActions,
+              ]}
+            >
               {isRecoveryView ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setPasswordRecoveryMode("login");
-                    setNewPassword("");
-                    setLoginError("");
-                  }}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    onPress={handlePasswordRecoveryRequest}
+                    disabled={isSubmitting}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.forgotPasswordText}>Reenviar código</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setPasswordRecoveryMode("login");
+                      setResetCode("");
+                      setNewPassword("");
+                      setLoginError("");
+                      setRecoveryMessage("");
+                    }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <TouchableOpacity
                   onPress={handlePasswordRecoveryRequest}
+                  disabled={isSubmitting}
                   accessibilityRole="button"
                 >
                   <Text style={styles.forgotPasswordText}>
@@ -797,6 +855,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   forgotPasswordRow: { alignItems: "flex-end", marginTop: 10, marginBottom: 8 },
+  recoveryActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   forgotPasswordText: {
     color: "#168AC7",
     fontSize: 13,

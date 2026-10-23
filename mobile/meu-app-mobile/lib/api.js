@@ -10,7 +10,13 @@ function getApiUrl() {
     return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
   }
 
-  if (Platform.OS === 'web') return 'http://localhost:3000/api';
+  if (Platform.OS === 'web') {
+    const host = globalThis.location?.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:3000/api`;
+    }
+    return 'http://localhost:3000/api';
+  }
 
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
   const host = hostUri?.split(':')[0];
@@ -91,6 +97,13 @@ export async function apiFetch(path, options = {}) {
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error('O servidor demorou para responder. Tente novamente.');
+    }
+    if (error instanceof TypeError) {
+      const connectionError = new Error(
+        `Não foi possível conectar à API em ${API_URL}. Verifique se o backend está iniciado e se o endereço está acessível neste dispositivo.`,
+      );
+      connectionError.code = 'API_UNREACHABLE';
+      throw connectionError;
     }
     throw error;
   } finally {

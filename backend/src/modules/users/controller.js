@@ -15,3 +15,13 @@ export async function listUsers(req, res) {
   const users = await userService.getUsers();
   res.json(users)
 }
+
+export async function getPreferences(req, res) {
+  const preferences = await userService.getPreferences(req.user.id);
+  res.json({ preferences });
+}
+
+export async function updatePreferences(req, res) {
+  const preferences = await userService.updatePreferences(req.user.id, req.validated.body);
+  res.json({ preferences });
+}
