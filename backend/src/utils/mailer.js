@@ -5,7 +5,7 @@ let transporter = null;
 
 function createTransporter() {
   if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
-    return nodemailer.createTransport({
+    const smtpTransport = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
       secure: env.SMTP_SECURE,
@@ -14,20 +14,23 @@ function createTransporter() {
         pass: env.SMTP_PASS,
       },
     });
+    return { mode: 'smtp', sendMail: (options) => smtpTransport.sendMail(options) };
   }
 
-  // Development fallback: log emails to console
-  return {
-    sendMail: async (mailOptions) => {
-      console.log("📧 [DEV EMAIL] ==============================");
-      console.log("To:", mailOptions.to);
-      console.log("Subject:", mailOptions.subject);
-      console.log("Text:", mailOptions.text);
-      console.log("HTML:", mailOptions.html);
-      console.log("===============================================");
-      return { messageId: `dev-${Date.now()}` };
-    },
-  };
+  if (env.NODE_ENV === 'development') {
+    return {
+      mode: 'console',
+      sendMail: async (mailOptions) => {
+        console.warn('[DEV EMAIL NOT SENT] Configure SMTP para entregar este e-mail.');
+        console.log('To:', mailOptions.to);
+        console.log('Subject:', mailOptions.subject);
+        console.log('Text:', mailOptions.text);
+        return { messageId: `console-${Date.now()}` };
+      },
+    };
+  }
+
+  return { mode: 'unavailable' };
 }
 
 export async function getTransporter() {
@@ -39,6 +42,12 @@ export async function getTransporter() {
 
 export async function sendEmail({ to, subject, text, html }) {
   const transport = await getTransporter();
+  if (transport.mode === 'unavailable') {
+    const error = new Error('SMTP_NOT_CONFIGURED');
+    error.code = 'SMTP_NOT_CONFIGURED';
+    throw error;
+  }
+
   return transport.sendMail({
     from: env.SMTP_FROM,
     to,

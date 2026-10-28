@@ -1,27 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
-  apiFetch,
-  clearToken,
-  getToken,
-  hasSeenOnboarding,
-  markOnboardingSeen,
-  saveToken,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import {
+    apiFetch,
+    clearToken,
+    getToken,
+    hasSeenOnboarding,
+    markOnboardingSeen,
+    saveToken,
 } from '../lib/api';
 
 const BRAND = {
@@ -133,13 +133,95 @@ function OnboardingScreen({ onFinish }) {
 function LoginScreen({ startupMessage }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [recoveryMode, setRecoveryMode] = useState('login');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [recoveryCooldown, setRecoveryCooldown] = useState(0);
   const [loginError, setLoginError] = useState('');
   const [loginNotice, setLoginNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (recoveryCooldown <= 0) return undefined;
+    const timer = setTimeout(() => setRecoveryCooldown((current) => Math.max(0, current - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [recoveryCooldown]);
+
+  const requestPasswordRecovery = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setLoginError('Informe um e-mail válido para continuar.');
+      return;
+    }
+    if (recoveryCooldown > 0) return;
+
+    setLoginError('');
+    setIsSubmitting(true);
+    try {
+      const result = await apiFetch('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail }),
+        token: null,
+      });
+      setRecoveryMode('reset');
+      setRecoveryCooldown(30);
+      setLoginNotice(result.message || 'Se o e-mail estiver cadastrado, as instruções serão processadas.');
+    } catch (error) {
+      setLoginError(error.message || 'Não foi possível solicitar a recuperação. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\d{6}$/.test(recoveryCode.trim())) {
+      setLoginError('Informe o código de seis dígitos recebido por e-mail.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setLoginError('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setLoginError('As senhas não conferem.');
+      return;
+    }
+
+    setLoginError('');
+    setIsSubmitting(true);
+    try {
+      const result = await apiFetch('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail, code: recoveryCode.trim(), password: newPassword }),
+        token: null,
+      });
+      setRecoveryMode('login');
+      setRecoveryCode('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPassword('');
+      setLoginNotice(result.message || 'Senha redefinida. Entre com sua nova senha.');
+    } catch (error) {
+      setLoginError(error.message || 'Não foi possível redefinir a senha. Confira o código e tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleLogin = async () => {
+    if (recoveryMode === 'request') {
+      await requestPasswordRecovery();
+      return;
+    }
+    if (recoveryMode === 'reset') {
+      await resetPassword();
+      return;
+    }
     setLoginError('');
     setLoginNotice('');
     const normalizedEmail = email.trim().toLowerCase();
@@ -194,8 +276,8 @@ function LoginScreen({ startupMessage }) {
             <View style={styles.brandIcon}><Feather name="link" size={20} color={BRAND.white} /></View>
             <Text style={styles.brandName}>Conecta<Text style={styles.brandAccent}>Fácil</Text></Text>
           </View>
-          <Text style={styles.welcome}>Que bom ter você aqui!</Text>
-          <Text style={styles.loginSubtitle}>Entre para encontrar sua próxima oportunidade.</Text>
+          <Text style={styles.welcome}>{recoveryMode === 'login' ? 'Que bom ter você aqui!' : recoveryMode === 'request' ? 'Esqueceu sua senha?' : 'Redefina sua senha'}</Text>
+          <Text style={styles.loginSubtitle}>{recoveryMode === 'login' ? 'Entre para encontrar sua próxima oportunidade.' : recoveryMode === 'request' ? 'Informe o e-mail cadastrado para receber as instruções de recuperação.' : 'Informe o código enviado e escolha uma nova senha.'}</Text>
 
           {!!startupMessage && <Text style={styles.startupMessage}>{startupMessage}</Text>}
 
@@ -216,47 +298,108 @@ function LoginScreen({ startupMessage }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                editable={recoveryMode !== 'reset'}
                 returnKeyType="next"
               />
             </View>
 
-            <Text style={styles.fieldLabel}>Senha</Text>
-            <View style={styles.inputWrapper}>
-              <Feather name="lock" size={19} color={BRAND.gray} />
-              <TextInput
-                style={styles.input}
-                placeholder="Digite sua senha"
-                placeholderTextColor="#A0A4A8"
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  setLoginError('');
-                  setLoginNotice('');
-                }}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                returnKeyType="go"
-                onSubmitEditing={handleLogin}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword((visible) => !visible)}
-                hitSlop={10}
-                accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-              >
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={BRAND.gray} />
-              </TouchableOpacity>
-            </View>
+            {recoveryMode === 'login' && (
+              <>
+                <Text style={styles.fieldLabel}>Senha</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Digite sua senha"
+                    placeholderTextColor="#A0A4A8"
+                    value={password}
+                    onChangeText={(value) => {
+                      setPassword(value);
+                      setLoginError('');
+                      setLoginNotice('');
+                    }}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    returnKeyType="go"
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((visible) => !visible)}
+                    hitSlop={10}
+                    accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={BRAND.gray} />
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {recoveryMode === 'reset' && (
+              <>
+                <Text style={styles.fieldLabel}>Código de recuperação</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="key" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="6 dígitos"
+                    placeholderTextColor="#A0A4A8"
+                    value={recoveryCode}
+                    onChangeText={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                </View>
+                <Text style={styles.fieldLabel}>Nova senha</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Mínimo de 8 caracteres"
+                    placeholderTextColor="#A0A4A8"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry={!showRecoveryPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowRecoveryPassword((visible) => !visible)} accessibilityLabel={showRecoveryPassword ? 'Ocultar nova senha' : 'Mostrar nova senha'}>
+                    <Feather name={showRecoveryPassword ? 'eye-off' : 'eye'} size={19} color={BRAND.gray} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.fieldLabel}>Confirmar nova senha</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Digite a senha novamente"
+                    placeholderTextColor="#A0A4A8"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showRecoveryPassword}
+                    autoCapitalize="none"
+                    onSubmitEditing={handleLogin}
+                  />
+                </View>
+                <Text style={styles.loginNoticeText}>{newPassword.length >= 8 ? '✓ ' : '○ '}Pelo menos 8 caracteres</Text>
+              </>
+            )}
 
             <View style={styles.forgotPasswordRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  setLoginError('');
-                  setLoginNotice('A recuperação de senha será disponibilizada em breve.');
-                }}
-                accessibilityRole="button"
-              >
-                <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
-              </TouchableOpacity>
+              {recoveryMode === 'login' ? (
+                <TouchableOpacity onPress={() => { setRecoveryMode('request'); setLoginError(''); setLoginNotice(''); }} accessibilityRole="button">
+                  <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.recoveryLinks}>
+                  <TouchableOpacity onPress={() => { setRecoveryMode('login'); setLoginError(''); setLoginNotice(''); }} accessibilityRole="button">
+                    <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
+                  </TouchableOpacity>
+                  {recoveryMode === 'reset' && (
+                    <TouchableOpacity onPress={requestPasswordRecovery} disabled={isSubmitting || recoveryCooldown > 0} accessibilityRole="button">
+                      <Text style={styles.forgotPasswordText}>{recoveryCooldown > 0 ? `Reenviar em ${recoveryCooldown}s` : 'Reenviar código'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
 
             {!!loginNotice && (
@@ -278,16 +421,18 @@ function LoginScreen({ startupMessage }) {
               disabled={isSubmitting}
               accessibilityRole="button"
             >
-              <Text style={styles.primaryButtonText}>{isSubmitting ? 'Entrando...' : 'Entrar'}</Text>
+              <Text style={styles.primaryButtonText}>{isSubmitting ? 'Aguarde...' : recoveryMode === 'login' ? 'Entrar' : recoveryMode === 'request' ? 'Enviar código de recuperação' : 'Redefinir senha'}</Text>
               {!isSubmitting && <Feather name="arrow-right" size={18} color={BRAND.white} />}
             </TouchableOpacity>
 
-            <View style={styles.registerLine}>
-              <Text style={styles.registerText}>Ainda não tem uma conta? </Text>
-              <TouchableOpacity onPress={() => router.push('/cadastro')}>
-                <Text style={styles.registerLink}>Cadastre-se</Text>
-              </TouchableOpacity>
-            </View>
+            {recoveryMode === 'login' && (
+              <View style={styles.registerLine}>
+                <Text style={styles.registerText}>Ainda não tem uma conta? </Text>
+                <TouchableOpacity onPress={() => router.push('/cadastro')}>
+                  <Text style={styles.registerLink}>Cadastre-se</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <View style={styles.secureNote}>
@@ -497,6 +642,7 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, height: 52, paddingHorizontal: 11, color: BRAND.black, fontSize: 15 },
   forgotPasswordRow: { alignItems: 'flex-end', marginTop: 10, marginBottom: 8 },
+  recoveryLinks: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   forgotPasswordText: { color: '#168AC7', fontSize: 13, fontWeight: '600', paddingVertical: 4 },
   loginNoticeText: { color: '#168AC7', fontSize: 12, lineHeight: 18, marginBottom: 8 },
   loginPrimaryButton: { marginTop: 8 },

@@ -1,6 +1,7 @@
-import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 
 const baseUrl = process.env.API_URL || 'http://localhost:3000';
 
@@ -57,7 +58,7 @@ const candidateLogin = await request('/api/auth/login', {
 });
 expectStatus(candidateLogin, 200, 'candidate login');
 
-const candidateToken = candidateLogin.data.token;
+let candidateToken = candidateLogin.data.token;
 const recruiterToken = recruiterLogin.data.token;
 const adminToken = adminLogin.data.token;
 const candidateId = candidateLogin.data.user.id;
@@ -70,6 +71,38 @@ assert.ok(!initialCandidateMessages.data.conversations.some((item) => item.job_t
 const candidateMe = await request('/api/auth/me', { token: candidateToken });
 expectStatus(candidateMe, 200, 'candidate session validation');
 assert.equal(candidateMe.data.user.id, candidateId);
+
+const defaultPreferences = await request('/api/users/me/preferences', { token: candidateToken });
+expectStatus(defaultPreferences, 200, 'candidate preferences');
+const updatedPreferences = await request('/api/users/me/preferences', {
+  method: 'PUT',
+  token: candidateToken,
+  body: {
+    theme: 'dark',
+    preferred_sector: 'Tecnologia',
+    preferred_location: 'São Paulo',
+    preferred_work_model: 'REMOTE',
+    preferred_contract_type: 'INTERNSHIP',
+  },
+});
+expectStatus(updatedPreferences, 200, 'candidate job preferences update');
+assert.equal(updatedPreferences.data.preferences.theme, 'dark');
+assert.equal(updatedPreferences.data.preferences.preferred_sector, 'Tecnologia');
+assert.equal(updatedPreferences.data.preferences.preferred_location, 'São Paulo');
+assert.equal(updatedPreferences.data.preferences.preferred_work_model, 'REMOTE');
+assert.equal(updatedPreferences.data.preferences.preferred_contract_type, 'INTERNSHIP');
+const preferenceReset = await request('/api/users/me/preferences', {
+  method: 'PUT',
+  token: candidateToken,
+  body: {
+    theme: 'system',
+    preferred_sector: null,
+    preferred_location: null,
+    preferred_work_model: null,
+    preferred_contract_type: null,
+  },
+});
+expectStatus(preferenceReset, 200, 'candidate preferences cleanup');
 
 const setupDb = new DatabaseSync('./data/conectafacil.db');
 setupDb.prepare('DELETE FROM users WHERE email = ?').run('second-recruiter@smoke.test');
@@ -114,6 +147,50 @@ const testVacancy = await request('/api/recruiters/vacancies', {
 });
 expectStatus(testVacancy, 201, 'test vacancy creation');
 const vacancyId = testVacancy.data.vacancy.id;
+
+const combinedVacancyFilters = await request(
+  '/api/candidates/vacancies?q=smoke&company_sector=Tecnologia&location=S%C3%A3o%20Paulo&work_model=HYBRID&contract_type=CLT',
+  { token: candidateToken },
+);
+expectStatus(combinedVacancyFilters, 200, 'combined vacancy filters');
+assert.ok(combinedVacancyFilters.data.vacancies.some((vacancy) => vacancy.id === vacancyId));
+const conflictingVacancyFilters = await request(
+  '/api/candidates/vacancies?q=smoke&company_sector=Tecnologia&location=S%C3%A3o%20Paulo&work_model=REMOTE&contract_type=CLT',
+  { token: candidateToken },
+);
+expectStatus(conflictingVacancyFilters, 200, 'combined vacancy filters with no match');
+assert.ok(!conflictingVacancyFilters.data.vacancies.some((vacancy) => vacancy.id === vacancyId));
+
+const savedVacancy = await request(`/api/candidates/vacancies/${vacancyId}/favorite`, {
+  method: 'PUT',
+  token: candidateToken,
+  body: {},
+});
+expectStatus(savedVacancy, 201, 'candidate saves vacancy');
+const duplicateSavedVacancy = await request(`/api/candidates/vacancies/${vacancyId}/favorite`, {
+  method: 'PUT',
+  token: candidateToken,
+  body: {},
+});
+expectStatus(duplicateSavedVacancy, 201, 'duplicate favorite remains idempotent');
+const recruiterFavorites = await request('/api/candidates/favorites', { token: recruiterToken });
+expectStatus(recruiterFavorites, 403, 'recruiter cannot list candidate favorites');
+const candidateRelogin = await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'Senha123!' },
+});
+expectStatus(candidateRelogin, 200, 'candidate relogin before favorite persistence check');
+candidateToken = candidateRelogin.data.token;
+const persistedFavorites = await request('/api/candidates/favorites', { token: candidateToken });
+expectStatus(persistedFavorites, 200, 'candidate favorites persist across sessions');
+assert.equal(persistedFavorites.data.favorites.filter((vacancy) => vacancy.id === vacancyId).length, 1);
+const removedFavorite = await request(`/api/candidates/vacancies/${vacancyId}/favorite`, {
+  method: 'DELETE',
+  token: candidateToken,
+});
+expectStatus(removedFavorite, 200, 'candidate removes saved vacancy');
+const favoritesAfterRemoval = await request('/api/candidates/favorites', { token: candidateToken });
+assert.ok(!favoritesAfterRemoval.data.favorites.some((vacancy) => vacancy.id === vacancyId));
 
 const activeVacancyEdit = await request(`/api/recruiters/vacancies/${vacancyId}`, {
   method: 'PUT',
@@ -267,27 +344,63 @@ const forgot = await request('/api/auth/forgot-password', {
   body: { email: 'candidate@test.com' },
 });
 expectStatus(forgot, 200, 'forgot password');
-assert.equal(
-  forgot.data.message,
-  'Se o e-mail estiver cadastrado, você receberá um código de recuperação.',
-);
+const forgotUnknown = await request('/api/auth/forgot-password', {
+  method: 'POST',
+  body: { email: 'unknown-reset@test.com' },
+});
+expectStatus(forgotUnknown, 200, 'forgot password for unknown address');
+assert.equal(forgot.data.message, forgotUnknown.data.message, 'reset request response must not disclose account existence');
 
 const db = new DatabaseSync('./data/conectafacil.db');
-const resetCode = db.prepare('SELECT code_email_verification FROM users WHERE email = ?').get('candidate@test.com').code_email_verification;
+const resetRequest = db.prepare('SELECT id, code_hash FROM password_reset_requests WHERE user_id = ? ORDER BY requested_at DESC LIMIT 1').get(candidateId);
+assert.ok(resetRequest, 'password reset token should be persisted');
+assert.ok(resetRequest.code_hash.startsWith('$2'), 'only the bcrypt code hash should be persisted');
+db.prepare('UPDATE password_reset_requests SET code_hash = ? WHERE id = ?')
+  .run(await bcrypt.hash('742981', 12), resetRequest.id);
 db.close();
-const invalidResetCode = resetCode === '000000' ? '000001' : '000000';
 
 const invalidReset = await request('/api/auth/reset-password', {
   method: 'POST',
-  body: { email: 'candidate@test.com', code: invalidResetCode, password: 'SenhaNova123!' },
+  body: { email: 'candidate@test.com', code: '000000', password: 'SenhaNova123!' },
 });
 expectStatus(invalidReset, 400, 'invalid password reset code');
 
 const reset = await request('/api/auth/reset-password', {
   method: 'POST',
-  body: { email: 'candidate@test.com', code: resetCode, password: 'Senha123!' },
+  body: { email: 'candidate@test.com', code: '742981', password: 'SenhaNova123!' },
 });
 expectStatus(reset, 200, 'reset password');
+
+const resetReuse = await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', code: '742981', password: 'SenhaNova123!' },
+});
+expectStatus(resetReuse, 400, 'password reset code cannot be reused');
+expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password reset revokes old session');
+
+const resetLogin = await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'SenhaNova123!' },
+});
+expectStatus(resetLogin, 200, 'login with reset password');
+candidateToken = resetLogin.data.token;
+
+const changedPassword = await request('/api/auth/change-password', {
+  method: 'POST',
+  token: candidateToken,
+  body: { current_password: 'SenhaNova123!', new_password: 'SenhaNova456!' },
+});
+expectStatus(changedPassword, 200, 'authenticated password change');
+expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password change revokes old session');
+expectStatus(await request('/api/auth/me', { token: changedPassword.data.token }), 200, 'password change returns rotated session');
+
+const resetCleanup = new DatabaseSync('./data/conectafacil.db');
+resetCleanup.prepare('DELETE FROM password_reset_requests WHERE user_id = ?').run(candidateId);
+resetCleanup.prepare('DELETE FROM password_reset_attempts WHERE email_hash = ?')
+  .run(createHash('sha256').update('candidate@test.com').digest('hex'));
+resetCleanup.prepare('UPDATE users SET password_hash = ?, token_version = 0 WHERE id = ?')
+  .run(await bcrypt.hash('Senha123!', 12), candidateId);
+resetCleanup.close();
 
 const linkedDb = new DatabaseSync('./data/conectafacil.db');
 const linkedUser = linkedDb.prepare('SELECT user_id FROM vacancies LIMIT 1').get();
@@ -301,6 +414,7 @@ expectStatus(linkedUserDelete, 409, 'linked user delete');
 
 const cleanupDb = new DatabaseSync('./data/conectafacil.db');
 cleanupDb.prepare('DELETE FROM messages WHERE application_id IN (SELECT id FROM interests WHERE vacancy_id = ?)').run(vacancyId);
+  cleanupDb.prepare('DELETE FROM saved_vacancies WHERE vacancy_id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM interests WHERE vacancy_id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM vacancies WHERE id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM users WHERE email = ?').run('second-recruiter@smoke.test');

@@ -1,30 +1,28 @@
-import React, { useContext, useState, useEffect } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  View,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  TextInput,
-  Platform,
-} from 'react-native';
-import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { SessionContext } from '../../context/SessionContext';
-import { clearToken, apiFetch, getAssetUrl } from '../../lib/api';
+import { apiFetch, clearToken, getAssetUrl } from '../../lib/api';
 
+import JobCard from '../../components/jobs/JobCard';
 import Header from '../../components/layout/Header';
 import NotificationModal from '../../components/modals/NotificationModal';
 import ProfileMenuModal from '../../components/modals/ProfileMenuModal';
-import JobCard from '../../components/jobs/JobCard';
-
-const colors = Colors.light;
 
 const formatCurrency = (value) => {
   const amount = Number(value);
@@ -45,7 +43,7 @@ const formatTimeAgo = (value) => {
   return `Há ${diffMonths} mês${diffMonths === 1 ? '' : 'es'}`;
 };
 
-const normalizeJob = (vacancy) => ({
+const normalizeJob = (vacancy, colors) => ({
   id: String(vacancy.id),
   vacancyId: vacancy.id,
   company: vacancy.company_name || 'Empresa',
@@ -71,6 +69,8 @@ const normalizeJob = (vacancy) => ({
 
 export default function HomeScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  const { colors, preferences, loading: preferencesLoading, isDark } = useAppPreferences();
+  const styles = makeStyles(colors);
   const isEmployer = sessionData?.user?.user_type === 'RECRUITER';
 
   const [selectedFilter, setSelectedFilter] = useState('Para você');
@@ -101,6 +101,17 @@ export default function HomeScreen() {
   const router = useRouter();
 
   useEffect(() => {
+    if (preferencesLoading) return;
+    setAdvancedFilters((current) => ({
+      ...current,
+      company_sector: current.company_sector || preferences.preferred_sector || '',
+      location: current.location || preferences.preferred_location || '',
+      work_model: current.work_model || preferences.preferred_work_model || '',
+      contract_type: current.contract_type || preferences.preferred_contract_type || '',
+    }));
+  }, [preferencesLoading, preferences.preferred_sector, preferences.preferred_location, preferences.preferred_work_model, preferences.preferred_contract_type]);
+
+  useEffect(() => {
     let active = true;
     const timer = setTimeout(async () => {
       setLoadingJobs(true);
@@ -125,7 +136,7 @@ export default function HomeScreen() {
 
       try {
         const data = await apiFetch(`/candidates/vacancies?${params.toString()}`);
-        if (active) setJobs((data.vacancies || []).map(normalizeJob));
+        if (active) setJobs((data.vacancies || []).map((vacancy) => normalizeJob(vacancy, colors)));
       } catch (error) {
         if (active) {
           setJobs([]);
@@ -140,28 +151,31 @@ export default function HomeScreen() {
       active = false;
       clearTimeout(timer);
     };
-  }, [searchText, advancedFilters, selectedFilter, refreshJobs]);
+  }, [searchText, advancedFilters, selectedFilter, refreshJobs, colors]);
 
   useEffect(() => {
     let active = true;
-    Promise.allSettled([
-      apiFetch('/candidates/favorites'),
-      apiFetch('/candidates/applications'),
-    ]).then(([favoritesResult, applicationsResult]) => {
+    apiFetch('/candidates/applications').then((result) => {
       if (!active) return;
-      if (favoritesResult.status === 'fulfilled') {
-        const favorites = favoritesResult.value.favorites || [];
-        setFavoriteJobs(favorites.map(normalizeJob));
-        setFavoriteVacancyIds(favorites.map((favorite) => String(favorite.id)));
-      }
-      if (applicationsResult.status === 'fulfilled') {
-        const items = applicationsResult.value.applications || [];
-        setApplications(items);
-        setAppliedVacancyIds(items.map((application) => String(application.vacancy_id)));
-      }
-    });
+      const items = result.applications || [];
+      setApplications(items);
+      setAppliedVacancyIds(items.map((application) => String(application.vacancy_id)));
+    }).catch(() => {});
     return () => { active = false; };
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    apiFetch('/candidates/favorites').then((result) => {
+      if (!active) return;
+      const favorites = result.favorites || [];
+      const favoriteIds = favorites.map((favorite) => String(favorite.id));
+      setFavoriteJobs(favorites.map((favorite) => normalizeJob(favorite, colors)));
+      setFavoriteVacancyIds(favoriteIds);
+      setSessionData((current) => current ? { ...current, favoriteVacancyIds: favoriteIds } : current);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [colors, setSessionData]));
 
   const applyToJob = async (vacancyId) => {
     if (applyingToJob !== null) return;
@@ -206,13 +220,19 @@ export default function HomeScreen() {
       if (isSaved) {
         setFavoriteVacancyIds((current) => current.filter((id) => id !== vacancyId));
         setFavoriteJobs((current) => current.filter((favorite) => String(favorite.vacancyId) !== vacancyId));
+        setSessionData((current) => current ? {
+          ...current,
+          favoriteVacancyIds: (current.favoriteVacancyIds || []).filter((id) => String(id) !== vacancyId),
+        } : current);
       } else {
         setFavoriteVacancyIds((current) => [...new Set([...current, vacancyId])]);
         setFavoriteJobs((current) => [job, ...current.filter((favorite) => String(favorite.vacancyId) !== vacancyId)]);
         const result = await apiFetch('/candidates/favorites');
         const favorites = result.favorites || [];
-        setFavoriteJobs(favorites.map(normalizeJob));
-        setFavoriteVacancyIds(favorites.map((favorite) => String(favorite.id)));
+        const favoriteIds = favorites.map((favorite) => String(favorite.id));
+        setFavoriteJobs(favorites.map((favorite) => normalizeJob(favorite, colors)));
+        setFavoriteVacancyIds(favoriteIds);
+        setSessionData((current) => current ? { ...current, favoriteVacancyIds: favoriteIds } : current);
       }
     } catch (error) {
       Alert.alert('Não foi possível atualizar vagas salvas', error.message || 'Tente novamente.');
@@ -273,6 +293,10 @@ export default function HomeScreen() {
   };
 
   const toggleNotifications = async () => {
+    if (!(sessionData?.settings?.active_notification ?? sessionData?.user?.active_notification ?? true)) {
+      Alert.alert('Avisos desativados', 'Ative os avisos nas configurações para consultar atualizações de candidaturas.');
+      return;
+    }
     const shouldOpen = !showNotification;
     setShowNotification(shouldOpen);
     setShowProfileMenu(false);
@@ -339,10 +363,11 @@ export default function HomeScreen() {
   };
 
   const filteredJobs = getFilteredJobs();
+  const activeFilterCount = Object.values(advancedFilters).filter(Boolean).length;
 
   return (
     <SafeAreaView style={styles.homeContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* Modal de Logout */}
       <Modal visible={isLoggingOut} transparent animationType="fade">
@@ -481,9 +506,11 @@ export default function HomeScreen() {
                 accessibilityLabel="Abrir filtros avançados"
               >
                 <Feather name="sliders" size={15} color={colors.primaryDark} />
-                <Text style={styles.advancedFilterText}>Filtros</Text>
+                <Text style={styles.advancedFilterText}>{activeFilterCount ? `Filtros (${activeFilterCount})` : 'Filtros'}</Text>
               </TouchableOpacity>
             </View>
+
+            <Text style={styles.resultCount}>{loadingJobs ? 'Atualizando oportunidades...' : `${filteredJobs.length} ${filteredJobs.length === 1 ? 'oportunidade' : 'oportunidades'}`}</Text>
 
             {loadingJobs ? (
               <View style={styles.emptyContainer}>
@@ -616,7 +643,7 @@ export default function HomeScreen() {
             </ScrollView>
             {jobDetails && !jobDetails.loading ? (
               <View style={styles.detailActions}>
-                <TouchableOpacity onPress={() => toggleFavorite(normalizeJob(jobDetails))} style={styles.detailSaveButton} accessibilityLabel={favoriteVacancyIds.includes(String(jobDetails.id)) ? 'Remover vaga das salvas' : 'Salvar vaga'}>
+                <TouchableOpacity onPress={() => toggleFavorite(normalizeJob(jobDetails, colors))} style={styles.detailSaveButton} accessibilityLabel={favoriteVacancyIds.includes(String(jobDetails.id)) ? 'Remover vaga das salvas' : 'Salvar vaga'}>
                   <Feather name="bookmark" size={18} color={favoriteVacancyIds.includes(String(jobDetails.id)) ? colors.primaryDark : colors.muted} />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -635,7 +662,8 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   homeContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -672,6 +700,7 @@ const styles = StyleSheet.create({
   },
   advancedFilterButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.surface },
   advancedFilterText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
+  resultCount: { color: colors.muted, fontSize: 12, marginBottom: 10 },
   retryButton: { marginTop: 14, borderWidth: 1, borderColor: colors.tint, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8 },
   retryButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 18, backgroundColor: 'rgba(0,0,0,0.36)' },
@@ -828,4 +857,5 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 4,
   },
-});
+  });
+}

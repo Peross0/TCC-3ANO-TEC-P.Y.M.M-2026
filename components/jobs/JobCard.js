@@ -1,11 +1,11 @@
-import React from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function JobCard({ item, onApply, onSave, onOpenDetails, isSaved = false, isApplied = false, isApplying = false, isSaving = false }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return (
 
     <View style={styles.card}>
@@ -48,25 +48,28 @@ export default function JobCard({ item, onApply, onSave, onOpenDetails, isSaved 
             accessibilityRole="button"
             accessibilityLabel={isSaved ? `Remover ${item.title} das vagas salvas` : `Salvar ${item.title}`}
           >
-            <Feather name="bookmark" size={18} color={isSaved ? colors.primaryDark : colors.muted} />
+            <MaterialIcons name={isSaved ? 'bookmark' : 'bookmark-border'} size={20} color={isSaved ? colors.tint : colors.muted} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.interestButton, (isApplied || isApplying) && styles.interestButtonDisabled]}
-            onPress={() => onApply?.(item.vacancyId)}
-            disabled={isApplied || isApplying}
-            accessibilityRole="button"
-          >
-            <Text style={styles.interestButtonText}>
-              {isApplying ? 'Enviando...' : isApplied ? 'Candidatado' : 'Tenho interesse'}
-            </Text>
-          </TouchableOpacity>
+          {onApply ? (
+            <TouchableOpacity
+              style={[styles.interestButton, (isApplied || isApplying) && styles.interestButtonDisabled]}
+              onPress={() => onApply(item.vacancyId)}
+              disabled={isApplied || isApplying}
+              accessibilityRole="button"
+            >
+              <Text style={styles.interestButtonText}>
+                {isApplying ? 'Enviando...' : isApplied ? 'Candidatado' : 'Tenho interesse'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 20,
@@ -164,4 +167,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primaryDark,
   },
-});
+  });
+}

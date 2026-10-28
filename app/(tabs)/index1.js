@@ -1,27 +1,25 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+    Alert,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import MessageHeader from '../../components/messages/MessageHeader';
 import MessageInput from '../../components/messages/MessageInput';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { SessionContext } from '../../context/SessionContext';
 import { apiFetch, getAssetUrl } from '../../lib/api';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
 
 function formatTime(value) {
   if (!value) return '';
@@ -33,6 +31,8 @@ function formatTime(value) {
 
 export default function MessagesScreen() {
   const { sessionData } = useContext(SessionContext);
+  const { colors, isDark } = useAppPreferences();
+  const styles = makeStyles(colors);
   const router = useRouter();
   const [authenticatedUserId, setAuthenticatedUserId] = useState(sessionData?.user?.id ?? null);
   const currentUserId = sessionData?.user?.id ?? authenticatedUserId;
@@ -177,7 +177,7 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={styles.header}><Text style={styles.title}>Mensagens</Text></View>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -239,7 +239,8 @@ export default function MessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   title: { fontSize: 24, fontWeight: '800', color: colors.text },
@@ -289,4 +290,5 @@ const styles = StyleSheet.create({
   emptySubText: { fontSize: 13, color: colors.muted, textAlign: 'center', paddingHorizontal: 12 },
   jobsButton: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18, backgroundColor: colors.tint },
   jobsButtonText: { fontSize: 13, fontWeight: '700', color: colors.text },
-});
+  });
+}

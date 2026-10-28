@@ -1,11 +1,10 @@
-import React from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function MessageInput({ value, onChangeText, onSend }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.inputContainer}>
       <TextInput
@@ -22,7 +21,8 @@ export default function MessageInput({ value, onChangeText, onSend }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -51,4 +51,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-});
+  });
+}

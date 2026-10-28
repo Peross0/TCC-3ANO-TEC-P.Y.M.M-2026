@@ -14,6 +14,8 @@ npm start
 A API fica em `http://localhost:3000`.
 As migrations são verificadas ao iniciar o backend; os seeds não são executados automaticamente para evitar recriar contas e apagar dados relacionados a vagas de demonstração a cada reinicialização. Em desenvolvimento, execute `npm run seed` manualmente apenas quando quiser repor os dados de teste.
 
+Para enviar e-mails de recuperação de senha, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `SMTP_FROM` no `.env`. Sem SMTP, o ambiente de desenvolvimento registra no terminal que o e-mail não foi enviado e mostra o código apenas para testes locais. Em outros ambientes, a ausência ou falha do SMTP invalida o código emitido; a API mantém a mesma resposta genérica para não revelar se o e-mail está cadastrado.
+
 ## Cadastro
 
 O cadastro cria a conta e inicia a sessão imediatamente; a confirmação de e-mail não é exigida. A recuperação de senha continua usando código temporário enviado por e-mail.

@@ -1,25 +1,25 @@
-import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { Colors } from '../../constants/theme';
+import { useCallback, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { apiFetch, getAssetUrl } from '../../lib/api';
 
-const colors = Colors.light;
-
 export default function EmpresasScreen() {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   const [empresas, setEmpresas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
@@ -122,7 +122,8 @@ export default function EmpresasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.line },
   title: { color: colors.text, fontSize: 27, fontWeight: '800' },
@@ -149,4 +150,5 @@ const styles = StyleSheet.create({
   detailDescription: { color: colors.inkSoft, fontSize: 14, lineHeight: 21 },
   detailLocation: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line },
   detailLocationText: { flex: 1, color: colors.muted, fontSize: 13 },
-});
+  });
+}

@@ -1,7 +1,7 @@
+import { existsSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getKnex } from '../../config/database.js';
 import { env } from '../../config/env.js';
-import { unlinkSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 export async function updateAvatar(userId, avatarFilename) {
   const knex = getKnex();
@@ -54,6 +54,10 @@ const DEFAULT_PREFERENCES = {
   large_text: false,
   high_contrast: false,
   reduce_motion: false,
+  preferred_sector: null,
+  preferred_location: null,
+  preferred_work_model: null,
+  preferred_contract_type: null,
 };
 
 function normalizePreferences(row) {
@@ -63,6 +67,10 @@ function normalizePreferences(row) {
     large_text: Boolean(row.large_text),
     high_contrast: Boolean(row.high_contrast),
     reduce_motion: Boolean(row.reduce_motion),
+    preferred_sector: row.preferred_sector || null,
+    preferred_location: row.preferred_location || null,
+    preferred_work_model: row.preferred_work_model || null,
+    preferred_contract_type: row.preferred_contract_type || null,
   };
 }
 

@@ -1,8 +1,8 @@
-import { useContext } from 'react';
-import { Redirect, Tabs } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Redirect, Tabs } from 'expo-router';
+import { useContext } from 'react';
 import { Platform } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useAppPreferences } from '../../context/PreferencesContext';
 import { SessionContext } from '../../context/SessionContext';
 
 function blurFocusedWebElement() {
@@ -13,6 +13,7 @@ function blurFocusedWebElement() {
 
 export default function TabLayout() {
   const { sessionData } = useContext(SessionContext);
+  const { colors } = useAppPreferences();
 
   if (sessionData?.user?.user_type !== 'CANDIDATE') {
     return <Redirect href="/carregando" />;
@@ -25,9 +26,9 @@ export default function TabLayout() {
       }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.light.tint,
-        tabBarInactiveTintColor: Colors.light.muted,
-        tabBarStyle: { backgroundColor: Colors.light.surface, borderTopColor: Colors.light.line },
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
       }}
     >
       <Tabs.Screen
@@ -60,9 +61,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index3"
         options={{
-          title: 'Sobre',
+          title: 'Conta e configurações',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="info" size={24} color={color} />
+            <MaterialIcons name="settings" size={24} color={color} />
           ),
         }}
       />

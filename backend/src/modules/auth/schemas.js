@@ -58,3 +58,13 @@ export const resetPasswordSchema = z.object({
     password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
   }),
 });
+
+export const changePasswordSchema = z.object({
+  body: z.object({
+    current_password: z.string().min(1, 'Informe sua senha atual.'),
+    new_password: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+  }).refine((data) => data.current_password !== data.new_password, {
+    message: 'A nova senha deve ser diferente da senha atual.',
+    path: ['new_password'],
+  }),
+});

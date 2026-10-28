@@ -13,13 +13,19 @@ export async function login(req, res) {
 
 export async function forgotPassword(req, res) {
   const { email } = req.validated.body;
-  const result = await authService.forgotPassword(email);
+  const result = await authService.forgotPassword(email, req.ip);
   res.json(result);
 }
 
 export async function resetPassword(req, res) {
   const { email, code, password } = req.validated.body;
   const result = await authService.resetPassword(email, code, password);
+  res.json(result);
+}
+
+export async function changePassword(req, res) {
+  const { current_password, new_password } = req.validated.body;
+  const result = await authService.changePassword(req.user.id, current_password, new_password);
   res.json(result);
 }
 

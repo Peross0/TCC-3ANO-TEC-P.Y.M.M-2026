@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { Image, Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useState } from 'react';
+import { Image, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function Header({
   showNotification,
@@ -19,6 +17,8 @@ export default function Header({
   onClearSearch,
 }) {
   const [failedAvatarUri, setFailedAvatarUri] = useState(null);
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   const showAvatar = avatarUri && failedAvatarUri !== avatarUri;
 
   return (
@@ -93,7 +93,8 @@ export default function Header({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,4 +143,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   avatarImage: { width: '100%', height: '100%' },
-});
+  });
+}

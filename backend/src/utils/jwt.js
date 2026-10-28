@@ -1,5 +1,5 @@
-import { randomInt } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+import { randomInt } from 'node:crypto';
 import { env } from '../config/env.js';
 
 export function signToken(payload, options = {}) {
@@ -21,6 +21,7 @@ export function createAuthTokens(user) {
   const payload = {
     sub: user.id,
     type: user.user_type,
+    version: Number(user.token_version || 0),
   };
   const token = signToken(payload);
   return { token };

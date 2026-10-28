@@ -1,5 +1,5 @@
-import { verifyToken } from '../utils/jwt.js';
 import { getKnex } from '../config/database.js';
+import { verifyToken } from '../utils/jwt.js';
 
 export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -21,12 +21,19 @@ export async function authMiddleware(req, res, next) {
     const user = await knex('users')
       .where({ id: payload.sub })
       .whereNull('deleted_at')
-      .first('id', 'user_type');
+      .first('id', 'user_type', 'token_version');
 
     if (!user) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Usuário não encontrado',
+      });
+    }
+
+    if (Number(payload.version || 0) !== Number(user.token_version || 0)) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Sessão encerrada. Entre novamente.',
       });
     }
 

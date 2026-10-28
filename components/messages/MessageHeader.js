@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function MessageHeader({ activeChat, onBack }) {
   const [failedLogoUri, setFailedLogoUri] = useState(null);
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   if (!activeChat) return null;
   const showLogo = activeChat.companyLogoUri && failedLogoUri !== activeChat.companyLogoUri;
 
@@ -30,7 +30,8 @@ export default function MessageHeader({ activeChat, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   chatHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -63,4 +64,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.muted,
   },
-});
+  });
+}

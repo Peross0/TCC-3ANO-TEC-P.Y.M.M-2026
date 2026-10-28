@@ -1,11 +1,10 @@
-import React from 'react';
-import { View, Text, Modal, Pressable, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
-
-const colors = Colors.light;
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppPreferences } from '../../context/PreferencesContext';
 
 export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onGoToApplications, onLogout }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return (
     <Modal
       visible={visible}
@@ -38,7 +37,8 @@ export default function ProfileMenuModal({ visible, onClose, onGoToProfile, onGo
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -69,4 +69,5 @@ const styles = StyleSheet.create({
   },
   dropdownText: { fontSize: 14, color: colors.text, fontWeight: '500' },
   dropdownDivider: { height: 1, backgroundColor: colors.line, marginVertical: 2 },
-});
+  });
+}

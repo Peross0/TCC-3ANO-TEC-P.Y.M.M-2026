@@ -1,33 +1,31 @@
-import React, { useContext, useEffect, useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Platform,
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-} from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
+import { useContext, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useAppPreferences } from '../context/PreferencesContext';
 import { SessionContext } from '../context/SessionContext';
 import { apiFetch, getAssetUrl } from '../lib/api';
 
-const colors = Colors.light;
-
 export default function PerfilScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [curso, setCurso] = useState('');
-  const [genero, setGenero] = useState('');
-  const [descricao, setDescricao] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUri, setAvatarUri] = useState(getAssetUrl(sessionData?.profile?.avatar_url || sessionData?.user?.avatar_url));
@@ -203,35 +201,7 @@ export default function PerfilScreen() {
               />
             </>
           )}
-
-          <Text style={styles.label}>Gênero</Text>
-          <TextInput
-            style={styles.input}
-            value={genero}
-            onChangeText={setGenero}
-            placeholder="Seu gênero"
-          />
-
-          <View style={styles.descHead}>
-            <Text style={styles.label}>Sobre</Text>
-            <Text style={styles.counter}>{descricao.length}/300</Text>
-          </View>
-          <TextInput
-            style={[styles.input, styles.descInput]}
-            value={descricao}
-            onChangeText={setDescricao}
-            placeholder="Breve descrição..."
-            multiline
-            maxLength={300}
-          />
         </View>
-
-        {/* Currículo */}
-        <TouchableOpacity style={styles.card}>
-          <Feather name="file-text" size={20} color={colors.tint} />
-          <Text style={styles.cardText}>Anexar Currículo (PDF)</Text>
-          <Feather name="paperclip" size={18} color={colors.muted} />
-        </TouchableOpacity>
 
         {/* Botão Salvar */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
@@ -242,7 +212,8 @@ export default function PerfilScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
@@ -286,21 +257,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   readOnlyInput: { color: colors.muted },
-  descHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  counter: { fontSize: 11, color: colors.muted },
-  descInput: { height: 80, textAlignVertical: 'top' },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 10,
-    padding: 12,
-    gap: 10,
-    marginBottom: 20,
-  },
-  cardText: { flex: 1, fontSize: 14, color: colors.text },
   saveBtn: {
     backgroundColor: colors.tint,
     padding: 14,
@@ -308,4 +264,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveText: { color: colors.text, fontWeight: '700', fontSize: 15 },
-});
+  });
+}

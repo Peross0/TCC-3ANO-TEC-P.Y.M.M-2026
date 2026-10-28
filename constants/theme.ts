@@ -5,47 +5,55 @@
 
 import { Platform } from 'react-native';
 
-const paletteBlue = '#4FB3E6';
-const paletteGray = '#BFBFBF';
-const paletteBlack = '#000000';
+const paletteBlue = '#5A7FFF';
+const paletteInk = '#1E1D25';
+const paletteGray = '#667085';
 const paletteWhite = '#FFFFFF';
 
 export const Colors = {
   light: {
-    text: paletteBlack,
-    background: paletteWhite,
+    text: paletteInk,
+    ink: paletteInk,
+    inkSoft: '#475467',
+    background: '#F5F7FB',
     surface: paletteWhite,
-    line: paletteGray,
-    muted: paletteBlack,
-    tint: paletteBlue,
-    primaryDark: paletteBlack,
-    accent: paletteBlue,
-    accentWash: paletteGray,
-    lime: paletteBlue,
-    limeDark: paletteBlack,
-    limeWash: paletteGray,
-    primaryWash: paletteBlue,
-    icon: paletteBlack,
-    tabIconDefault: paletteGray,
-    tabIconSelected: paletteBlue,
-  },
-  dark: {
-    text: paletteWhite,
-    background: paletteBlack,
-    surface: paletteBlack,
-    line: paletteGray,
+    surfaceSoft: '#EFF2F8',
+    line: '#D9DFEA',
     muted: paletteGray,
     tint: paletteBlue,
-    primaryDark: paletteWhite,
+    primaryDark: paletteInk,
     accent: paletteBlue,
-    accentWash: paletteGray,
+    accentWash: '#E8EEFF',
     lime: paletteBlue,
-    limeDark: paletteBlack,
-    limeWash: paletteGray,
-    primaryWash: paletteBlue,
-    icon: paletteWhite,
-    tabIconDefault: paletteGray,
+    limeDark: paletteInk,
+    limeWash: '#E8EEFF',
+    primaryWash: '#E8EEFF',
+    icon: paletteInk,
+    tabIconDefault: '#98A2B3',
     tabIconSelected: paletteBlue,
+    danger: '#B42318',
+  },
+  dark: {
+    text: '#F3F4F6',
+    ink: '#F3F4F6',
+    inkSoft: '#D0D5DD',
+    background: '#101218',
+    surface: '#191B24',
+    surfaceSoft: '#20232E',
+    line: '#343843',
+    muted: '#A9B0BE',
+    tint: '#7D99FF',
+    primaryDark: '#F3F4F6',
+    accent: '#7D99FF',
+    accentWash: '#282F48',
+    lime: '#7D99FF',
+    limeDark: '#F3F4F6',
+    limeWash: '#282F48',
+    primaryWash: '#282F48',
+    icon: '#F3F4F6',
+    tabIconDefault: '#A9B0BE',
+    tabIconSelected: '#7D99FF',
+    danger: '#F97066',
   },
 };
 
