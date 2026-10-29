@@ -23,7 +23,7 @@ export default function RootLayout() {
           screenOptions={{
             headerShown: false,
             animation: 'slide_from_right',
-            // Opcional: define uma cor de fundo padrão para evitar flashes brancos durante a transição de telas
+            // Opcional: define uma cor de fundo padrão para evitar flashes brancos durante a transição de tela
             contentStyle: { backgroundColor: 'transparent' },
           }}
         >

@@ -276,7 +276,7 @@ export default function PerfilScreen() {
             ) : null}
           </View>
 
-          {/* Seção específica para o currículo caso o usuário seja candidato */}
+          {/* Seção específica para o currículo cas o usuário seja candidato */}
           {isCandidate && (
             <View style={styles.formCard}>
               <Text style={styles.sectionTitle}>Currículo Profissional</Text>
