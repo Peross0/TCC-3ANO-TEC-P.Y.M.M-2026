@@ -21,42 +21,46 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
+        // Remove os rótulos de texto de todas as abas globalmente
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.line,
+          height: Platform.OS === 'ios' ? 84 : 64, // Altura confortável sem os textos
+          paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+          paddingTop: 10,
+        },
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Início',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="home" size={24} color={color} />
+            <MaterialIcons name="home" size={26} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="index1"
         options={{
-          title: 'Mensagens',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="mail" size={24} color={color} />
+            <MaterialIcons name="mail" size={26} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="index2"
         options={{
-          title: 'Empresas',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="business" size={24} color={color} />
+            <MaterialIcons name="business" size={26} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="index3"
         options={{
-          title: 'Conta',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="person" size={24} color={color} />
+            <MaterialIcons name="person" size={26} color={color} />
           ),
         }}
       />

@@ -17,8 +17,15 @@ export default function RootLayout() {
     <SessionContext.Provider value={{ sessionData, setSessionData }}>
       <PreferencesProvider userId={sessionData?.user?.id}>
         <Stack
-          screenListeners={{ blur: blurFocusedWebElement }}
-          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+          screenListeners={{
+            blur: blurFocusedWebElement,
+          }}
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            // Opcional: define uma cor de fundo padrão para evitar flashes brancos durante a transição de telas
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="carregando" />

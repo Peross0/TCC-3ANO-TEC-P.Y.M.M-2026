@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   ActivityIndicator,
   Alert,
@@ -30,7 +31,9 @@ export default function PerfilScreen() {
   const [curso, setCurso] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [avatarUri, setAvatarUri] = useState(null);
+  const [resumeName, setResumeName] = useState(null);
   const router = useRouter();
   const user = sessionData?.user;
   const profile = sessionData?.profile;
@@ -41,6 +44,13 @@ export default function PerfilScreen() {
     setTelefone(profile?.phone || user?.phone || '');
     setCurso(profile?.course || user?.course || '');
     setAvatarUri(getAssetUrl(profile?.avatar_url || user?.avatar_url));
+    
+    // Se houver um currículo salvo no perfil/usuário, extraímos o nome ou definimos um rótulo padrão
+    const currentResumeUrl = profile?.resume_url || user?.resume_url;
+    if (currentResumeUrl) {
+      const parts = currentResumeUrl.split('/');
+      setResumeName(parts[parts.length - 1] || 'Currículo anexado');
+    }
   }, [profile, user]);
 
   const changeAvatar = async () => {
@@ -83,6 +93,49 @@ export default function PerfilScreen() {
       Alert.alert('Não foi possível atualizar a foto', error.message || 'Tente novamente.');
     } finally {
       setIsUploadingAvatar(false);
+    }
+  };
+
+  const handlePickResume = async () => {
+    if (isUploadingResume) return;
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      const fileAsset = result.assets[0];
+      const formData = new FormData();
+
+      if (Platform.OS === 'web' && fileAsset.file) {
+        formData.append('resume', fileAsset.file, fileAsset.name || 'curriculo.pdf');
+      } else {
+        formData.append('resume', {
+          uri: fileAsset.uri,
+          name: fileAsset.name || 'curriculo.pdf',
+          type: fileAsset.mimeType || 'application/pdf',
+        });
+      }
+
+      setIsUploadingResume(true);
+      // Rota de API para upload de currículo do candidato (ajuste conforme o seu backend)
+      const apiResult = await apiFetch('/candidates/resume', { method: 'POST', body: formData });
+      const updatedResumeUrl = apiResult.candidate?.resume_url || apiResult.resume_url;
+
+      setResumeName(fileAsset.name);
+      setSessionData((current) => ({
+        ...current,
+        profile: { ...current.profile, resume_url: updatedResumeUrl },
+      }));
+
+      Alert.alert('Currículo enviado', 'Seu currículo foi anexado com sucesso.');
+    } catch (error) {
+      Alert.alert('Não foi possível enviar o currículo', error.message || 'Tente novamente.');
+    } finally {
+      setIsUploadingResume(false);
     }
   };
 
@@ -223,6 +276,40 @@ export default function PerfilScreen() {
             ) : null}
           </View>
 
+          {/* Seção específica para o currículo caso o usuário seja candidato */}
+          {isCandidate && (
+            <View style={styles.formCard}>
+              <Text style={styles.sectionTitle}>Currículo Profissional</Text>
+              <Text style={styles.subtitleResume}>Envie seu currículo em formato PDF ou Word</Text>
+              
+              <View style={styles.resumeRow}>
+                <View style={styles.resumeInfo}>
+                  <Feather name="file-text" size={20} color={colors.tint} />
+                  <Text style={styles.resumeName} numberOfLines={1}>
+                    {resumeName || 'Nenhum currículo anexado'}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.resumeButton, isUploadingResume && styles.disabledButton]}
+                  onPress={handlePickResume}
+                  disabled={isUploadingResume}
+                >
+                  {isUploadingResume ? (
+                    <ActivityIndicator size="small" color={colors.surface} />
+                  ) : (
+                    <>
+                      <Feather name="upload" size={14} color={colors.surface} />
+                      <Text style={styles.resumeButtonText}>
+                        {resumeName ? 'Alterar' : 'Anexar'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[styles.saveButton, isSaving && styles.disabledButton]}
             onPress={handleSave}
@@ -270,6 +357,7 @@ function makeStyles(colors, largeText) {
     headerCopy: { flex: 1 },
     title: { color: colors.text, fontSize: 20 * scale, fontWeight: '800' },
     subtitle: { color: colors.muted, fontSize: 12 * scale, marginTop: 3 },
+    subtitleResume: { color: colors.muted, fontSize: 12 * scale, marginBottom: 4 },
     content: { gap: 16, padding: 18, paddingBottom: 34 },
     avatarSection: { alignItems: 'center', paddingVertical: 8 },
     avatar: {
@@ -318,6 +406,43 @@ function makeStyles(colors, largeText) {
       paddingVertical: 10,
     },
     readOnlyInput: { color: colors.muted, opacity: 0.85 },
+    resumeRow: {
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      borderColor: colors.line,
+      borderRadius: 11,
+      borderWidth: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    resumeInfo: {
+      alignItems: 'center',
+      flex: 1,
+      flexDirection: 'row',
+      gap: 10,
+      marginRight: 10,
+    },
+    resumeName: {
+      color: colors.text,
+      fontSize: 13 * scale,
+      flex: 1,
+    },
+    resumeButton: {
+      alignItems: 'center',
+      backgroundColor: colors.tint,
+      borderRadius: 8,
+      flexDirection: 'row',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    resumeButtonText: {
+      color: colors.surface,
+      fontSize: 12 * scale,
+      fontWeight: '700',
+    },
     saveButton: {
       alignItems: 'center',
       backgroundColor: colors.tint,
