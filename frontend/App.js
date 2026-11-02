@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
@@ -7,8 +8,8 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { colors } from './lib/theme';
+
+import { colors, theme } from './lib/theme';
 
 export default function App() {
   const router = useRouter();
@@ -20,19 +21,10 @@ export default function App() {
 
   const handleSubmit = () => {
     if (isRegister) {
-      console.log('Cadastro');
-      console.log('Nome:', nome);
-      console.log('Email:', email);
-      console.log('Senha:', senha);
-
       alert('Cadastro realizado com sucesso!');
     } else {
-      console.log('Login');
-      console.log('Email:', email);
-      console.log('Senha:', senha);
-
       // Vai para a tela Home
-      router.push('/home.js');
+      router.push('/home');
     }
   };
 
@@ -107,7 +99,7 @@ export default function App() {
         <Text style={styles.footer}>© 2026 Conecta Fácil</Text>
       </View>
 
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
     </View>
   );
 }
@@ -127,14 +119,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 40,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 8,
+    ...theme.shadows.card,
   },
 
   logo: {
@@ -181,7 +166,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.ink,
+    color: colors.onPrimary,
     fontSize: 17,
     fontWeight: 'bold',
   },

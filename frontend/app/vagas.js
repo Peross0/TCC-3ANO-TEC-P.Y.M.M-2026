@@ -1,6 +1,6 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -11,8 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+
+import { Skeleton } from '../components/ui/Primitives';
 import { apiFetch } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -39,10 +39,10 @@ const getDefaultDraft = (vaga = null) => ({
 });
 
 export default function VagasScreen() {
-  const { nome, email } = useLocalSearchParams();
   const [vagas, setVagas] = useState([]);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('ALL');
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -51,7 +51,6 @@ export default function VagasScreen() {
   const [draft, setDraft] = useState(getDefaultDraft());
 
   const carregarVagas = async (statusFilter = filtroStatus) => {
-    setCarregando(true);
     try {
       const query = new URLSearchParams({ limit: '50' });
       if (statusFilter !== 'ALL') {
@@ -61,6 +60,7 @@ export default function VagasScreen() {
       const data = await apiFetch(`/recruiters/vacancies?${query.toString()}`);
       setVagas(data.vacancies || []);
     } catch (error) {
+      setErro(error.message || 'Não foi possível carregar as vagas. Verifique a conexão e tente novamente.');
       Alert.alert('Não foi possível carregar vagas', error.message || 'Verifique o backend.');
     } finally {
       setCarregando(false);
@@ -110,6 +110,8 @@ export default function VagasScreen() {
         body: JSON.stringify({ status: targetStatus }),
       });
 
+      setCarregando(true);
+      setErro('');
       await carregarVagas(filtroStatus);
       Alert.alert(targetStatus === 'CLOSED' ? 'Vaga desativada' : 'Vaga reativada', targetStatus === 'CLOSED'
         ? 'A vaga foi ocultada para os candidatos e continua salva no sistema.'
@@ -162,12 +164,8 @@ export default function VagasScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headingRow}>
-          <Pressable onPress={() => router.replace({ pathname: '/home', params: { nome, email } })} style={styles.backButton} accessibilityLabel="Voltar para início">
-            <Feather name="arrow-left" size={20} color={colors.ink} />
-          </Pressable>
           <View style={styles.headingText}>
             <Text style={styles.eyebrow}>GESTÃO DE OPORTUNIDADES</Text>
-            <Text style={styles.title}>Vagas da empresa</Text>
             <Text style={styles.subtitle}>Gerencie o ciclo de vida das oportunidades da sua empresa.</Text>
           </View>
         </View>
@@ -176,8 +174,14 @@ export default function VagasScreen() {
           {FILTERS.map((filter) => (
             <Pressable
               key={filter.key}
-              style={[styles.filterChip, filtroStatus === filter.key && styles.filterChipSelected]}
-              onPress={() => setFiltroStatus(filter.key)}
+              style={({ pressed }) => [styles.filterChip, filtroStatus === filter.key && styles.filterChipSelected, pressed && styles.pressed]}
+              onPress={() => {
+                setCarregando(true);
+                setErro('');
+                setFiltroStatus(filter.key);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: filtroStatus === filter.key }}
             >
               <Text style={[styles.filterChipText, filtroStatus === filter.key && styles.filterChipTextSelected]}>{filter.label}</Text>
             </Pressable>
@@ -190,7 +194,32 @@ export default function VagasScreen() {
         </View>
 
         {carregando ? (
-          <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+          <View style={styles.loadingList} accessibilityLabel="Carregando vagas">
+            {[0, 1, 2].map((item) => (
+              <View key={item} style={styles.loadingCard}>
+                <Skeleton style={styles.loadingTitle} />
+                <Skeleton style={styles.loadingLine} />
+                <Skeleton style={styles.loadingLineShort} />
+              </View>
+            ))}
+          </View>
+        ) : erro ? (
+          <View style={styles.emptyState} accessibilityRole="alert">
+            <View style={styles.emptyIcon}><Feather name="alert-circle" size={26} color={colors.warning} /></View>
+            <Text style={styles.emptyTitle}>Não foi possível carregar as vagas</Text>
+            <Text style={styles.emptyText}>{erro}</Text>
+            <Pressable
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+              onPress={() => {
+                setCarregando(true);
+                setErro('');
+                carregarVagas(filtroStatus);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryText}>Tentar novamente</Text>
+            </Pressable>
+          </View>
         ) : vagasFiltradas.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}><Feather name="briefcase" size={28} color={colors.ink} /></View>
@@ -214,7 +243,7 @@ export default function VagasScreen() {
 
               <View style={styles.actionRow}>
                 <Pressable
-                  style={[styles.actionButton, styles.editButton, vaga.status === 'OPEN' && styles.actionButtonDisabled]}
+                  style={({ pressed }) => [styles.actionButton, styles.editButton, vaga.status === 'OPEN' && styles.actionButtonDisabled, pressed && styles.pressed]}
                   onPress={() => abrirEdicao(vaga)}
                   disabled={vaga.status === 'OPEN'}
                 >
@@ -222,7 +251,7 @@ export default function VagasScreen() {
                 </Pressable>
 
                 <Pressable
-                  style={[styles.actionButton, vaga.status === 'OPEN' ? styles.deactivateButton : styles.reactivateButton]}
+                  style={({ pressed }) => [styles.actionButton, vaga.status === 'OPEN' ? styles.deactivateButton : styles.reactivateButton, pressed && styles.pressed]}
                   onPress={() => handleStatusToggle(vaga, vaga.status === 'OPEN' ? 'CLOSED' : 'OPEN')}
                 >
                   <Text style={styles.actionButtonText}>{vaga.status === 'OPEN' ? 'Desativar' : 'Reativar'}</Text>
@@ -273,7 +302,7 @@ export default function VagasScreen() {
               </Pressable>
 
               <Pressable style={[styles.actionButton, styles.saveButton]} onPress={handleSaveEdit}>
-                <Text style={styles.actionButtonText}>Salvar</Text>
+                <Text style={[styles.actionButtonText, styles.onPrimaryText]}>Salvar</Text>
               </Pressable>
             </View>
           </View>
@@ -299,7 +328,7 @@ export default function VagasScreen() {
               </Pressable>
 
               <Pressable style={[styles.actionButton, styles.saveButton]} onPress={confirmStatusChange}>
-                <Text style={styles.actionButtonText}>Confirmar</Text>
+                <Text style={[styles.actionButtonText, styles.onPrimaryText]}>Confirmar</Text>
               </Pressable>
             </View>
           </View>
@@ -313,10 +342,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.paper },
   content: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 22 },
-  backButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headingText: { flex: 1 },
   eyebrow: { color: colors.ink, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginBottom: 5 },
-  title: { color: colors.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20, marginTop: 5 },
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 18, flexWrap: 'wrap' },
   filterChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
@@ -325,15 +352,21 @@ const styles = StyleSheet.create({
   filterChipTextSelected: { color: colors.paper },
   searchBox: { minHeight: 50, borderWidth: 1, borderColor: colors.line, borderRadius: 11, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, marginBottom: 18 },
   searchInput: { flex: 1, minWidth: 0, color: colors.ink, fontSize: 14, paddingHorizontal: 10 },
-  loader: { marginTop: 40 },
+  loadingList: { gap: 12, marginTop: 8 },
+  loadingCard: { minHeight: 140, justifyContent: 'center', gap: 14, padding: 18, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.line },
+  loadingTitle: { width: '48%', height: 18 },
+  loadingLine: { width: '82%' },
+  loadingLineShort: { width: '58%' },
+  retryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surfaceElevated, marginTop: 14 },
+  retryText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   jobCard: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 18, marginBottom: 13 },
   jobIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   jobBody: { flex: 1 },
   jobHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   jobTitle: { flex: 1, color: colors.ink, fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, alignSelf: 'flex-start' },
-  statusBadgeActive: { backgroundColor: '#dff7ea', borderWidth: 1, borderColor: '#3aa76d' },
-  statusBadgeInactive: { backgroundColor: '#fce6e6', borderWidth: 1, borderColor: '#d15a5a' },
+  statusBadgeActive: { backgroundColor: colors.successSurface, borderWidth: 1, borderColor: colors.success },
+  statusBadgeInactive: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.danger },
   statusBadgeText: { color: colors.ink, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
   companyName: { color: colors.ink, fontSize: 13, fontWeight: '700', marginTop: 6 },
   location: { color: colors.muted, fontSize: 12, marginTop: 5 },
@@ -342,21 +375,23 @@ const styles = StyleSheet.create({
   requirementsLabel: { color: colors.ink, fontSize: 11, fontWeight: '800', marginBottom: 3 },
   requirementsText: { color: colors.inkSoft, fontSize: 12, lineHeight: 18 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, flexWrap: 'wrap' },
-  actionButton: { minHeight: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1 },
+  actionButton: { minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1 },
   actionButtonText: { color: colors.ink, fontSize: 12, fontWeight: '700' },
   editButton: { backgroundColor: colors.surface, borderColor: colors.line },
-  deactivateButton: { backgroundColor: '#f3a7a7', borderColor: '#d96c6c' },
-  reactivateButton: { backgroundColor: '#bfe7d0', borderColor: '#4fa770' },
+  deactivateButton: { backgroundColor: colors.dangerSurface, borderColor: colors.danger },
+  reactivateButton: { backgroundColor: colors.successSurface, borderColor: colors.success },
   actionButtonDisabled: { opacity: 0.55 },
+  onPrimaryText: { color: colors.onPrimary },
+  pressed: { opacity: 0.78 },
   cancelButton: { backgroundColor: colors.surface, borderColor: colors.line },
   saveButton: { backgroundColor: colors.primary, borderColor: colors.primary },
   emptyState: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 30, marginTop: 16 },
   emptyIcon: { width: 56, height: 56, borderRadius: 17, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyTitle: { color: colors.ink, fontSize: 17, fontWeight: '700' },
   emptyText: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.35)', justifyContent: 'center', padding: 20 },
-  modalCard: { backgroundColor: colors.paper, borderRadius: 18, padding: 18, maxHeight: '85%' },
-  confirmCard: { backgroundColor: colors.paper, borderRadius: 18, padding: 18, width: '100%', maxWidth: 420, alignSelf: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: colors.surface, borderRadius: 18, padding: 18, maxHeight: '85%' },
+  confirmCard: { backgroundColor: colors.surface, borderRadius: 18, padding: 18, width: '100%', maxWidth: 420, alignSelf: 'center' },
   modalTitle: { color: colors.ink, fontSize: 22, fontWeight: '800', marginBottom: 14 },
   confirmTitle: { color: colors.ink, fontSize: 20, fontWeight: '800', marginBottom: 10 },
   confirmText: { color: colors.inkSoft, fontSize: 14, lineHeight: 20, marginBottom: 18 },

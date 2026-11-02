@@ -15,6 +15,7 @@ import {
     View,
     useWindowDimensions,
 } from 'react-native';
+
 import { apiFetch, saveSession } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -186,7 +187,7 @@ export default function LoginScreen() {
       });
       if (data.user.user_type !== 'RECRUITER') throw new Error('Esta conta não possui acesso de recrutador.');
       await saveSession(data.token, data.user);
-      router.replace({ pathname: '/home', params: { nome: data.user.full_name, email: data.user.email } });
+      router.replace('/home');
     } catch (error) {
       const message = error instanceof TypeError
         ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
@@ -232,6 +233,7 @@ export default function LoginScreen() {
         <Feather name={icon} size={17} color={colors.muted} />
         <TextInput
           style={styles.input}
+          accessibilityLabel={label}
           placeholderTextColor={colors.muted}
           value={value}
           onChangeText={onChangeText}
@@ -243,13 +245,13 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={[styles.shell, isWide && styles.shellWide]}>
             <View style={[styles.intro, isWide && styles.introWide]}>
               <Pressable style={styles.brand} onPress={() => router.replace('/')} accessibilityRole="button" accessibilityLabel="Voltar à página inicial">
-                <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.ink} /></View>
+                <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.onPrimary} /></View>
                 <Text style={styles.brandName}>Conecta Fácil</Text>
               </Pressable>
               <View style={styles.introCopy}>
@@ -295,7 +297,7 @@ export default function LoginScreen() {
                   </View>
                   <View style={styles.inputRow}>
                     <Feather name="lock" size={17} color={colors.muted} />
-                    <TextInput style={styles.input} placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
+                    <TextInput style={styles.input} accessibilityLabel="Senha" placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
                     <Pressable onPress={() => setShowPassword((visible) => !visible)} hitSlop={10} accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                       <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.muted} />
                     </Pressable>
@@ -311,7 +313,7 @@ export default function LoginScreen() {
                       <Text style={styles.label}>Nova senha</Text>
                       <View style={styles.inputRow}>
                         <Feather name="lock" size={17} color={colors.muted} />
-                        <TextInput style={styles.input} placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showNewPassword} value={newPassword} onChangeText={setNewPassword} />
+                        <TextInput style={styles.input} accessibilityLabel="Nova senha" placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showNewPassword} value={newPassword} onChangeText={setNewPassword} />
                         <Pressable onPress={() => setShowNewPassword((visible) => !visible)} accessibilityLabel={showNewPassword ? 'Ocultar nova senha' : 'Mostrar nova senha'}>
                           <Feather name={showNewPassword ? 'eye-off' : 'eye'} size={18} color={colors.muted} />
                         </Pressable>
@@ -342,7 +344,7 @@ export default function LoginScreen() {
 
                 <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={verificationPending ? handleVerifyEmail : handleSubmit} disabled={isSubmitting} accessibilityRole="button">
                   <Text style={styles.submitText}>{isSubmitting ? 'Aguarde…' : verificationPending ? 'Verificar e-mail' : isRegistering ? 'Criar meu acesso' : recoveryMode === 'request' ? 'Enviar link de recuperação' : recoveryMode === 'reset' ? 'Redefinir senha' : 'Entrar na conta'}</Text>
-                  {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.ink} />}
+                  {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.onPrimary} />}
                 </Pressable>
 
                 {recoveryMode === 'login' && <View style={styles.switchRow}>
@@ -390,15 +392,15 @@ const styles = StyleSheet.create({
   label: { color: colors.ink, fontSize: 13, fontWeight: '700', marginBottom: 7 },
   forgotPassword: { color: colors.primaryDark, fontSize: 12, fontWeight: '700', marginBottom: 7 },
   recoveryActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4, marginBottom: 10 },
-  recoveryMessage: { color: '#287A4B', fontSize: 12, lineHeight: 18, marginBottom: 12 },
-  recoveryError: { color: '#B42318', fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  recoveryMessage: { color: colors.success, fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  recoveryError: { color: colors.danger, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   recoveryHint: { color: colors.muted, fontSize: 12, marginBottom: 12 },
   inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: colors.surface },
-  input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14, outlineStyle: 'none' },
+  input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14 },
   submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
   pressedButton: { opacity: 0.88 },
   disabledButton: { opacity: 0.58 },
-  submitText: { color: colors.ink, fontSize: 14, fontWeight: '800' },
+  submitText: { color: colors.onPrimary, fontSize: 14, fontWeight: '800' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 20 },
   switchText: { color: colors.muted, fontSize: 13 },
   switchLink: { color: colors.primaryDark, fontSize: 13, fontWeight: '800' },

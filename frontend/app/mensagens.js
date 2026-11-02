@@ -1,3 +1,5 @@
+import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,8 +12,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+
+import { Skeleton } from '../components/ui/Primitives';
 import { apiFetch, getSession } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -24,7 +26,6 @@ function formatTime(value) {
 }
 
 export default function MensagensScreen() {
-  const { nome, email } = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
   const [userId, setUserId] = useState(null);
@@ -111,14 +112,10 @@ export default function MensagensScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.page}>
         <View style={styles.heading}>
-          <Pressable onPress={() => router.replace({ pathname: '/home', params: { nome, email } })} style={styles.backButton} accessibilityLabel="Voltar para o início">
-            <Feather name="arrow-left" size={19} color={colors.ink} />
-          </Pressable>
           <View style={styles.headingCopy}>
             <Text style={styles.eyebrow}>ÁREA EMPRESARIAL</Text>
-            <Text style={styles.title}>Mensagens</Text>
           </View>
-          <Pressable onPress={() => loadMessages()} style={styles.refreshButton} accessibilityLabel="Atualizar mensagens">
+          <Pressable onPress={() => loadMessages()} style={styles.refreshButton} accessibilityRole="button" accessibilityLabel="Atualizar mensagens" title="Atualizar mensagens">
             <Feather name="refresh-cw" size={17} color={colors.primaryDark} />
           </Pressable>
         </View>
@@ -130,7 +127,17 @@ export default function MensagensScreen() {
             <View style={[styles.conversationPane, isWide && styles.conversationPaneWide]}>
               <Text style={styles.paneTitle}>Candidaturas</Text>
               {isLoading && conversations.length === 0 ? (
-                <View style={styles.center}><ActivityIndicator color={colors.primaryDark} /><Text style={styles.mutedText}>Carregando conversas...</Text></View>
+                <View style={styles.loadingConversations} accessibilityLabel="Carregando conversas">
+                  {[0, 1, 2].map((item) => (
+                    <View key={item} style={styles.loadingConversation}>
+                      <Skeleton style={styles.loadingAvatar} />
+                      <View style={styles.loadingConversationCopy}>
+                        <Skeleton style={styles.loadingName} />
+                        <Skeleton style={styles.loadingPreview} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
               ) : conversations.length === 0 ? (
                 <View style={styles.center}>
                   <Feather name="message-circle" size={30} color={colors.muted} />
@@ -146,6 +153,9 @@ export default function MensagensScreen() {
                         key={conversation.id}
                         onPress={() => setActiveApplicationId(conversation.applicationId)}
                         style={[styles.conversationItem, selected && styles.conversationSelected]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Conversa com ${conversation.candidate} sobre ${conversation.jobTitle}`}
+                        accessibilityState={{ selected }}
                       >
                         <View style={styles.avatar}><Text style={styles.avatarText}>{conversation.candidate.charAt(0).toUpperCase()}</Text></View>
                         <View style={styles.conversationCopy}>
@@ -170,7 +180,7 @@ export default function MensagensScreen() {
                 <>
                   <View style={styles.chatHeader}>
                     {!isWide ? (
-                      <Pressable onPress={() => setActiveApplicationId(null)} style={styles.mobileBack} accessibilityLabel="Voltar para conversas">
+                      <Pressable onPress={() => setActiveApplicationId(null)} style={styles.mobileBack} accessibilityRole="button" accessibilityLabel="Voltar para conversas">
                         <Feather name="arrow-left" size={19} color={colors.ink} />
                       </Pressable>
                     ) : null}
@@ -206,8 +216,8 @@ export default function MensagensScreen() {
                       style={styles.input}
                       onSubmitEditing={sendMessage}
                     />
-                    <Pressable onPress={sendMessage} disabled={!inputText.trim() || isSending} style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendDisabled]} accessibilityRole="button" accessibilityLabel="Enviar mensagem">
-                      {isSending ? <ActivityIndicator size="small" color={colors.ink} /> : <Feather name="send" size={17} color={colors.ink} />}
+                    <Pressable onPress={sendMessage} disabled={!inputText.trim() || isSending} style={({ pressed }) => [styles.sendButton, (!inputText.trim() || isSending) && styles.sendDisabled, pressed && styles.sendPressed]} accessibilityRole="button" accessibilityLabel="Enviar mensagem">
+                      {isSending ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Feather name="send" size={17} color={colors.onPrimary} />}
                     </Pressable>
                   </View>
                 </>
@@ -226,17 +236,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.paper },
   page: { flex: 1, width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24 },
   heading: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
-  backButton: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headingCopy: { flex: 1 },
   eyebrow: { color: colors.primaryDark, fontSize: 9, fontWeight: '800', marginBottom: 3 },
-  title: { color: colors.ink, fontSize: 25, fontWeight: '700' },
-  refreshButton: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  refreshButton: { width: 44, height: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   errorText: { color: colors.danger, paddingVertical: 9, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, marginBottom: 10 },
   inbox: { flex: 1, minHeight: 440, flexDirection: 'row', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 12, overflow: 'hidden' },
   conversationPane: { flex: 1, minWidth: 0, padding: 15 },
   conversationPaneWide: { flex: 0.9, maxWidth: 360, borderRightWidth: 1, borderRightColor: colors.line },
   paneTitle: { color: colors.ink, fontSize: 14, fontWeight: '700', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
   conversationList: { paddingTop: 7 },
+  loadingConversations: { gap: 14, paddingTop: 14 },
+  loadingConversation: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  loadingAvatar: { width: 42, height: 42, borderRadius: 21 },
+  loadingConversationCopy: { flex: 1, gap: 9 },
+  loadingName: { width: '54%' },
+  loadingPreview: { width: '82%', height: 10 },
   conversationItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
   conversationSelected: { backgroundColor: colors.primaryWash },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.accentWash, alignItems: 'center', justifyContent: 'center' },
@@ -258,12 +272,13 @@ const styles = StyleSheet.create({
   ownBubble: { alignSelf: 'flex-end', backgroundColor: colors.primary },
   otherBubble: { alignSelf: 'flex-start', backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line },
   messageText: { color: colors.ink, fontSize: 13, lineHeight: 19 },
-  ownMessageText: { color: colors.ink },
-  ownTimestamp: { color: colors.inkSoft, textAlign: 'right' },
+  ownMessageText: { color: colors.onPrimary },
+  ownTimestamp: { color: colors.onPrimary, textAlign: 'right' },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, padding: 12, borderTopWidth: 1, borderTopColor: colors.line },
   input: { flex: 1, minHeight: 42, maxHeight: 110, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: colors.line, borderRadius: 10, color: colors.ink, fontSize: 13 },
-  sendButton: { width: 42, height: 42, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  sendButton: { width: 44, height: 44, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   sendDisabled: { opacity: 0.5 },
+  sendPressed: { opacity: 0.78 },
   center: { flex: 1, minHeight: 200, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 9 },
   emptyTitle: { color: colors.ink, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 6 },
   mutedText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },

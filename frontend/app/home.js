@@ -1,3 +1,5 @@
+import { Feather } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
@@ -10,11 +12,13 @@ import {
   TextInput,
   ScrollView,
   Modal,
+  Platform,
+  Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { API_URL, apiFetch, clearSession, getSession } from '../lib/api';
+
+import { Badge, Card, IconButton, SectionHeader, Skeleton, StatCard } from '../components/ui/Primitives';
+import { API_URL, apiFetch, getSession } from '../lib/api';
 import { colors } from '../lib/theme';
 
 function getImageUri(value) {
@@ -24,11 +28,31 @@ function getImageUri(value) {
   return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
 }
 
+function formatNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat('pt-BR').format(number) : '—';
+}
+
+function formatProfileCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return 'Quantidade de perfis indisponível';
+  const formattedCount = formatNumber(count);
+  return count === 1
+    ? `${formattedCount} perfil de recrutador cadastrado`
+    : `${formattedCount} perfis de recrutador cadastrados`;
+}
+
+function formatActivityDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 export default function Home() {
-  const { nome, email } = useLocalSearchParams();
   const { width } = useWindowDimensions();
-  const summaryCardWidth = width >= 900 ? '23%' : width >= 600 ? '47%' : '100%';
-  const [menuAberto, setMenuAberto] = useState(false);
+  const summaryCardWidth = width >= 1280 ? '23%' : width >= 600 ? '47%' : '100%';
   const [editarEmpresaModalAberto, setEditarEmpresaModalAberto] = useState(false);
   const [vagaModalAberto, setVagaModalAberto] = useState(false);
   const [vagasModalAberto, setVagasModalAberto] = useState(false);
@@ -44,25 +68,6 @@ export default function Home() {
   const [vaga, setVaga] = useState({ nomeEmpresa: '', descricaoEmpresa: '', titulo: '', descricao: '', requisitos: '' });
   const [vagasEmpresa, setVagasEmpresa] = useState([]);
   const [empresa, setEmpresa] = useState({ nome: '', telefone: '' });
-
-  const fecharTudo = () => setMenuAberto(false);
-
-  const sair = async () => {
-    fecharTudo();
-    await clearSession();
-    router.replace('/');
-  };
-
-  const navegarMenu = (rota) => {
-    fecharTudo();
-    router.push({
-      pathname: rota,
-      params: {
-        nome: empresas[0]?.nome || nome,
-        email: empresas[0]?.email || email,
-      },
-    });
-  };
 
   const atualizarEmpresa = (campo, valor) => {
     setEmpresa((atual) => ({ ...atual, [campo]: valor }));
@@ -214,26 +219,6 @@ export default function Home() {
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* HEADER */}
-      <View style={styles.header}>
-
-        <TouchableOpacity style={styles.headerButton} onPress={() => setMenuAberto(true)} accessibilityLabel="Abrir menu">
-          <Feather name="menu" size={21} color={colors.ink} />
-        </TouchableOpacity>
-
-        <View style={styles.headerBrand}>
-          <View style={styles.headerMark}><Feather name="link-2" size={15} color={colors.ink} /></View>
-          <Text style={styles.headerTitle}>Conecta Fácil</Text>
-        </View>
-
-        <TouchableOpacity style={styles.headerButton} onPress={() => navegarMenu('/perfil')} accessibilityLabel="Abrir perfil">
-          {avatarUrl
-            ? <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} onError={() => setAvatarUrl(null)} accessibilityLabel="Foto do perfil" />
-            : <Feather name="user" size={19} color={colors.primaryDark} />}
-        </TouchableOpacity>
-
-      </View>
-
       {/* CONTEÚDO */}
       <ScrollView
         style={styles.scroll}
@@ -249,13 +234,23 @@ export default function Home() {
           {empresas[0]?.email ? `Sua conta empresarial · ${empresas[0].email}` : 'Painel do recrutador'}
         </Text>
 
-        <View style={styles.section}>
-          <View style={styles.companyListHeader}>
-            <Text style={styles.sectionTitle}>Perfil do recrutador</Text>
-            <Text style={styles.companyCount}>{carregandoEmpresas ? '…' : erroEmpresas || !dashboard ? '—' : dashboard.profileCount}</Text>
-          </View>
+        <Card style={styles.section}>
+          <SectionHeader
+            title="Perfil do recrutador"
+            action={(
+              <Badge
+                accessibilityLabel={carregandoEmpresas ? 'Carregando quantidade de perfis' : erroEmpresas || !dashboard ? 'Quantidade de perfis indisponível' : formatProfileCount(dashboard.profileCount)}
+                title="Quantidade de perfis de recrutador cadastrados"
+              >
+                {carregandoEmpresas ? '…' : erroEmpresas || !dashboard ? '—' : formatNumber(dashboard.profileCount)}
+              </Badge>
+            )}
+          />
           {carregandoEmpresas ? (
-            <View style={styles.profileLoading}><Feather name="loader" size={16} color={colors.primaryDark} /><Text style={styles.emptyCompanyText}>Carregando perfil…</Text></View>
+            <View style={styles.profileLoading} accessibilityLabel="Carregando perfil do recrutador">
+              <Skeleton style={styles.profileSkeletonName} />
+              <Skeleton style={styles.profileSkeletonDetails} />
+            </View>
           ) : erroEmpresas ? (
             <View style={styles.profileError}><Text style={styles.emptyCompanyText}>{erroEmpresas}</Text><TouchableOpacity onPress={carregarEmpresas} style={styles.retryButton}><Text style={styles.retryText}>Tentar novamente</Text></TouchableOpacity></View>
           ) : empresas.length === 0 ? (
@@ -266,7 +261,7 @@ export default function Home() {
                 <View style={styles.companyAvatar}>
                   {avatarUrl
                     ? <Image source={{ uri: avatarUrl }} style={styles.companyAvatarImage} onError={() => setAvatarUrl(null)} accessibilityLabel="Foto do recrutador" />
-                    : <Feather name="briefcase" size={20} color={colors.ink} />}
+                    : <Feather name="briefcase" size={20} color={colors.onPrimary} />}
                 </View>
                 <View style={styles.companyItemContent}>
                   <Text style={styles.companyItemTitle}>{empresaAtual.nome}</Text>
@@ -275,30 +270,40 @@ export default function Home() {
                 </View>
               </View>
               <View style={styles.companyActions}>
-                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirEdicao(empresaAtual)} accessibilityRole="button" accessibilityLabel="Editar perfil do recrutador">
-                  <Feather name="edit-2" size={17} color={colors.inkSoft} />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.companyActionButton, styles.addJobButton]} onPress={() => abrirCadastroVaga(empresaAtual)} accessibilityRole="button" accessibilityLabel="Adicionar vaga">
-                  <Feather name="plus" size={18} color={colors.primaryDark} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.companyActionButton} onPress={() => abrirVagas(empresaAtual)} accessibilityRole="button" accessibilityLabel="Gerenciar vagas cadastradas">
-                  <Feather name="list" size={17} color={colors.inkSoft} />
-                </TouchableOpacity>
+                <IconButton
+                  icon="edit-2"
+                  label="Editar perfil do recrutador"
+                  onPress={() => abrirEdicao(empresaAtual)}
+                  style={styles.companyActionButton}
+                />
+                <IconButton
+                  icon="plus"
+                  label="Adicionar vaga"
+                  onPress={() => abrirCadastroVaga(empresaAtual)}
+                  iconColor={colors.onPrimary}
+                  style={[styles.companyActionButton, styles.addJobButton]}
+                />
+                <IconButton
+                  icon="list"
+                  label="Ver vagas ativas cadastradas"
+                  onPress={() => abrirVagas(empresaAtual)}
+                  style={styles.companyActionButton}
+                />
               </View>
             </View>
           ))}
-        </View>
+        </Card>
 
         <View style={styles.dashboardSection}>
-          <Text style={styles.sectionTitle}>Resumo</Text>
+          <SectionHeader title="Resumo" />
           {carregandoDashboard ? (
             <View style={styles.summaryGrid}>
               {['Vagas ativas', 'Candidaturas recebidas', 'Processos em andamento', 'Vagas encerradas'].map((label) => (
-                <View key={label} style={[styles.summaryLoading, { width: summaryCardWidth }]}>
-                  <Text style={styles.summaryLabel}>{label}</Text>
-                  <View style={styles.summaryLoadingStatus}>
-                    <Feather name="loader" size={15} color={colors.primary} />
-                    <Text style={styles.summaryHint}>Carregando dados</Text>
+                <View key={label} style={[styles.summaryLoading, { width: summaryCardWidth }]} accessibilityLabel={`Carregando ${label.toLowerCase()}`}>
+                  <View style={styles.summarySkeletons}>
+                    <Skeleton style={styles.summarySkeletonLabel} />
+                    <Skeleton style={styles.summarySkeletonValue} />
+                    <Skeleton style={styles.summarySkeletonHint} />
                   </View>
                 </View>
               ))}
@@ -312,50 +317,75 @@ export default function Home() {
             </View>
           ) : (
             <View style={styles.summaryGrid}>
-              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
-                <Text style={styles.summaryLabel}>Vagas ativas</Text>
-                <Text style={styles.summaryValue}>{dashboard?.vacancies?.open ?? '—'}</Text>
-                {dashboard?.vacancies?.open === 0 ? <Text style={styles.summaryHint}>Você ainda não possui vagas ativas.</Text> : null}
-              </View>
-              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
-                <Text style={styles.summaryLabel}>Candidaturas recebidas</Text>
-                <Text style={styles.summaryValue}>{dashboard?.applications?.total ?? '—'}</Text>
-                {dashboard?.applications?.total === 0 ? <Text style={styles.summaryHint}>Nenhuma candidatura recebida.</Text> : null}
-              </View>
-              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
-                <Text style={styles.summaryLabel}>Processos em andamento</Text>
-                <Text style={styles.summaryUnavailable}>Não disponível</Text>
-                <Text style={styles.summaryHint}>O sistema não registra essa etapa.</Text>
-              </View>
-              <View style={[styles.summaryCard, { width: summaryCardWidth }]}>
-                <Text style={styles.summaryLabel}>Vagas encerradas</Text>
-                <Text style={styles.summaryValue}>{dashboard?.vacancies?.closed ?? '—'}</Text>
-              </View>
+              <StatCard
+                label="Vagas ativas"
+                value={formatNumber(dashboard?.vacancies?.open)}
+                helper={dashboard?.vacancies?.open === 0 ? 'Você ainda não possui vagas ativas.' : ' '}
+                style={{ width: summaryCardWidth }}
+              />
+              <StatCard
+                label="Candidaturas recebidas"
+                value={formatNumber(dashboard?.applications?.total)}
+                helper={dashboard?.applications?.total === 0 ? 'Nenhuma candidatura recebida.' : ' '}
+                style={{ width: summaryCardWidth }}
+              />
+              <StatCard
+                label="Processos em andamento"
+                value="-"
+                helper="O sistema não registra essa etapa."
+                neutral
+                style={{ width: summaryCardWidth }}
+              />
+              <StatCard
+                label="Vagas encerradas"
+                value={formatNumber(dashboard?.vacancies?.closed)}
+                helper=" "
+                style={{ width: summaryCardWidth }}
+              />
             </View>
           )}
         </View>
 
-        {!carregandoDashboard && !erroDashboard ? (
-          <View style={styles.dashboardSection}>
-            <Text style={styles.sectionTitle}>Atividades recentes</Text>
-            {!dashboard?.activities?.length ? (
-              <View style={styles.dashboardMessage}>
-                <Text style={styles.emptyCompanyText}>Nenhuma atividade recente.</Text>
+        <View style={styles.dashboardSection}>
+          <SectionHeader title="Atividades recentes" />
+          <Card style={styles.activityList}>
+            {carregandoDashboard ? (
+              <View style={styles.activityLoading} accessibilityLabel="Carregando atividades recentes">
+                <Skeleton style={styles.activitySkeletonTitle} />
+                <Skeleton style={styles.activitySkeletonDescription} />
+              </View>
+            ) : erroDashboard ? (
+              <View style={styles.activityEmpty}>
+                <Feather name="alert-circle" size={20} color={colors.warning} />
+                <Text style={styles.emptyCompanyText}>Não foi possível carregar as atividades.</Text>
+                <TouchableOpacity onPress={carregarEmpresas} style={styles.retryButton} accessibilityRole="button">
+                  <Text style={styles.retryText}>Tentar novamente</Text>
+                </TouchableOpacity>
+              </View>
+            ) : !dashboard?.activities?.length ? (
+              <View style={styles.activityEmpty}>
+                <Feather name="activity" size={20} color={colors.textMuted} />
+                <Text style={styles.emptyCompanyText}>Ainda não há atividades para mostrar.</Text>
               </View>
             ) : dashboard.activities.map((activity, index) => (
-              <View key={`${activity.type}-${activity.created_at}-${index}`} style={styles.activityItem}>
+              <Pressable
+                key={`${activity.type}-${activity.created_at}-${index}`}
+                accessible={false}
+                focusable={false}
+                style={({ hovered }) => [styles.activityItem, hovered && styles.activityItemHovered]}
+              >
                 <View style={styles.activityIcon}>
-                  <Feather name={activity.type === 'VACANCY_CREATED' ? 'briefcase' : 'file-text'} size={16} color={colors.ink} />
+                  <Feather name={activity.type === 'VACANCY_CREATED' ? 'briefcase' : 'file-text'} size={16} color={colors.onPrimary} />
                 </View>
                 <View style={styles.activityContent}>
                   <Text style={styles.activityTitle}>{activity.title}</Text>
                   <Text style={styles.activityDescription}>{activity.description}</Text>
                 </View>
-                <Text style={styles.activityDate}>{activity.created_at ? new Date(activity.created_at).toLocaleDateString('pt-BR') : ''}</Text>
-              </View>
+                <Text style={styles.activityDate}>{formatActivityDate(activity.created_at)}</Text>
+              </Pressable>
             ))}
-          </View>
-        ) : null}
+          </Card>
+        </View>
 
       </ScrollView>
 
@@ -394,7 +424,7 @@ export default function Home() {
               ))}
               <TouchableOpacity style={[styles.companySubmit, cadastrandoEmpresa && styles.companySubmitDisabled]} onPress={salvarEdicao} disabled={cadastrandoEmpresa}>
                 <Text style={styles.companySubmitText}>{cadastrandoEmpresa ? 'Salvando...' : 'Salvar alterações'}</Text>
-                {!cadastrandoEmpresa && <Feather name="check" size={19} color={colors.ink} />}
+                {!cadastrandoEmpresa && <Feather name="check" size={19} color={colors.onPrimary} />}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -441,7 +471,7 @@ export default function Home() {
               <TextInput style={styles.textArea} placeholder="Informe os requisitos necessários" placeholderTextColor={colors.muted} value={vaga.requisitos} onChangeText={(valor) => setVaga((atual) => ({ ...atual, requisitos: valor }))} multiline textAlignVertical="top" />
               <TouchableOpacity style={[styles.companySubmit, cadastrandoEmpresa && styles.companySubmitDisabled]} onPress={cadastrarVaga} disabled={cadastrandoEmpresa}>
                 <Text style={styles.companySubmitText}>{cadastrandoEmpresa ? 'Publicando...' : 'Publicar vaga'}</Text>
-                {!cadastrandoEmpresa && <Feather name="send" size={18} color={colors.ink} />}
+                {!cadastrandoEmpresa && <Feather name="send" size={18} color={colors.onPrimary} />}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -486,103 +516,6 @@ export default function Home() {
         </View>
       </Modal>
 
-      {/* MENU LATERAL */}
-      <Modal
-        visible={menuAberto}
-        transparent
-        animationType="fade"
-        onRequestClose={fecharTudo}
-      >
-
-        <View style={styles.modalContainer}>
-
-          <TouchableOpacity
-            style={styles.overlay}
-            onPress={fecharTudo}
-          />
-
-          <View style={styles.sidebar}>
-
-            <View style={styles.sidebarHeader}>
-
-              <View style={styles.sidebarBrand}><View style={styles.headerMark}><Feather name="link-2" size={14} color={colors.ink} /></View><Text style={styles.sidebarTitle}>Conecta Fácil</Text></View>
-
-              <TouchableOpacity
-                onPress={fecharTudo}
-              >
-                <Feather name="x" size={21} color={colors.inkSoft} />
-              </TouchableOpacity>
-
-            </View>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => fecharTudo()}
-            >
-              <Feather style={styles.menuIcon} name="home" size={18} color={colors.primaryDark} />
-              <Text style={styles.menuText}>
-                Início
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navegarMenu('/candidaturas')}
-            >
-              <Feather style={styles.menuIcon} name="file-text" size={17} color={colors.muted} />
-              <Text style={styles.menuText}>
-                Candidaturas
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navegarMenu('/vagas')}
-            >
-              <Feather style={styles.menuIcon} name="briefcase" size={17} color={colors.muted} />
-              <Text style={styles.menuText}>
-                Vagas
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navegarMenu('/mensagens')}
-            >
-              <Feather style={styles.menuIcon} name="message-circle" size={17} color={colors.muted} />
-              <Text style={styles.menuText}>
-                Mensagens
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navegarMenu('/perfil')}
-            >
-              <Feather style={styles.menuIcon} name="user" size={17} color={colors.muted} />
-              <Text style={styles.menuText}>
-                Meu perfil
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuSeparator} />
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={sair}
-            >
-              <Feather style={styles.menuIcon} name="log-out" size={17} color={colors.danger} />
-              <Text style={styles.menuText}>
-                Sair
-              </Text>
-            </TouchableOpacity>
-
-          </View>
-
-        </View>
-
-      </Modal>
-
     </SafeAreaView>
   );
 }
@@ -592,53 +525,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.paper,
-  },
-
-  header: {
-    minHeight: 68,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-
-  headerButton: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: colors.surfaceSoft,
-  },
-  headerAvatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
-
-  headerBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-  },
-
-  headerMark: {
-    width: 29,
-    height: 29,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-
-  headerTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: colors.ink,
-    letterSpacing: -0.3,
   },
 
   scroll: {
@@ -663,16 +549,9 @@ const styles = StyleSheet.create({
   },
 
   description: {
-    fontSize: 15,
-    color: colors.muted,
     fontSize: 14,
+    color: colors.muted,
     marginBottom: 26,
-  },
-
-  companyListHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
 
   dashboardSection: {
@@ -687,50 +566,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  summaryCard: {
-    minHeight: 120,
-    justifyContent: 'center',
-    padding: 17,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-    borderRadius: 14,
-  },
-
-  summaryLabel: {
-    color: colors.inkSoft,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 19,
-  },
-
-  summaryValue: {
-    color: colors.primary,
-    fontSize: 28,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-
-  summaryUnavailable: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 12,
-  },
-
-  summaryHint: {
-    color: colors.inkSoft,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 5,
-  },
-
   summaryLoading: {
-    minHeight: 120,
+    minHeight: 142,
     justifyContent: 'center',
-    padding: 17,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 14,
@@ -739,12 +578,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
-  summaryLoadingStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
+  summarySkeletons: { gap: 14 },
+  summarySkeletonLabel: { width: '72%' },
+  summarySkeletonValue: { width: 58, height: 28, borderRadius: 8 },
+  summarySkeletonHint: { width: '92%' },
 
   dashboardMessage: {
     padding: 16,
@@ -764,7 +601,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
+    ...Platform.select({
+      web: { transitionDuration: '150ms' },
+      default: {},
+    }),
   },
+  activityItemHovered: { backgroundColor: colors.surfaceElevated },
+  activityList: { overflow: 'hidden' },
+  activityEmpty: { minHeight: 100, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20 },
+  activityLoading: { minHeight: 100, justifyContent: 'center', gap: 14, padding: 20 },
+  activitySkeletonTitle: { width: '35%', height: 16 },
+  activitySkeletonDescription: { width: '68%' },
 
   activityIcon: {
     width: 34,
@@ -798,14 +645,16 @@ const styles = StyleSheet.create({
   activityDate: {
     color: colors.inkSoft,
     fontSize: 11,
+    textAlign: 'right',
+    minWidth: 76,
   },
 
   profileLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
+    gap: 12,
     paddingVertical: 10,
   },
+  profileSkeletonName: { width: '38%', height: 16 },
+  profileSkeletonDetails: { width: '56%' },
 
   profileError: {
     gap: 12,
@@ -833,28 +682,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.line,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.ink,
-    marginBottom: 14,
-    letterSpacing: -0.3,
-  },
-
-  companyCount: {
-    minWidth: 28,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
   },
 
   emptyCompanyText: {
@@ -920,16 +747,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
-    gap: 5,
+    gap: 8,
   },
 
   companyActionButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSoft,
+    width: 44,
+    height: 44,
   },
 
   addJobButton: {
@@ -1003,74 +826,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  modalContainer: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-
-  sidebar: {
-    width: '78%',
-    maxWidth: 310,
-    backgroundColor: colors.surface,
-    paddingTop: 28,
-    paddingHorizontal: 20,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-  },
-
-  sidebarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 26,
-  },
-
-  sidebarBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-  },
-
-  sidebarTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-
-  menuIcon: {
-    width: 35,
-  },
-
-  menuText: {
-    fontSize: 16,
-    color: colors.ink,
-    fontWeight: '600',
-  },
-
-  menuSeparator: {
-    height: 1,
-    backgroundColor: colors.line,
-    marginVertical: 10,
-  },
-
   companyModalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.46)',
+    backgroundColor: colors.overlay,
     padding: 18,
   },
 
@@ -1175,7 +935,7 @@ const styles = StyleSheet.create({
   },
 
   companySubmitText: {
-    color: colors.ink,
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '800',
   },

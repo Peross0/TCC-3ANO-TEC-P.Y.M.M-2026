@@ -1,3 +1,6 @@
+import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import {
   Pressable,
@@ -8,9 +11,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+
 import { colors } from '../lib/theme';
 
 const benefits = [
@@ -42,17 +43,17 @@ export default function LandingPage() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Pressable style={styles.brand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button" accessibilityLabel="Conecta Fácil, início">
-            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.ink} /></View>
+            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.onPrimary} /></View>
             <Text style={styles.brandName}>Conecta Fácil</Text>
           </Pressable>
           {isWide && (
             <View style={styles.navLinks}>
-              <Pressable onPress={scrollToBenefits} accessibilityRole="button"><Text style={styles.navText}>A plataforma</Text></Pressable>
-              <Pressable onPress={() => router.push('/login')} accessibilityRole="button"><Text style={styles.navText}>Para empresas</Text></Pressable>
+              <Pressable style={styles.navLink} onPress={scrollToBenefits} accessibilityRole="button"><Text style={styles.navText}>A plataforma</Text></Pressable>
+              <Pressable style={styles.navLink} onPress={() => router.push('/login')} accessibilityRole="button"><Text style={styles.navText}>Para empresas</Text></Pressable>
             </View>
           )}
           <Pressable style={styles.loginButton} onPress={() => router.push('/login')} accessibilityRole="button">
@@ -69,7 +70,7 @@ export default function LandingPage() {
             <View style={styles.heroActions}>
               <Pressable style={styles.primaryButton} onPress={goToRegister} accessibilityRole="button">
                 <Text style={styles.primaryButtonText}>Cadastrar minha empresa</Text>
-                <Feather name="arrow-right" size={17} color={colors.ink} />
+                <Feather name="arrow-right" size={17} color={colors.onPrimary} />
               </Pressable>
               <Pressable style={styles.secondaryButton} onPress={scrollToBenefits} accessibilityRole="button">
                 <Text style={styles.secondaryButtonText}>Conhecer a plataforma</Text>
@@ -85,7 +86,7 @@ export default function LandingPage() {
               <Text style={styles.visualSubtitle}>Um caminho direto, sem etapas desnecessárias.</Text>
               <View style={styles.flowLine}>
                 <View style={styles.flowItem}>
-                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="briefcase" size={17} color={colors.primaryDark} /></View>
+                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="briefcase" size={17} color={colors.onPrimary} /></View>
                   <Text style={styles.flowLabel}>Empresa</Text>
                 </View>
                 <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.primaryDark} /></View>
@@ -95,13 +96,13 @@ export default function LandingPage() {
                 </View>
                 <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.primaryDark} /></View>
                 <View style={styles.flowItem}>
-                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="users" size={17} color={colors.primaryDark} /></View>
+                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="users" size={17} color={colors.onPrimary} /></View>
                   <Text style={styles.flowLabel}>Talento</Text>
                 </View>
               </View>
               <View style={styles.visualFooter}><View style={styles.visualFooterIcon}><Feather name="heart" size={14} color={colors.primaryDark} /></View><Text style={styles.visualFooterText}>Mais clareza para os dois lados.</Text></View>
             </View>
-            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.ink} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
+            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.onPrimary} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
           </View>
         </View>
 
@@ -135,7 +136,7 @@ export default function LandingPage() {
 
         <View style={styles.footer}>
           <Pressable style={styles.footerBrand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button">
-            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.ink} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
+            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.onPrimary} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
           </Pressable>
           <Text style={styles.footerText}>Conexões profissionais começam com proximidade.</Text>
           <Text style={styles.copyright}>© 2026 Conecta Fácil</Text>
@@ -153,8 +154,9 @@ const styles = StyleSheet.create({
   brandMark: { width: 37, height: 37, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
   navLinks: { flexDirection: 'row', alignItems: 'center', gap: 32 },
+  navLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   navText: { color: colors.inkSoft, fontSize: 13, fontWeight: '600' },
-  loginButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 10, backgroundColor: colors.surface },
+  loginButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 10, backgroundColor: colors.surface },
   loginButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   hero: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingTop: 45, paddingBottom: 56 },
   heroWide: { minHeight: 560, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 46, paddingTop: 68, paddingBottom: 74 },
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
   heroDescription: { maxWidth: 520, color: colors.inkSoft, fontSize: 16, lineHeight: 25, marginTop: 17 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 25 },
   primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primary },
-  primaryButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
+  primaryButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '800' },
   secondaryButton: { minHeight: 45, justifyContent: 'center', paddingHorizontal: 8 },
   secondaryButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
   trustNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25 },
@@ -189,7 +191,7 @@ const styles = StyleSheet.create({
   visualFooterIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.primaryWash },
   visualFooterText: { color: colors.inkSoft, fontSize: 12, fontWeight: '600' },
   visualNote: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 11, marginTop: 13 },
-  visualNoteText: { color: colors.ink, fontSize: 11, fontWeight: '600' },
+  visualNoteText: { color: colors.onPrimary, fontSize: 11, fontWeight: '600' },
   benefitSection: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingVertical: 52, borderTopWidth: 1, borderTopColor: colors.line },
   sectionHeading: { maxWidth: 650 },
   sectionEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },

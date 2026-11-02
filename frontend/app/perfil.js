@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { Skeleton } from '../components/ui/Primitives';
 import { API_URL, apiFetch, clearSession, getSession } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -12,6 +14,11 @@ function formatDate(value) {
   if (!value) return '';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat('pt-BR').format(number) : value;
 }
 
 function formatDocument(type, value) {
@@ -53,14 +60,13 @@ function Metric({ icon, label, value }) {
   return (
     <View style={styles.metricCard}>
       <View style={styles.metricIcon}><Feather name={icon} size={17} color={colors.primaryDark} /></View>
-      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricValue}>{formatNumber(value)}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
 }
 
 export default function PerfilScreen() {
-  const params = useLocalSearchParams();
   const [recruiter, setRecruiter] = useState(null);
   const [vacancies, setVacancies] = useState([]);
   const [vacancyTotal, setVacancyTotal] = useState(null);
@@ -83,8 +89,6 @@ export default function PerfilScreen() {
   const [notificationBusy, setNotificationBusy] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    setLoading(true);
-    setFeedback(null);
     try {
       const session = await getSession();
       if (!session.token) {
@@ -401,26 +405,12 @@ export default function PerfilScreen() {
     router.replace('/');
   };
 
-  const backToHome = () => {
-    router.replace({
-      pathname: '/home',
-      params: {
-        nome: recruiter?.full_name || params.nome || '',
-        email: recruiter?.email || params.email || '',
-      },
-    });
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={styles.headingRow}>
-          <Pressable onPress={backToHome} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Voltar para início">
-            <Feather name="arrow-left" size={19} color={colors.ink} />
-          </Pressable>
           <View style={styles.headingCopy}>
             <Text style={styles.eyebrow}>CONTA EMPRESARIAL</Text>
-            <Text style={styles.pageTitle}>Meu perfil</Text>
             <Text style={styles.pageSubtitle}>Gerencie suas informações profissionais e os dados associados à sua empresa.</Text>
           </View>
         </View>
@@ -430,7 +420,15 @@ export default function PerfilScreen() {
             <Feather name={feedback.type === 'error' ? 'alert-circle' : 'check-circle'} size={17} color={feedback.type === 'error' ? colors.danger : colors.limeDark} />
             <Text style={[styles.feedbackText, feedback.type === 'error' && styles.feedbackErrorText]}>{feedback.message}</Text>
             {feedback.type === 'error' && !loading && (
-              <Pressable onPress={loadProfile} accessibilityRole="button" accessibilityLabel="Tentar carregar novamente">
+              <Pressable
+                onPress={() => {
+                  setLoading(true);
+                  setFeedback(null);
+                  loadProfile();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Tentar carregar novamente"
+              >
                 <Feather name="refresh-cw" size={16} color={colors.primaryDark} />
               </Pressable>
             )}
@@ -438,9 +436,10 @@ export default function PerfilScreen() {
         )}
 
         {loading ? (
-          <View style={styles.loadingPanel}>
-            <Feather name="loader" size={19} color={colors.primaryDark} />
-            <Text style={styles.loadingText}>Carregando dados do perfil...</Text>
+          <View style={styles.loadingPanel} accessibilityLabel="Carregando dados do perfil">
+            <Skeleton style={styles.profileSkeletonTitle} />
+            <Skeleton style={styles.profileSkeletonLine} />
+            <Skeleton style={styles.profileSkeletonLineShort} />
           </View>
         ) : recruiter ? (
           <>
@@ -462,7 +461,7 @@ export default function PerfilScreen() {
                     ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} accessibilityLabel="Foto do perfil" />
                     : <Text style={styles.avatarText}>{recruiter.full_name?.trim().charAt(0).toUpperCase() || 'R'}</Text>}
                   <View style={styles.imageEditBadge}>
-                    <Feather name={avatarUploading ? 'loader' : 'camera'} size={12} color={colors.ink} />
+                    <Feather name={avatarUploading ? 'loader' : 'camera'} size={12} color={colors.onPrimary} />
                   </View>
                 </Pressable>
                 <View style={styles.profileCopy}>
@@ -478,7 +477,7 @@ export default function PerfilScreen() {
                   <Text style={styles.statusText}>Conta ativa</Text>
                 </View>
                 <Pressable style={styles.primaryButton} onPress={editing ? cancelEditing : beginEditing} accessibilityRole="button">
-                  <Feather name={editing ? 'x' : 'edit-2'} size={15} color={colors.ink} />
+                  <Feather name={editing ? 'x' : 'edit-2'} size={15} color={colors.onPrimary} />
                   <Text style={styles.primaryButtonText}>{editing ? 'Cancelar edição' : 'Editar perfil'}</Text>
                 </Pressable>
               </View>
@@ -542,7 +541,7 @@ export default function PerfilScreen() {
                         <Text style={styles.secondaryButtonText}>Cancelar</Text>
                       </Pressable>
                       <Pressable style={[styles.primaryButton, saving && styles.disabledButton]} onPress={saveProfile} disabled={saving} accessibilityRole="button">
-                        <Feather name={saving ? 'loader' : 'check'} size={15} color={colors.ink} />
+                        <Feather name={saving ? 'loader' : 'check'} size={15} color={colors.onPrimary} />
                         <Text style={styles.primaryButtonText}>{saving ? 'Salvando...' : 'Salvar alterações'}</Text>
                       </Pressable>
                     </View>
@@ -641,7 +640,7 @@ export default function PerfilScreen() {
                           <Text style={styles.secondaryButtonText}>Cancelar</Text>
                         </Pressable>
                         <Pressable style={[styles.primaryButton, companySaving && styles.disabledButton]} onPress={saveCompany} disabled={companySaving} accessibilityRole="button">
-                          <Feather name={companySaving ? 'loader' : 'check'} size={15} color={colors.ink} />
+                          <Feather name={companySaving ? 'loader' : 'check'} size={15} color={colors.onPrimary} />
                           <Text style={styles.primaryButtonText}>{companySaving ? 'Salvando...' : 'Salvar empresa'}</Text>
                         </Pressable>
                       </View>
@@ -799,18 +798,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.paper },
   page: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 28, paddingBottom: 52 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 22 },
-  backButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginRight: 13 },
   headingCopy: { flex: 1, minWidth: 0 },
   eyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.25, marginBottom: 4 },
-  pageTitle: { color: colors.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.7 },
   pageSubtitle: { color: colors.inkSoft, fontSize: 13, lineHeight: 19, marginTop: 5, maxWidth: 620 },
   feedback: { flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 14 },
   feedbackSuccess: { backgroundColor: colors.limeWash, borderColor: colors.line },
   feedbackError: { backgroundColor: colors.surface, borderColor: colors.line },
   feedbackText: { flex: 1, color: colors.inkSoft, fontSize: 12, lineHeight: 17 },
   feedbackErrorText: { color: colors.danger },
-  loadingPanel: { minHeight: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 15, padding: 24 },
-  loadingText: { color: colors.inkSoft, fontSize: 14 },
+  loadingPanel: { minHeight: 170, justifyContent: 'center', gap: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 15, padding: 24 },
+  profileSkeletonTitle: { width: '40%', height: 20 },
+  profileSkeletonLine: { width: '75%' },
+  profileSkeletonLineShort: { width: '52%' },
   profileCard: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, marginBottom: 16 },
   profileIdentity: { flexDirection: 'row', alignItems: 'center', gap: 15, flex: 1, minWidth: 240 },
   avatar: { width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryWash },
@@ -826,8 +825,8 @@ const styles = StyleSheet.create({
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.limeWash, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 20 },
   statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.limeDark },
   statusText: { color: colors.inkSoft, fontSize: 11, fontWeight: '700' },
-  primaryButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, borderRadius: 9, backgroundColor: colors.primary },
-  primaryButtonText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
+  primaryButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, borderRadius: 9, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   disabledButton: { opacity: 0.6 },
   mainGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 16 },
   mainColumn: { flex: 1.7, flexBasis: 560, minWidth: 0, gap: 16 },
@@ -837,7 +836,7 @@ const styles = StyleSheet.create({
   sectionHeadingCopy: { flex: 1, minWidth: 0 },
   sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
   sectionSubtitle: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
-  textAction: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 5, paddingHorizontal: 7 },
+  textAction: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 5, paddingHorizontal: 7 },
   textActionLabel: { color: colors.primaryDark, fontSize: 12, fontWeight: '700' },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 20 },
   formGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 },
@@ -847,12 +846,12 @@ const styles = StyleSheet.create({
   fieldLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', marginBottom: 5 },
   fieldValue: { color: colors.ink, fontSize: 13, lineHeight: 19 },
   emptyValue: { color: colors.muted, fontStyle: 'italic', fontSize: 12 },
-  input: { minHeight: 42, borderWidth: 1, borderColor: colors.line, borderRadius: 9, paddingHorizontal: 11, color: colors.ink, fontSize: 13, backgroundColor: colors.surface, outlineStyle: 'none' },
+  input: { minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 9, paddingHorizontal: 11, color: colors.ink, fontSize: 13, backgroundColor: colors.surface },
   companyDescriptionInput: { minHeight: 96, paddingVertical: 10 },
   descriptionCounter: { alignSelf: 'flex-end', color: colors.muted, fontSize: 10, marginTop: 4 },
   readOnly: { color: colors.muted, backgroundColor: colors.surfaceSoft },
   formActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 9, marginTop: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.line },
-  secondaryButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.surface },
+  secondaryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.surface },
   secondaryButtonText: { color: colors.inkSoft, fontSize: 12, fontWeight: '700' },
   companyIdentity: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 17, borderBottomWidth: 1, borderBottomColor: colors.line },
   companyLogo: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 14, backgroundColor: colors.primaryWash },
@@ -891,7 +890,7 @@ const styles = StyleSheet.create({
   securityHeadingCopy: { flex: 1 },
   securityCheck: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
   securityCheckText: { color: colors.inkSoft, fontSize: 11 },
-  securityButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 7, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.surface },
+  securityButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 7, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.surface },
   securityButtonText: { color: colors.primaryDark, fontSize: 11, fontWeight: '800' },
   passwordPanel: { gap: 9, marginTop: 13, paddingTop: 13, borderTopWidth: 1, borderTopColor: colors.line },
   passwordHint: { color: colors.inkSoft, fontSize: 11, lineHeight: 16, marginBottom: 2 },
