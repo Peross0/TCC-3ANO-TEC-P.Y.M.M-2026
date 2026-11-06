@@ -63,7 +63,7 @@ const COLOR_VISION_OPTIONS = [
     value: 'deuteranopia',
     title: 'Deuteranopia',
     description: 'Adapta cores para dificuldade de percepção do verde.',
-    swatches: ['#005A9C', '#D55E00'],
+    swatches: ['#6A51A3', '#008C95'],
   },
   {
     value: 'tritanopia',
