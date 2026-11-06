@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Platform, View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, Platform, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAppPreferences } from '../../context/PreferencesContext';
 
@@ -11,6 +11,9 @@ export default function Header({
   onToggleProfileMenu,
   onOpenMessages,
   avatarUri,
+  searchValue,
+  onSearchChangeText,
+  notificationCount = 0,
 }) {
   const [failedAvatarUri, setFailedAvatarUri] = useState(null);
   const { colors, preferences } = useAppPreferences();
@@ -23,10 +26,18 @@ export default function Header({
       <View style={styles.searchBar}>
         <Feather name="search" size={20} color={colors.muted} />
         <TextInput
-          placeholder="Pesquisa"
+          placeholder="Buscar vaga, empresa ou local..."
           placeholderTextColor={colors.muted}
           style={styles.searchInput}
+          value={searchValue}
+          onChangeText={onSearchChangeText}
+          returnKeyType="search"
         />
+        {Boolean(searchValue) && (
+          <TouchableOpacity onPress={() => onSearchChangeText?.('')} accessibilityLabel="Limpar pesquisa">
+            <Feather name="x-circle" size={18} color={colors.muted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <TouchableOpacity
@@ -40,12 +51,19 @@ export default function Header({
       <TouchableOpacity
         style={styles.headerIconBtn}
         onPress={onToggleNotification}
+        accessibilityRole="button"
+        accessibilityLabel={notificationCount ? `Notificações, ${notificationCount} não lidas` : 'Notificações'}
       >
-        <Feather
-          name="bell"
-          size={24}
-          color={showNotification ? colors.tint : iconColor}
-        />
+        <View>
+          <Feather name="bell" size={24} color={showNotification ? colors.tint : iconColor} />
+          {notificationCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -113,6 +131,19 @@ function makeStyles(colors, largeText) {
   headerIconBtn: {
     padding: 4,
   },
+  notificationBadge: {
+    position: 'absolute',
+    top: -7,
+    right: -9,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 3,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.notification,
+  },
+  notificationBadgeText: { color: colors.buttonText, fontSize: 9, fontWeight: '700' },
   avatarContainer: {
     width: 44,
     height: 44,

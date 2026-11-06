@@ -83,6 +83,7 @@ const updatedPreferences = await request('/api/users/me/preferences', {
     preferred_location: 'São Paulo',
     preferred_work_model: 'REMOTE',
     preferred_contract_type: 'INTERNSHIP',
+    color_vision_mode: 'protanopia',
   },
 });
 expectStatus(updatedPreferences, 200, 'candidate job preferences update');
@@ -91,6 +92,16 @@ assert.equal(updatedPreferences.data.preferences.preferred_sector, 'Tecnologia')
 assert.equal(updatedPreferences.data.preferences.preferred_location, 'São Paulo');
 assert.equal(updatedPreferences.data.preferences.preferred_work_model, 'REMOTE');
 assert.equal(updatedPreferences.data.preferences.preferred_contract_type, 'INTERNSHIP');
+assert.equal(updatedPreferences.data.preferences.color_vision_mode, 'protanopia');
+for (const mode of ['protanopia', 'deuteranopia', 'tritanopia', 'none']) {
+  const colorVisionPreference = await request('/api/users/me/preferences', {
+    method: 'PUT',
+    token: candidateToken,
+    body: { color_vision_mode: mode },
+  });
+  expectStatus(colorVisionPreference, 200, `${mode} color vision preference`);
+  assert.equal(colorVisionPreference.data.preferences.color_vision_mode, mode);
+}
 const preferenceReset = await request('/api/users/me/preferences', {
   method: 'PUT',
   token: candidateToken,
@@ -100,6 +111,7 @@ const preferenceReset = await request('/api/users/me/preferences', {
     preferred_location: null,
     preferred_work_model: null,
     preferred_contract_type: null,
+    color_vision_mode: 'none',
   },
 });
 expectStatus(preferenceReset, 200, 'candidate preferences cleanup');

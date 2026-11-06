@@ -14,29 +14,31 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SessionContext } from '../context/SessionContext';
+import { useAppPreferences } from '../context/PreferencesContext';
 import { apiFetch, clearToken } from '../lib/api';
 
-const BLUE = '#38B6F5';
-const INK = '#111111';
-const MUTED = '#777777';
-const LINE = '#E7E9EC';
-const SOFT_BLUE = '#E8F6FD';
 const MIN_SKELETON_DURATION_MS = 1200;
 const wait = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
 function SkeletonBar({ width, height = 13, style }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return <View style={[styles.skeletonBar, { width, height }, style]} />;
 }
 
 function SkeletonCard({ children, style }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return <View style={[styles.skeletonCard, style]}>{children}</View>;
 }
 
 function SectionHeading({ icon, title }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.sectionHeading}>
       <View style={styles.sectionIcon}>
-        <Feather name={icon} size={15} color={BLUE} />
+        <Feather name={icon} size={15} color={colors.tint} />
       </View>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.headingLine} />
@@ -46,7 +48,9 @@ function SectionHeading({ icon, title }) {
 }
 
 function LoadingPlaceholder() {
-  const pulse = useRef(new Animated.Value(0)).current;
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
+  const [pulse] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -68,13 +72,13 @@ function LoadingPlaceholder() {
       <SkeletonCard style={styles.profileCard}>
         <View style={styles.placeholderHeading}>
           <View style={styles.avatarSkeleton}>
-            <Feather name="user" size={23} color="#9BCFE8" />
+            <Feather name="user" size={23} color={colors.primaryDark} />
           </View>
           <View style={styles.placeholderIdentity}>
             <SkeletonBar width="56%" height={16} />
             <SkeletonBar width="77%" height={11} />
           </View>
-          <View style={styles.editBadge}><Feather name="edit-2" size={14} color={BLUE} /></View>
+          <View style={styles.editBadge}><Feather name="edit-2" size={14} color={colors.tint} /></View>
         </View>
         <View style={styles.profileStats}>
           <View style={styles.statBlock}>
@@ -121,7 +125,7 @@ function LoadingPlaceholder() {
       <SkeletonCard>
         <SectionHeading icon="briefcase" title="Histórico de candidaturas" />
         <View style={styles.applicationPreview}>
-          <View style={styles.applicationIcon}><Feather name="briefcase" size={15} color={BLUE} /></View>
+          <View style={styles.applicationIcon}><Feather name="briefcase" size={15} color={colors.tint} /></View>
           <View style={styles.applicationCopy}>
             <SkeletonBar width="68%" height={12} />
             <SkeletonBar width="43%" height={10} />
@@ -131,7 +135,7 @@ function LoadingPlaceholder() {
       </SkeletonCard>
 
       <SkeletonCard style={styles.settingsCard}>
-        <View style={styles.settingsIcon}><Feather name="settings" size={16} color={BLUE} /></View>
+        <View style={styles.settingsIcon}><Feather name="settings" size={16} color={colors.tint} /></View>
         <View style={styles.settingsCopy}>
           <SkeletonBar width={103} height={12} />
           <SkeletonBar width={148} height={9} />
@@ -144,6 +148,8 @@ function LoadingPlaceholder() {
 
 export default function LoadingScreen() {
   const { setSessionData } = useContext(SessionContext);
+  const { colors, isDark } = useAppPreferences();
+  const styles = makeStyles(colors);
   const [errorMessage, setErrorMessage] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const router = useRouter();
@@ -168,10 +174,11 @@ export default function LoadingScreen() {
         ? apiFetch('/candidates/applications')
         : Promise.resolve({ applications: [] });
 
-      const [profileData, historyData, messagesData] = await Promise.all([
+      const [profileData, historyData, messagesData, preferencesData] = await Promise.all([
         profileRequest,
         historyRequest,
         apiFetch('/messages'),
+        apiFetch('/users/me/preferences'),
       ]);
 
       await minimumSkeletonDuration;
@@ -181,6 +188,7 @@ export default function LoadingScreen() {
         applications: historyData.applications || [],
         conversations: messagesData.conversations || [],
         messages: messagesData.messages,
+        preferences: preferencesData.preferences,
         settings: { active_notification: user.active_notification },
       });
       router.replace('/(tabs)/home');
@@ -199,7 +207,8 @@ export default function LoadingScreen() {
   }, [router, setSessionData]);
 
   useEffect(() => {
-    loadAccount();
+    const timer = setTimeout(loadAccount, 0);
+    return () => clearTimeout(timer);
   }, [loadAccount]);
 
   const returnToLogin = async () => {
@@ -210,22 +219,22 @@ export default function LoadingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F6F8FA" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={styles.header}>
-        <View style={styles.brandIcon}><Feather name="link" size={18} color="#FFFFFF" /></View>
+        <View style={styles.brandIcon}><Feather name="link" size={18} color={colors.buttonText} /></View>
         <View style={styles.headerCopy}>
           <Text style={styles.brandName}>Conecta<Text style={styles.brandAccent}>Fácil</Text></Text>
           <Text style={styles.headerCaption}>SEU PRÓXIMO PASSO COMEÇA AQUI</Text>
         </View>
         <View style={styles.headerLoading}>
-          <ActivityIndicator size="small" color={BLUE} />
+          <ActivityIndicator size="small" color={colors.tint} />
           <Text style={styles.headerLoadingText}>Carregando</Text>
         </View>
       </View>
 
       {errorMessage ? (
         <View style={styles.errorPanel}>
-          <View style={styles.errorIcon}><Feather name="wifi-off" size={24} color={BLUE} /></View>
+          <View style={styles.errorIcon}><Feather name="wifi-off" size={24} color={colors.tint} /></View>
           <Text style={styles.title}>Não foi possível carregar seus dados</Text>
           <Text style={styles.subtitle}>{errorMessage}</Text>
           <TouchableOpacity
@@ -250,7 +259,7 @@ export default function LoadingScreen() {
           >
             <View style={styles.intro}>
               <View style={styles.introEyebrow}>
-                <ActivityIndicator size="small" color={BLUE} />
+                <ActivityIndicator size="small" color={colors.tint} />
                 <Text style={styles.eyebrowText}>CARREGANDO SEUS DADOS</Text>
               </View>
               <Text style={styles.title}>Preparando sua conta</Text>
@@ -258,7 +267,7 @@ export default function LoadingScreen() {
             </View>
             <LoadingPlaceholder />
             <View style={styles.statusLine}>
-              <Feather name="shield" size={14} color={BLUE} />
+              <Feather name="shield" size={14} color={colors.tint} />
               <Text style={styles.statusText}>Seus dados estão sendo carregados com segurança</Text>
             </View>
           </ScrollView>
@@ -268,34 +277,34 @@ export default function LoadingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F7FA', paddingHorizontal: 22 },
-  header: { height: 68, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#E8EEF2' },
+const makeStyles = (colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 22 },
+  header: { height: 68, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
   headerCopy: { gap: 3 },
-  headerLoading: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 18, backgroundColor: '#EAF7FD' },
-  headerLoadingText: { color: BLUE, fontSize: 11, fontWeight: '700' },
-  brandIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
-  brandName: { color: INK, fontSize: 18, fontWeight: '800' },
-  brandAccent: { color: BLUE },
-  headerCaption: { color: MUTED, fontSize: 8, fontWeight: '700', letterSpacing: 1 },
+  headerLoading: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 18, backgroundColor: colors.primaryWash },
+  headerLoadingText: { color: colors.tint, fontSize: 11, fontWeight: '700' },
+  brandIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' },
+  brandName: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  brandAccent: { color: colors.tint },
+  headerCaption: { color: colors.muted, fontSize: 8, fontWeight: '700', letterSpacing: 1 },
   loadingContent: { paddingBottom: 25 },
   intro: { marginTop: 24, marginBottom: 19 },
   introEyebrow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
-  eyebrowText: { color: BLUE, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
-  title: { color: INK, fontSize: 24, fontWeight: '800' },
-  subtitle: { color: MUTED, fontSize: 13, lineHeight: 19, marginTop: 5 },
+  eyebrowText: { color: colors.tint, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5 },
   placeholder: { gap: 13 },
   skeletonCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: '#E8EEF2',
+    borderColor: colors.line,
     padding: 15,
     gap: 10,
     ...Platform.select({
       web: { boxShadow: '0px 3px 9px rgba(15, 41, 64, 0.035)' },
       default: {
-        shadowColor: '#0F2940',
+        shadowColor: colors.text,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.035,
         shadowRadius: 9,
@@ -303,44 +312,44 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  profileCard: { backgroundColor: '#FFFFFF' },
+  profileCard: { backgroundColor: colors.surface },
   placeholderHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 3 },
-  avatarSkeleton: { width: 54, height: 54, borderRadius: 18, backgroundColor: SOFT_BLUE, alignItems: 'center', justifyContent: 'center' },
+  avatarSkeleton: { width: 54, height: 54, borderRadius: 18, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center' },
   placeholderIdentity: { flex: 1, gap: 8 },
-  editBadge: { width: 30, height: 30, borderRadius: 10, backgroundColor: '#F2FAFE', alignItems: 'center', justifyContent: 'center' },
-  profileStats: { flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#EFF3F6' },
+  editBadge: { width: 30, height: 30, borderRadius: 10, backgroundColor: colors.accentWash, alignItems: 'center', justifyContent: 'center' },
+  profileStats: { flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line },
   statBlock: { flex: 1, gap: 7 },
-  statDivider: { width: 1, height: 27, backgroundColor: LINE, marginHorizontal: 14 },
+  statDivider: { width: 1, height: 27, backgroundColor: colors.line, marginHorizontal: 14 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
-  sectionIcon: { width: 27, height: 27, borderRadius: 9, backgroundColor: '#EFF9FE', alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { color: INK, fontSize: 13, fontWeight: '700' },
+  sectionIcon: { width: 27, height: 27, borderRadius: 9, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
   headingLine: { flex: 1 },
-  loadingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#A9DDF5' },
-  skeletonBar: { backgroundColor: '#E8EDF1', borderRadius: 7 },
+  loadingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.tint },
+  skeletonBar: { backgroundColor: colors.line, borderRadius: 7 },
   fieldLabelSkeleton: { marginTop: 2 },
-  inputSkeleton: { backgroundColor: '#F6F8FA', borderWidth: 1, borderColor: '#EDF1F4', borderRadius: 10 },
+  inputSkeleton: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.line, borderRadius: 10 },
   completionRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
-  completionTrack: { height: 5, borderRadius: 3, backgroundColor: '#EEF2F5', overflow: 'hidden' },
-  completionFill: { width: '63%', height: '100%', borderRadius: 3, backgroundColor: '#A7DDF6' },
+  completionTrack: { height: 5, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden' },
+  completionFill: { width: '63%', height: '100%', borderRadius: 3, backgroundColor: colors.accent },
   messagePreview: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 3 },
-  messageAvatar: { width: 36, height: 36, borderRadius: 13, backgroundColor: '#EAF5FA' },
+  messageAvatar: { width: 36, height: 36, borderRadius: 13, backgroundColor: colors.primaryWash },
   messageCopy: { flex: 1, gap: 7 },
   messageTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   applicationPreview: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },
-  applicationIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: '#EFF9FE', alignItems: 'center', justifyContent: 'center' },
+  applicationIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center' },
   applicationCopy: { flex: 1, gap: 7 },
-  applicationStatus: { backgroundColor: '#F3F8EF', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 6 },
+  applicationStatus: { backgroundColor: colors.accentWash, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 6 },
   settingsCard: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  settingsIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#EFF9FE', alignItems: 'center', justifyContent: 'center' },
+  settingsIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center' },
   settingsCopy: { flex: 1, gap: 7 },
-  switchSkeleton: { width: 38, height: 22, borderRadius: 12, backgroundColor: '#DDF1FB', justifyContent: 'center', paddingHorizontal: 3 },
-  switchThumb: { width: 16, height: 16, borderRadius: 8, backgroundColor: BLUE, alignSelf: 'flex-end' },
+  switchSkeleton: { width: 38, height: 22, borderRadius: 12, backgroundColor: colors.accentWash, justifyContent: 'center', paddingHorizontal: 3 },
+  switchThumb: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.tint, alignSelf: 'flex-end' },
   statusLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 16 },
-  statusText: { color: MUTED, fontSize: 11, textAlign: 'center' },
+  statusText: { color: colors.muted, fontSize: 11, textAlign: 'center' },
   errorPanel: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 45 },
-  errorIcon: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#E5F5FD', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
-  retryButton: { backgroundColor: BLUE, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, marginTop: 26 },
-  retryText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  errorIcon: { width: 54, height: 54, borderRadius: 27, backgroundColor: colors.primaryWash, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  retryButton: { backgroundColor: colors.tint, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, marginTop: 26 },
+  retryText: { color: colors.buttonText, fontSize: 15, fontWeight: '700' },
   loginButton: { padding: 14, marginTop: 8 },
-  loginButtonText: { color: MUTED, fontSize: 14, fontWeight: '600' },
+  loginButtonText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
 });

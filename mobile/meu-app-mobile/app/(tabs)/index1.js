@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import MessageHeader from '../../components/messages/MessageHeader';
 import MessageInput from '../../components/messages/MessageInput';
 import { SessionContext } from '../../context/SessionContext';
@@ -32,9 +32,11 @@ export default function MessagesScreen() {
   const { colors, preferences, isDark } = useAppPreferences();
   const styles = makeStyles(colors, preferences.large_text);
   const router = useRouter();
+  const { applicationId: requestedApplicationId } = useLocalSearchParams();
   const [authenticatedUserId, setAuthenticatedUserId] = useState(sessionData?.user?.id ?? null);
   const currentUserId = sessionData?.user?.id ?? authenticatedUserId;
   const [activeApplicationId, setActiveApplicationId] = useState(null);
+  const [dismissedRequestedApplicationId, setDismissedRequestedApplicationId] = useState(null);
   const [conversationsData, setConversationsData] = useState([]);
   const [messagesData, setMessagesData] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -106,7 +108,11 @@ export default function MessagesScreen() {
     return () => clearInterval(refreshInterval);
   }, [loadMessages]));
 
-  const activeChat = conversations.find((item) => String(item.applicationId) === String(activeApplicationId)) || null;
+  const selectedApplicationId = activeApplicationId
+    || (String(requestedApplicationId) !== String(dismissedRequestedApplicationId)
+      ? requestedApplicationId
+      : null);
+  const activeChat = conversations.find((item) => String(item.applicationId) === String(selectedApplicationId)) || null;
   const filteredConversations = conversations.filter((item) =>
     `${item.company} ${item.jobTitle}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -140,7 +146,13 @@ export default function MessagesScreen() {
       <AnimatedScreen>
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <MessageHeader activeChat={activeChat} onBack={() => setActiveApplicationId(null)} />
+        <MessageHeader
+          activeChat={activeChat}
+          onBack={() => {
+            setActiveApplicationId(null);
+            setDismissedRequestedApplicationId(String(requestedApplicationId || ''));
+          }}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.chatBody}
@@ -281,17 +293,17 @@ function makeStyles(colors, largeText) {
   chatBody: { flex: 1 },
   messagesList: { padding: 16, gap: 10, flexGrow: 1 },
   messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 16, marginBottom: 4 },
-  userBubble: { alignSelf: 'flex-end', backgroundColor: '#147BA3', borderBottomRightRadius: 2 },
+  userBubble: { alignSelf: 'flex-end', backgroundColor: colors.messageBubble, borderBottomRightRadius: 2 },
   companyBubble: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderBottomLeftRadius: 2 },
   messageText: { fontSize: 14 * scale, color: colors.text, lineHeight: 18 * scale },
-  userMessageText: { color: '#FFFFFF' },
+  userMessageText: { color: colors.messageBubbleText },
   messageTime: { fontSize: 10, color: colors.muted, alignSelf: 'flex-end', marginTop: 4 },
-  userMessageTime: { color: '#EAF7FD' },
+  userMessageTime: { color: colors.messageBubbleTime },
   sendingText: { textAlign: 'center', color: colors.muted, fontSize: 12 * scale, paddingBottom: 5 },
   emptyContainer: { flex: 1, paddingVertical: 60, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { fontSize: 16 * scale, fontWeight: '700', color: colors.text, textAlign: 'center' },
   emptySubText: { fontSize: 13 * scale, color: colors.muted, textAlign: 'center', paddingHorizontal: 12 },
   jobsButton: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18, backgroundColor: colors.tint },
-  jobsButtonText: { fontSize: 13 * scale, fontWeight: '700', color: colors.surface },
+  jobsButtonText: { fontSize: 13 * scale, fontWeight: '700', color: colors.buttonText },
   });
 }

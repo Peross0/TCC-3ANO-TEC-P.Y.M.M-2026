@@ -23,3 +23,5 @@ npx expo start
 - `.vscode/` e `.claude/`: configurações locais das ferramentas de desenvolvimento.
 
 As telas continuam dentro de `app/` para preservar as rotas automáticas do Expo Router.
+
+Em Configurações > Acessibilidade, é possível selecionar paletas para protanopia, deuteranopia ou tritanopia. A opção é aplicada às cores de destaque do app e sincronizada com a conta.

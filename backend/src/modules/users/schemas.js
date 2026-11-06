@@ -11,6 +11,7 @@ export const updatePreferencesSchema = z.object({
     large_text: z.boolean().optional(),
     high_contrast: z.boolean().optional(),
     reduce_motion: z.boolean().optional(),
+    color_vision_mode: z.enum(['none', 'protanopia', 'deuteranopia', 'tritanopia']).optional(),
     preferred_sector: z.string().trim().max(100).nullable().optional(),
     preferred_location: z.string().trim().max(255).nullable().optional(),
     preferred_work_model: z.enum(['REMOTE', 'HYBRID', 'ONSITE']).nullable().optional(),

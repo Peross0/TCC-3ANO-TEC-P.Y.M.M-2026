@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAppPreferences } from "../context/PreferencesContext";
 import {
   apiFetch,
   clearToken,
@@ -24,17 +25,18 @@ import {
   saveToken,
 } from "../lib/api";
 
-const BRAND = {
-  blue: "#38B6F5",
-  black: "#111111",
-  gray: "#777777",
-  line: "#E7E9EC",
-  background: "#F6F8FA",
-  white: "#FFFFFF",
-};
 const MIN_SPLASH_DURATION_MS = 1700;
 const wait = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration));
+
+const makeBrand = (colors) => ({
+  blue: colors.tint,
+  black: colors.text,
+  gray: colors.muted,
+  line: colors.line,
+  background: colors.background,
+  white: colors.buttonText,
+});
 
 const onboardingSlides = [
   {
@@ -56,10 +58,14 @@ const onboardingSlides = [
   },
 ];
 
-function SplashScreen() {
+function SplashScreen({ colors }) {
+  const styles = makeStyles(colors);
   return (
     <View style={styles.splash}>
-      <StatusBar barStyle="light-content" backgroundColor="#1D1C24" />
+      <StatusBar
+        barStyle={colors.background === '#101822' || colors.background === '#000000' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <Image
         source={require("../assets/images/logo.png")}
         style={styles.splashLogo}
@@ -71,14 +77,17 @@ function SplashScreen() {
   );
 }
 
-function OnboardingScreen({ onFinish }) {
+function OnboardingScreen({ onFinish, colors }) {
+  const BRAND = makeBrand(colors);
+  const styles = makeStyles(colors);
+  const isDark = colors.background === '#101822' || colors.background === '#000000';
   const [step, setStep] = useState(0);
   const slide = onboardingSlides[step];
   const lastStep = step === onboardingSlides.length - 1;
 
   return (
     <SafeAreaView style={styles.onboardingScreen}>
-      <StatusBar barStyle="dark-content" backgroundColor={BRAND.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={BRAND.background} />
       <View style={styles.onboardingTop}>
         <View style={styles.brandLine}>
           <View style={styles.brandIcon}>
@@ -157,6 +166,9 @@ function OnboardingScreen({ onFinish }) {
 }
 
 function LoginScreen({ startupMessage }) {
+  const { colors, isDark } = useAppPreferences();
+  const BRAND = makeBrand(colors);
+  const styles = makeStyles(colors);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetCode, setResetCode] = useState("");
@@ -291,7 +303,7 @@ function LoginScreen({ startupMessage }) {
 
   return (
     <SafeAreaView style={styles.loginScreen}>
-      <StatusBar barStyle="dark-content" backgroundColor={BRAND.background} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={BRAND.background} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -331,7 +343,7 @@ function LoginScreen({ startupMessage }) {
               <TextInput
                 style={styles.input}
                 placeholder="seuemail@exemplo.com"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={email}
                 onChangeText={(value) => {
                   setEmail(value);
@@ -354,7 +366,7 @@ function LoginScreen({ startupMessage }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Digite sua senha"
-                    placeholderTextColor="#A0A4A8"
+                    placeholderTextColor={colors.placeholder}
                     value={password}
                     onChangeText={(value) => {
                       setPassword(value);
@@ -390,7 +402,7 @@ function LoginScreen({ startupMessage }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Código de 6 dígitos"
-                    placeholderTextColor="#A0A4A8"
+                    placeholderTextColor={colors.placeholder}
                     value={resetCode}
                     onChangeText={(value) => {
                       setResetCode(value.replace(/\D/g, "").slice(0, 6));
@@ -409,7 +421,7 @@ function LoginScreen({ startupMessage }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Mínimo de 8 caracteres"
-                    placeholderTextColor="#A0A4A8"
+                    placeholderTextColor={colors.placeholder}
                     value={newPassword}
                     onChangeText={(value) => {
                       setNewPassword(value);
@@ -490,7 +502,7 @@ function LoginScreen({ startupMessage }) {
                 accessibilityRole="alert"
                 accessibilityLiveRegion="polite"
               >
-                <Feather name="alert-circle" size={17} color="#B42318" />
+                <Feather name="alert-circle" size={17} color={colors.error} />
                 <Text style={styles.loginErrorText}>{loginError}</Text>
               </View>
             )}
@@ -558,6 +570,7 @@ function LoginScreen({ startupMessage }) {
 }
 
 export default function EntryScreen() {
+  const { colors } = useAppPreferences();
   const [screen, setScreen] = useState("splash");
   const [startupMessage, setStartupMessage] = useState("");
   const router = useRouter();
@@ -621,17 +634,17 @@ export default function EntryScreen() {
     }
   };
 
-  if (screen === "splash") return <SplashScreen />;
+  if (screen === "splash") return <SplashScreen colors={colors} />;
   if (screen === "onboarding")
-    return <OnboardingScreen onFinish={finishOnboarding} />;
+    return <OnboardingScreen onFinish={finishOnboarding} colors={colors} />;
   return <LoginScreen startupMessage={startupMessage} />;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   flex: { flex: 1 },
   splash: {
     flex: 1,
-    backgroundColor: "#1D1C24",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -642,11 +655,11 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 3,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
   },
   onboardingScreen: {
     flex: 1,
-    backgroundColor: BRAND.background,
+    backgroundColor: colors.background,
     paddingHorizontal: 24,
   },
   onboardingTop: {
@@ -660,18 +673,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
     alignItems: "center",
     justifyContent: "center",
   },
   brandName: {
-    color: BRAND.black,
+    color: colors.text,
     fontSize: 19,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
-  brandAccent: { color: BRAND.blue },
-  skipText: { color: BRAND.gray, fontSize: 15, fontWeight: "600", padding: 8 },
+  brandAccent: { color: colors.tint },
+  skipText: { color: colors.muted, fontSize: 15, fontWeight: "600", padding: 8 },
   skipSpacer: { width: 44 },
   illustration: {
     flex: 1,
@@ -683,7 +696,7 @@ const styles = StyleSheet.create({
     width: 218,
     height: 218,
     borderRadius: 109,
-    backgroundColor: "#E5F5FD",
+    backgroundColor: colors.primaryWash,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -691,13 +704,13 @@ const styles = StyleSheet.create({
     width: 142,
     height: 142,
     borderRadius: 71,
-    backgroundColor: BRAND.white,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     ...Platform.select({
       web: { boxShadow: "0px 7px 18px rgba(17, 17, 17, 0.08)" },
       default: {
-        shadowColor: BRAND.black,
+        shadowColor: colors.text,
         shadowOpacity: 0.08,
         shadowRadius: 18,
         shadowOffset: { width: 0, height: 7 },
@@ -710,11 +723,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 4,
-    borderColor: BRAND.background,
+    borderColor: colors.background,
   },
   badgeLeft: { left: 2, top: 36 },
   badgeRight: { right: 3, bottom: 27 },
@@ -724,26 +737,26 @@ const styles = StyleSheet.create({
     width: 13,
     height: 13,
     borderRadius: 8,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
     borderWidth: 3,
-    borderColor: BRAND.white,
+    borderColor: colors.surface,
   },
   mapPinOne: { top: "31%", left: "34%" },
   mapPinTwo: { top: "45%", right: "28%" },
   mapPinThree: { bottom: "25%", left: "40%" },
   onboardingCopy: { paddingBottom: 28, alignItems: "center" },
   dots: { flexDirection: "row", gap: 7, marginBottom: 25 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#D3D8DC" },
-  activeDot: { width: 24, backgroundColor: BRAND.blue },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.line },
+  activeDot: { width: 24, backgroundColor: colors.tint },
   onboardingTitle: {
-    color: BRAND.black,
+    color: colors.text,
     fontSize: 27,
     lineHeight: 34,
     fontWeight: "800",
     textAlign: "center",
   },
   onboardingSubtitle: {
-    color: BRAND.gray,
+    color: colors.muted,
     fontSize: 15,
     lineHeight: 23,
     textAlign: "center",
@@ -754,7 +767,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 54,
     borderRadius: 14,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -764,19 +777,19 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 52,
     borderRadius: 12,
-    backgroundColor: "#EAF7FF",
+    backgroundColor: colors.primaryWash,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
   },
   secondaryButtonText: {
-    color: BRAND.blue,
+    color: colors.tint,
     fontSize: 15,
     fontWeight: "700",
   },
-  primaryButtonText: { color: BRAND.white, fontSize: 16, fontWeight: "700" },
-  loginScreen: { flex: 1, backgroundColor: BRAND.background },
+  primaryButtonText: { color: colors.buttonText, fontSize: 16, fontWeight: "700" },
+  loginScreen: { flex: 1, backgroundColor: colors.background },
   loginContent: {
     flexGrow: 1,
     justifyContent: "center",
@@ -791,21 +804,21 @@ const styles = StyleSheet.create({
     marginBottom: 34,
   },
   welcome: {
-    color: BRAND.black,
+    color: colors.text,
     fontSize: 30,
     lineHeight: 37,
     fontWeight: "800",
     letterSpacing: -0.8,
   },
   loginSubtitle: {
-    color: BRAND.gray,
+    color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
     marginTop: 8,
     marginBottom: 26,
   },
   startupMessage: {
-    color: "#A65B00",
+    color: colors.warning,
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 14,
@@ -814,24 +827,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: "#FEF3F2",
+    backgroundColor: colors.errorWash,
     borderWidth: 1,
-    borderColor: "#FECDCA",
+    borderColor: colors.errorBorder,
     borderRadius: 10,
     padding: 11,
     marginTop: 2,
     marginBottom: 8,
   },
-  loginErrorText: { flex: 1, color: "#B42318", fontSize: 13, lineHeight: 18 },
+  loginErrorText: { flex: 1, color: colors.error, fontSize: 13, lineHeight: 18 },
   formCard: {
-    backgroundColor: BRAND.white,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#EEF0F2",
+    borderColor: colors.line,
   },
   fieldLabel: {
-    color: BRAND.black,
+    color: colors.text,
     fontSize: 13,
     fontWeight: "700",
     marginBottom: 8,
@@ -842,16 +855,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BRAND.line,
+    borderColor: colors.line,
     borderRadius: 12,
     paddingHorizontal: 14,
-    backgroundColor: BRAND.white,
+    backgroundColor: colors.surface,
   },
   input: {
     flex: 1,
     height: 52,
     paddingHorizontal: 11,
-    color: BRAND.black,
+    color: colors.text,
     fontSize: 15,
   },
   forgotPasswordRow: { alignItems: "flex-end", marginTop: 10, marginBottom: 8 },
@@ -861,13 +874,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   forgotPasswordText: {
-    color: "#168AC7",
+    color: colors.tint,
     fontSize: 13,
     fontWeight: "600",
     paddingVertical: 4,
   },
   loginNoticeText: {
-    color: "#168AC7",
+    color: colors.tint,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 8,
@@ -881,10 +894,10 @@ const styles = StyleSheet.create({
     marginTop: 22,
     paddingTop: 18,
     borderTopWidth: 1,
-    borderTopColor: "#EEF0F2",
+    borderTopColor: colors.line,
   },
-  registerText: { color: BRAND.gray, fontSize: 13 },
-  registerLink: { color: "#168AC7", fontSize: 13, fontWeight: "700" },
+  registerText: { color: colors.muted, fontSize: 13 },
+  registerLink: { color: colors.tint, fontSize: 13, fontWeight: "700" },
   secureNote: {
     flexDirection: "row",
     alignItems: "center",
@@ -892,5 +905,5 @@ const styles = StyleSheet.create({
     gap: 7,
     marginTop: 24,
   },
-  secureNoteText: { color: BRAND.gray, fontSize: 12 },
+  secureNoteText: { color: colors.muted, fontSize: 12 },
 });

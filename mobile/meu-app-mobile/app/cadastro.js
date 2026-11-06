@@ -15,21 +15,25 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { apiFetch, saveToken } from '../lib/api';
+import { useAppPreferences } from '../context/PreferencesContext';
 
-const BRAND = {
-  blue: '#38B6F5',
-  black: '#111111',
-  gray: '#777777',
-  line: '#E7E9EC',
-  background: '#F6F8FA',
-  white: '#FFFFFF',
-};
+const makeBrand = (colors) => ({
+  blue: colors.tint,
+  black: colors.text,
+  gray: colors.muted,
+  line: colors.line,
+  background: colors.background,
+  white: colors.buttonText,
+});
+
 function FormField({ label, icon, children }) {
+  const { colors } = useAppPreferences();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={styles.inputWrapper}>
-        <Feather name={icon} size={18} color={BRAND.gray} />
+        <Feather name={icon} size={18} color={colors.muted} />
         {children}
       </View>
     </View>
@@ -45,6 +49,9 @@ function formatCpf(value) {
 }
 
 export default function RegisterScreen() {
+  const { colors, isDark } = useAppPreferences();
+  const BRAND = makeBrand(colors);
+  const styles = makeStyles(colors);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -113,7 +120,7 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={BRAND.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={BRAND.background} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -150,7 +157,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Como podemos chamar você?"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={nome}
                 onChangeText={(value) => { setNome(value); setErrorMessage(''); }}
                 autoComplete="name"
@@ -161,7 +168,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="seuemail@exemplo.com"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={email}
                 onChangeText={(value) => { setEmail(value); setErrorMessage(''); }}
                 keyboardType="email-address"
@@ -174,7 +181,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Mínimo de 8 caracteres"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={senha}
                 onChangeText={(value) => { setSenha(value); setErrorMessage(''); }}
                 secureTextEntry={!showPassword}
@@ -188,14 +195,14 @@ export default function RegisterScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={BRAND.gray} />
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={colors.muted} />
               </TouchableOpacity>
             </FormField>
             <FormField label="CPF *" icon="credit-card">
               <TextInput
                 style={styles.input}
                 placeholder="000.000.000-00"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={cpf}
                 onChangeText={(value) => { setCpf(formatCpf(value)); setErrorMessage(''); }}
                 keyboardType="number-pad"
@@ -207,7 +214,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="(00) 00000-0000"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="phone-pad"
@@ -219,7 +226,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Ex.: Técnico em Informática"
-                placeholderTextColor="#A0A4A8"
+                placeholderTextColor={colors.placeholder}
                 value={curso}
                 onChangeText={setCurso}
                 returnKeyType="done"
@@ -254,9 +261,9 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: BRAND.background },
+  container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 28 },
   brandIcon: {
@@ -265,35 +272,35 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
   },
-  brandName: { color: BRAND.black, fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  brandAccent: { color: BRAND.blue },
+  brandName: { color: colors.text, fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  brandAccent: { color: colors.tint },
   backButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, marginBottom: 16, paddingVertical: 4 },
-  backText: { color: BRAND.gray, fontSize: 14, fontWeight: '600' },
-  title: { color: BRAND.black, fontSize: 30, lineHeight: 37, fontWeight: '800', letterSpacing: -0.8 },
-  subtitle: { color: BRAND.gray, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
-  formCard: { backgroundColor: BRAND.white, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#EEF0F2' },
-  sectionTitle: { color: BRAND.black, fontSize: 19, fontWeight: '800' },
-  sectionSubtitle: { color: BRAND.gray, fontSize: 13, lineHeight: 19, marginTop: 5, marginBottom: 14 },
+  backText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
+  title: { color: colors.text, fontSize: 30, lineHeight: 37, fontWeight: '800', letterSpacing: -0.8 },
+  subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
+  formCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.line },
+  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: '800' },
+  sectionSubtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5, marginBottom: 14 },
   fieldGroup: { marginBottom: 12 },
-  fieldLabel: { color: BRAND.black, fontSize: 13, fontWeight: '700', marginBottom: 7 },
+  fieldLabel: { color: colors.text, fontSize: 13, fontWeight: '700', marginBottom: 7 },
   inputWrapper: {
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: BRAND.line,
+    borderColor: colors.line,
     borderRadius: 12,
     paddingHorizontal: 13,
-    backgroundColor: BRAND.white,
+    backgroundColor: colors.surface,
   },
-  input: { flex: 1, minWidth: 0, height: 50, paddingHorizontal: 10, color: BRAND.black, fontSize: 14 },
+  input: { flex: 1, minWidth: 0, height: 50, paddingHorizontal: 10, color: colors.text, fontSize: 14 },
   errorMessage: {
-    color: '#B42318',
-    backgroundColor: '#FEF3F2',
+    color: colors.error,
+    backgroundColor: colors.errorWash,
     borderWidth: 1,
-    borderColor: '#FECDCA',
+    borderColor: colors.errorBorder,
     borderRadius: 10,
     padding: 11,
     fontSize: 13,
@@ -306,12 +313,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    backgroundColor: BRAND.blue,
+    backgroundColor: colors.tint,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginTop: 4,
   },
-  primaryButtonText: { color: BRAND.white, fontSize: 15, fontWeight: '700' },
+  primaryButtonText: { color: colors.buttonText, fontSize: 15, fontWeight: '700' },
   disabledButton: { opacity: 0.65 },
   loginLine: {
     flexDirection: 'row',
@@ -320,10 +327,10 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingTop: 17,
     borderTopWidth: 1,
-    borderTopColor: '#EEF0F2',
+    borderTopColor: colors.line,
   },
-  loginText: { color: BRAND.gray, fontSize: 13 },
-  loginLink: { color: '#168AC7', fontSize: 13, fontWeight: '700' },
+  loginText: { color: colors.muted, fontSize: 13 },
+  loginLink: { color: colors.tint, fontSize: 13, fontWeight: '700' },
   secureNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 22 },
-  secureNoteText: { color: BRAND.gray, fontSize: 12 },
+  secureNoteText: { color: colors.muted, fontSize: 12 },
 });

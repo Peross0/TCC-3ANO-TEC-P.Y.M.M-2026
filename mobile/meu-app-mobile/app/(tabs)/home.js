@@ -53,6 +53,9 @@ const normalizeJob = (vacancy, now) => ({
   company: vacancy.company_name || 'Empresa',
   logoUri: getAssetUrl(vacancy.company_logo_url),
   category: vacancy.company_sector || 'Empresa',
+  location: vacancy.location || '',
+  workModel: vacancy.work_model || '',
+  contractType: vacancy.contract_type || '',
   timeAgo: formatTimeAgo(vacancy.created_at, now),
   createdAt: parseApiDate(vacancy.created_at) || new Date(0),
   dateTimeLabel: formatBrasiliaDateTime(vacancy.created_at),
@@ -66,12 +69,22 @@ const normalizeJob = (vacancy, now) => ({
 });
 
 export default function HomeScreen() {
-  const { sessionData, setSessionData } = useContext(SessionContext);
+  const {
+    sessionData,
+    setSessionData,
+    notifications,
+    unreadNotificationCount,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useContext(SessionContext);
   const { colors, preferences, isDark } = useAppPreferences();
   const styles = makeStyles(colors, preferences.large_text);
   const isEmployer = sessionData?.user?.user_type === 'RECRUITER';
+  const favoriteVacancyIds = sessionData?.favoriteVacancyIds || [];
 
-  const [selectedFilter, setSelectedFilter] = useState('Para você');
+  const [selectedFilter, setSelectedFilter] = useState('Todas');
+  const [selectedContractType, setSelectedContractType] = useState('Todos');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showNotification, setShowNotification] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSettingsActive, setIsSettingsActive] = useState(false);
@@ -82,9 +95,8 @@ export default function HomeScreen() {
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [applyingToJob, setApplyingToJob] = useState(null);
   const [appliedVacancyIds, setAppliedVacancyIds] = useState([]);
-  const [favoriteVacancyIds, setFavoriteVacancyIds] = useState([]);
   const [savingFavoriteIds, setSavingFavoriteIds] = useState([]);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   const router = useRouter();
 
@@ -94,16 +106,10 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (sessionData?.favoriteVacancyIds) {
-      setFavoriteVacancyIds(sessionData.favoriteVacancyIds);
-    }
-  }, [sessionData?.favoriteVacancyIds]);
-
-  useEffect(() => {
     const carregarVagas = async () => {
       try {
-        setLoadingJobs(true);
         if (isEmployer) {
+          setLoadingJobs(true);
           const data = await apiFetch('/recruiters/vacancies?status=ALL&limit=20');
           setEmployerJobs((data.vacancies || []).map((vacancy) => ({
             id: String(vacancy.id),
@@ -114,23 +120,22 @@ export default function HomeScreen() {
         }
 
         const requests = [
-          apiFetch('/candidates/vacancies?limit=20'),
           apiFetch('/candidates/applications'),
           apiFetch('/candidates/favorites'),
         ];
-        const [data, applicationsData, favoritesData] = await Promise.all(requests);
-        setJobs((data.vacancies || []).map((vacancy) => normalizeJob(vacancy, Date.now())));
+        const [applicationsData, favoritesData] = await Promise.all(requests);
         setAppliedVacancyIds((applicationsData.applications || []).map((application) => String(application.vacancy_id)));
         const favoriteIds = (favoritesData.favorites || []).map((vacancy) => String(vacancy.id));
-        setFavoriteVacancyIds(favoriteIds);
         setSessionData((current) => current
           ? { ...current, favoriteVacancyIds: favoriteIds }
           : current);
       } catch (error) {
-        setJobs([]);
-        Alert.alert('Erro ao carregar vagas', error.message || 'Não foi possível conectar ao servidor.');
+        Alert.alert(
+          isEmployer ? 'Erro ao carregar vagas' : 'Erro ao carregar seus dados',
+          error.message || 'Não foi possível conectar ao servidor.',
+        );
       } finally {
-        setLoadingJobs(false);
+        if (isEmployer) setLoadingJobs(false);
       }
     };
 
@@ -138,11 +143,49 @@ export default function HomeScreen() {
   }, [isEmployer, setSessionData]);
 
   useEffect(() => {
-    setJobs((current) => current.map((job) => ({
-      ...job,
-      timeAgo: formatTimeAgo(job.createdAt, currentTime),
-    })));
-  }, [currentTime]);
+    if (isEmployer) return undefined;
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      setLoadingJobs(true);
+      const params = ['limit=50'];
+      const query = searchQuery.trim();
+      const workModel = {
+        Remoto: 'REMOTE',
+        Híbrido: 'HYBRID',
+        Presencial: 'ONSITE',
+      }[selectedFilter];
+      const contractType = {
+        CLT: 'CLT',
+        PJ: 'PJ',
+        Estágio: 'INTERNSHIP',
+        Freelance: 'FREELANCE',
+      }[selectedContractType];
+
+      if (query) params.push(`q=${encodeURIComponent(query)}`);
+      if (workModel) params.push(`work_model=${workModel}`);
+      if (contractType) params.push(`contract_type=${contractType}`);
+
+      try {
+        const data = await apiFetch(`/candidates/vacancies?${params.join('&')}`);
+        if (active) {
+          setJobs((data.vacancies || []).map((vacancy) => normalizeJob(vacancy, Date.now())));
+        }
+      } catch (error) {
+        if (active) {
+          setJobs([]);
+          Alert.alert('Erro ao carregar vagas', error.message || 'Não foi possível conectar ao servidor.');
+        }
+      } finally {
+        if (active) setLoadingJobs(false);
+      }
+    }, searchQuery.trim() ? 350 : 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [isEmployer, searchQuery, selectedFilter, selectedContractType]);
 
   const applyToJob = async (vacancyId) => {
     if (applyingToJob !== null) return;
@@ -169,11 +212,6 @@ export default function HomeScreen() {
       await apiFetch(`/candidates/vacancies/${vacancyId}/favorite`, {
         method: isFavorite ? 'DELETE' : 'PUT',
       });
-      setFavoriteVacancyIds((current) => (
-        isFavorite
-          ? current.filter((favoriteId) => favoriteId !== id)
-          : [...new Set([...current, id])]
-      ));
       setSessionData((current) => {
         if (!current) return current;
         const currentIds = current.favoriteVacancyIds || [];
@@ -237,10 +275,6 @@ export default function HomeScreen() {
   };
 
   const getFilteredJobs = () => {
-    if (selectedFilter === 'Remotos') {
-      return jobs.filter((job) => job.isRemote);
-    }
-
     if (selectedFilter === 'Recentes') {
       return [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
@@ -248,7 +282,14 @@ export default function HomeScreen() {
     return jobs;
   };
 
-  const filteredJobs = getFilteredJobs();
+  const filteredJobs = getFilteredJobs().map((job) => ({
+    ...job,
+    timeAgo: formatTimeAgo(job.createdAt, currentTime),
+  }));
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase('pt-BR');
+  const filteredEmployerJobs = employerJobs.filter((job) =>
+    `${job.title} ${job.category}`.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
+  );
 
   return (
     <AnimatedScreen>
@@ -279,11 +320,24 @@ export default function HomeScreen() {
           setShowProfileMenu(!showProfileMenu);
         }}
         onOpenMessages={handleOpenMessages}
+        searchValue={searchQuery}
+        onSearchChangeText={setSearchQuery}
+        notificationCount={unreadNotificationCount}
       />
 
       <NotificationModal
         visible={showNotification}
         onClose={() => setShowNotification(false)}
+        notifications={notifications}
+        onMarkAllRead={markAllNotificationsRead}
+        onPressNotification={(notification) => {
+          markNotificationRead(notification.id);
+          setShowNotification(false);
+          router.push({
+            pathname: '/(tabs)/index1',
+            params: { applicationId: String(notification.applicationId) },
+          });
+        }}
       />
 
       <ProfileMenuModal
@@ -313,12 +367,14 @@ export default function HomeScreen() {
             </View>
 
             {/* Conteúdo: Estado Vazio ou Lista de Vagas */}
-            {employerJobs.length === 0 ? (
+            {filteredEmployerJobs.length === 0 ? (
               <View style={styles.emptyEmployerContainer}>
-                <Text style={styles.emptyEmployerText}>Não há vaga criada</Text>
+                <Text style={styles.emptyEmployerText}>
+                  {searchQuery ? 'Nenhuma vaga corresponde à pesquisa' : 'Não há vaga criada'}
+                </Text>
               </View>
             ) : (
-              employerJobs.map((job) => (
+              filteredEmployerJobs.map((job) => (
                 <View key={job.id} style={styles.employerJobCard}>
                   <Text style={styles.employerJobTitle}>{job.title}</Text>
                   <Text style={styles.employerJobDetails}>{job.category}</Text>
@@ -329,8 +385,12 @@ export default function HomeScreen() {
         ) : (
           /* ==================== TELA DO CANDIDATO ==================== */
           <>
-            <View style={styles.filterContainer}>
-              {['Para você', 'Recentes', 'Remotos'].map((filter) => (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterContainer}
+            >
+              {['Todas', 'Recentes', 'Remoto', 'Híbrido', 'Presencial'].map((filter) => (
                 <TouchableOpacity
                   key={filter}
                   onPress={() => setSelectedFilter(filter)}
@@ -349,7 +409,39 @@ export default function HomeScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterContainer}
+            >
+              {['Todos', 'CLT', 'PJ', 'Estágio', 'Freelance'].map((contractType) => (
+                <TouchableOpacity
+                  key={contractType}
+                  onPress={() => setSelectedContractType(contractType)}
+                  style={[
+                    styles.filterChip,
+                    selectedContractType === contractType && styles.activeFilterChip,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      selectedContractType === contractType && styles.activeFilterText,
+                    ]}
+                  >
+                    {contractType === 'Todos' ? 'Todos os contratos' : contractType}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {!loadingJobs && (
+              <Text style={styles.resultsCount}>
+                {filteredJobs.length} {filteredJobs.length === 1 ? 'vaga encontrada' : 'vagas encontradas'}
+              </Text>
+            )}
 
             {loadingJobs ? (
               <View style={styles.emptyContainer}>
@@ -386,7 +478,9 @@ export default function HomeScreen() {
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyTitle}>Nenhuma vaga encontrada</Text>
                 <Text style={styles.emptySubText}>
-                  Não há vagas disponíveis para a categoria selecionada no momento.
+                  {searchQuery
+                    ? 'Tente outra palavra ou ajuste os filtros selecionados.'
+                    : 'Tente alterar os filtros de modalidade ou contrato.'}
                 </Text>
               </View>
             )}
@@ -412,9 +506,11 @@ function makeStyles(colors, largeText) {
   // Candidato
   filterContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 10,
+    paddingVertical: 2,
   },
+  resultsCount: { color: colors.muted, fontSize: 12 * scale, marginBottom: 10 },
   filterChip: {
     paddingVertical: 4,
     paddingHorizontal: 10,
@@ -433,7 +529,7 @@ function makeStyles(colors, largeText) {
     color: colors.muted,
   },
   activeFilterText: {
-    color: colors.text,
+    color: colors.buttonText,
   },
   mostRecentHighlight: {
     borderWidth: 2,
@@ -453,7 +549,7 @@ function makeStyles(colors, largeText) {
     zIndex: 1,
   },
   recentBadgeText: {
-    color: colors.text,
+    color: colors.buttonText,
     fontSize: 10 * scale,
     fontWeight: 'bold',
   },

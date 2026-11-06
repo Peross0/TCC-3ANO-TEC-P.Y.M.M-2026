@@ -30,7 +30,7 @@ const settingsItems = [
 export default function ConfiguracoesScreen() {
   const router = useRouter();
   const { sessionData, setSessionData } = useContext(SessionContext);
-  const { colors, syncError } = useAppPreferences();
+  const { colors, isDark, syncError } = useAppPreferences();
   const styles = makeStyles(colors);
   const [savingNotifications, setSavingNotifications] = useState(false);
 
@@ -75,7 +75,7 @@ export default function ConfiguracoesScreen() {
   return (
     <AnimatedScreen>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle={colors.text === '#F3F7FC' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -258,6 +258,6 @@ function makeStyles(colors) {
       gap: 12,
       padding: 14,
     },
-    syncError: { color: '#D24B4B', fontSize: 12, lineHeight: 18, padding: 4 },
+    syncError: { color: colors.error, fontSize: 12, lineHeight: 18, padding: 4 },
   });
 }

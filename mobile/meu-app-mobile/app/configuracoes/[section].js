@@ -46,6 +46,33 @@ const FAQ_ITEMS = [
   },
 ];
 
+const COLOR_VISION_OPTIONS = [
+  {
+    value: 'none',
+    title: 'Padrão',
+    description: 'Mantém as cores originais do aplicativo.',
+    swatches: ['#4FB3E6', '#111111'],
+  },
+  {
+    value: 'protanopia',
+    title: 'Protanopia',
+    description: 'Adapta cores para dificuldade de percepção do vermelho.',
+    swatches: ['#0072B2', '#E69F00'],
+  },
+  {
+    value: 'deuteranopia',
+    title: 'Deuteranopia',
+    description: 'Adapta cores para dificuldade de percepção do verde.',
+    swatches: ['#005A9C', '#D55E00'],
+  },
+  {
+    value: 'tritanopia',
+    title: 'Tritanopia',
+    description: 'Adapta cores para dificuldade de percepção do azul e amarelo.',
+    swatches: ['#9B3F77', '#007A5E'],
+  },
+];
+
 export default function ConfigurationSectionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -54,6 +81,7 @@ export default function ConfigurationSectionScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
   const {
     colors,
+    isDark,
     preferences,
     loading,
     saving,
@@ -115,7 +143,7 @@ export default function ConfigurationSectionScreen() {
   return (
     <AnimatedScreen>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle={colors.text === '#F3F7FC' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -167,6 +195,43 @@ export default function ConfigurationSectionScreen() {
 
           {sectionId === 'acessibilidade' && (
             <>
+              <View style={styles.accessibilityIntro}>
+                <Text style={styles.choiceTitle}>Adaptação para daltonismo</Text>
+                <Text style={styles.rowSubtitle}>
+                  Escolha uma paleta para diferenciar melhor botões, links e destaques.
+                  A opção selecionada será aplicada em todo o aplicativo.
+                </Text>
+              </View>
+              {COLOR_VISION_OPTIONS.map((option) => {
+                const selected = (preferences.color_vision_mode || 'none') === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.choiceCard, selected && styles.selectedCard]}
+                    onPress={() => savePreference({ color_vision_mode: option.value })}
+                    disabled={saving}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected, disabled: saving }}
+                  >
+                    <View style={styles.choiceCopy}>
+                      <Text style={styles.choiceTitle}>{option.title}</Text>
+                      <Text style={styles.rowSubtitle}>{option.description}</Text>
+                      <View style={styles.palettePreview}>
+                        {option.swatches.map((color) => (
+                          <View
+                            key={color}
+                            style={[styles.paletteSwatch, { backgroundColor: color }]}
+                          />
+                        ))}
+                        <Text style={styles.palettePreviewLabel}>Cores de destaque</Text>
+                      </View>
+                    </View>
+                    {selected
+                      ? <Feather name="check-circle" size={21} color={colors.tint} />
+                      : <View style={styles.radio} />}
+                  </TouchableOpacity>
+                );
+              })}
               <PreferenceSwitch
                 colors={colors}
                 title="Texto maior"
@@ -342,6 +407,7 @@ function makeStyles(colors, largeText) {
     title: { color: colors.text, fontSize: 19 * textScale, fontWeight: '800' },
     subtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
     content: { gap: 12, padding: 18, paddingBottom: 36 },
+    accessibilityIntro: { backgroundColor: colors.primaryWash, borderRadius: 15, padding: 16 },
     choiceCard: {
       alignItems: 'center',
       backgroundColor: colors.surface,
@@ -356,6 +422,9 @@ function makeStyles(colors, largeText) {
     choiceCopy: { flex: 1 },
     choiceTitle: { color: colors.text, fontSize: 15 * textScale, fontWeight: '700' },
     rowSubtitle: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 5 },
+    palettePreview: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 11 },
+    paletteSwatch: { borderColor: colors.line, borderRadius: 8, borderWidth: 1, height: 28, width: 34 },
+    palettePreviewLabel: { color: colors.muted, fontSize: 11, marginLeft: 2 },
     radio: { borderColor: colors.line, borderRadius: 10, borderWidth: 2, height: 20, width: 20 },
     switchCard: {
       alignItems: 'center',
@@ -407,7 +476,7 @@ function makeStyles(colors, largeText) {
     separator: { backgroundColor: colors.line, height: StyleSheet.hairlineWidth },
     loader: { marginTop: 8 },
     syncErrorCard: { backgroundColor: colors.surface, borderRadius: 12, gap: 8, padding: 14 },
-    error: { color: '#C63D3D', fontSize: 13, lineHeight: 19 },
+    error: { color: colors.error, fontSize: 13, lineHeight: 19 },
     retry: { color: colors.tint, fontSize: 13, fontWeight: '800' },
   });
 }

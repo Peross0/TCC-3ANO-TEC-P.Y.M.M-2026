@@ -17,7 +17,7 @@ export default function MessageInput({ value, onChangeText, onSend }) {
         onChangeText={onChangeText}
       />
       <TouchableOpacity style={styles.sendButton} onPress={onSend}>
-        <Feather name="send" size={18} color={colors.text} />
+        <Feather name="send" size={18} color={colors.buttonText} />
       </TouchableOpacity>
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import { Colors } from '../constants/theme';
+import { ColorVisionPalettes, Colors } from '../constants/theme';
 import { apiFetch } from '../lib/api';
 
 const DEFAULT_PREFERENCES = {
@@ -8,6 +8,7 @@ const DEFAULT_PREFERENCES = {
   large_text: false,
   high_contrast: false,
   reduce_motion: false,
+  color_vision_mode: 'none',
 };
 
 const PreferencesContext = createContext({
@@ -21,16 +22,25 @@ const PreferencesContext = createContext({
   updatePreferences: async () => {},
 });
 
-export function PreferencesProvider({ userId, children }) {
+export function PreferencesProvider({ userId, initialPreferences, children }) {
   const systemColorScheme = useColorScheme();
-  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [savedPreferences, setSavedPreferences] = useState({
+    userId,
+    value: { ...DEFAULT_PREFERENCES, ...initialPreferences },
+  });
+  const preferences = useMemo(() => {
+    if (savedPreferences.userId === userId) return savedPreferences.value;
+    return initialPreferences
+      ? { ...DEFAULT_PREFERENCES, ...initialPreferences }
+      : DEFAULT_PREFERENCES;
+  }, [savedPreferences, userId, initialPreferences]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [syncError, setSyncError] = useState('');
 
   const refreshPreferences = useCallback(async () => {
     if (!userId) {
-      setPreferences(DEFAULT_PREFERENCES);
+      setSavedPreferences({ userId: null, value: DEFAULT_PREFERENCES });
       setSyncError('');
       return false;
     }
@@ -39,7 +49,10 @@ export function PreferencesProvider({ userId, children }) {
     setSyncError('');
     try {
       const result = await apiFetch('/users/me/preferences');
-      setPreferences({ ...DEFAULT_PREFERENCES, ...result.preferences });
+      setSavedPreferences({
+        userId,
+        value: { ...DEFAULT_PREFERENCES, ...result.preferences },
+      });
       return true;
     } catch (error) {
       setSyncError(error.message || 'Não foi possível sincronizar suas preferências.');
@@ -50,8 +63,9 @@ export function PreferencesProvider({ userId, children }) {
   }, [userId]);
 
   useEffect(() => {
-    refreshPreferences();
-  }, [refreshPreferences]);
+    if (initialPreferences) return;
+    Promise.resolve().then(refreshPreferences);
+  }, [initialPreferences, refreshPreferences]);
 
   const updatePreferences = useCallback(async (updates) => {
     if (!userId) throw new Error('Entre na sua conta para salvar as preferências.');
@@ -63,7 +77,10 @@ export function PreferencesProvider({ userId, children }) {
         method: 'PUT',
         body: JSON.stringify(updates),
       });
-      setPreferences({ ...DEFAULT_PREFERENCES, ...result.preferences });
+      setSavedPreferences({
+        userId,
+        value: { ...DEFAULT_PREFERENCES, ...result.preferences },
+      });
       return result.preferences;
     } catch (error) {
       setSyncError(error.message || 'Não foi possível salvar suas preferências.');
@@ -78,16 +95,20 @@ export function PreferencesProvider({ userId, children }) {
     : preferences.theme;
   const isDark = activeTheme === 'dark';
   const baseColors = activeTheme === 'dark' ? Colors.dark : Colors.light;
-  const colors = useMemo(() => preferences.high_contrast
-    ? {
-      ...baseColors,
-      background: activeTheme === 'dark' ? '#000000' : '#FFFFFF',
-      surface: activeTheme === 'dark' ? '#080808' : '#FFFFFF',
-      text: activeTheme === 'dark' ? '#FFFFFF' : '#000000',
-      muted: activeTheme === 'dark' ? '#FFFFFF' : '#111111',
-      line: activeTheme === 'dark' ? '#FFFFFF' : '#111111',
-    }
-    : baseColors, [activeTheme, baseColors, preferences.high_contrast]);
+  const colors = useMemo(() => {
+    const visionPalette = ColorVisionPalettes[preferences.color_vision_mode]?.[activeTheme] || {};
+    const adaptedColors = { ...baseColors, ...visionPalette };
+    return preferences.high_contrast
+      ? {
+        ...adaptedColors,
+        background: activeTheme === 'dark' ? '#000000' : '#FFFFFF',
+        surface: activeTheme === 'dark' ? '#080808' : '#FFFFFF',
+        text: activeTheme === 'dark' ? '#FFFFFF' : '#000000',
+        muted: activeTheme === 'dark' ? '#FFFFFF' : '#111111',
+        line: activeTheme === 'dark' ? '#FFFFFF' : '#111111',
+      }
+      : adaptedColors;
+  }, [activeTheme, baseColors, preferences.color_vision_mode, preferences.high_contrast]);
   const contextValue = useMemo(() => ({
     preferences,
     colors,
