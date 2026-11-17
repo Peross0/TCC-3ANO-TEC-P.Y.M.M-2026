@@ -2,9 +2,11 @@ import multer from 'multer';
 import { env } from '../config/env.js';
 import { mkdirSync } from 'node:fs';
 import { extname } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 // Ensure upload directory exists
 mkdirSync(env.UPLOAD_DIR, { recursive: true });
+mkdirSync(env.DOCUMENT_UPLOAD_DIR, { recursive: true });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -40,3 +42,13 @@ function createImageUpload(prefix) {
 
 export const upload = createImageUpload('avatar');
 export const uploadCompanyLogo = createImageUpload('company');
+
+export const uploadDocument = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, env.DOCUMENT_UPLOAD_DIR),
+    filename: (_req, _file, cb) => cb(null, randomUUID()),
+  }),
+  limits: {
+    fileSize: env.MAX_DOCUMENT_MB * 1024 * 1024,
+  },
+});

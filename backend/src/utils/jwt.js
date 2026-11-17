@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { randomInt } from 'node:crypto';
 import { env } from '../config/env.js';
 
 export function signToken(payload, options = {}) {
@@ -11,10 +10,6 @@ export function signToken(payload, options = {}) {
 
 export function verifyToken(token) {
   return jwt.verify(token, env.JWT_SECRET);
-}
-
-export function generatePasswordResetCode() {
-  return randomInt(100000, 1000000).toString();
 }
 
 export function createAuthTokens(user) {

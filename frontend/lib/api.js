@@ -1,6 +1,6 @@
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 function getApiUrl() {
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
@@ -68,12 +68,21 @@ export async function getSession() {
 export async function apiFetch(path, options = {}) {
   const { token } = await getSession();
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const { responseType, ...fetchOptions } = options;
   const headers = {
     ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const response = await fetch(`${API_URL}${path}`, { ...fetchOptions, headers });
+  if (responseType === 'blob') {
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const details = Array.isArray(data.details) ? data.details.map((item) => item.message).join(' ') : '';
+      throw new Error(details || data.message || data.mensagem || 'Não foi possível concluir a operação.');
+    }
+    return response.blob();
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const details = Array.isArray(data.details) ? data.details.map((item) => item.message).join(' ') : '';

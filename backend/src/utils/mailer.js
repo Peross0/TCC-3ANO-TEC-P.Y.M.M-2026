@@ -57,17 +57,17 @@ export async function sendEmail({ to, subject, text, html }) {
   });
 }
 
-export async function sendPasswordResetEmail(email, code, expiryMinutes) {
+export async function sendPasswordResetCodeEmail(email, code, expiryMinutes) {
   return sendEmail({
     to: email,
     subject: "Recuperação de senha - ConectaFácil",
-    text: `Seu código de recuperação é ${code}. Ele expira em ${expiryMinutes} minutos. Se você não solicitou a redefinição, ignore este e-mail.`,
+    text: `Seu código para redefinir a senha é ${code}. Ele expira em ${expiryMinutes} minutos e só pode ser usado uma vez. Se você não solicitou a redefinição, ignore este e-mail.`,
     html: `
       <h2>Recuperação de Senha</h2>
       <p>Recebemos sua solicitação de redefinição de senha.</p>
-      <p>Use este código no aplicativo para criar uma nova senha:</p>
-      <p style="font-size:24px;font-weight:bold;letter-spacing:6px">${code}</p>
-      <p>O código expira em ${expiryMinutes} minutos. Se você não solicitou a redefinição, ignore este e-mail.</p>
+      <p>Informe este código no aplicativo para criar uma nova senha:</p>
+      <p style="font-size: 24px; font-weight: bold; letter-spacing: 5px">${code}</p>
+      <p>O código expira em ${expiryMinutes} minutos e só pode ser usado uma vez. Se você não solicitou a redefinição, ignore este e-mail.</p>
     `,
   });
 }

@@ -129,6 +129,20 @@ export default function ConfiguracoesScreen() {
             </TouchableOpacity>
           )}
 
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push('/redefinir-senha')}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+          >
+            <View style={styles.iconBox}><Feather name="lock" size={19} color={colors.tint} /></View>
+            <View style={styles.itemCopy}>
+              <Text style={styles.itemTitle}>Alterar senha</Text>
+              <Text style={styles.itemSubtitle}>Defina uma nova senha para sua conta</Text>
+            </View>
+            <Feather name="chevron-right" size={21} color={colors.muted} />
+          </TouchableOpacity>
+
           <View style={styles.notificationCard}>
             <View style={styles.iconBox}><Feather name="bell" size={19} color={colors.tint} /></View>
             <View style={styles.itemCopy}>

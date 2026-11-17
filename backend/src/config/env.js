@@ -28,6 +28,8 @@ const envSchema = z.object({
   // Upload
   UPLOAD_DIR: z.string().default('./uploads/avatars').transform(toBackendPath),
   MAX_AVATAR_MB: z.coerce.number().int().positive().default(2),
+  DOCUMENT_UPLOAD_DIR: z.string().default('./uploads/documents').transform(toBackendPath),
+  MAX_DOCUMENT_MB: z.coerce.number().int().positive().default(25),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -36,6 +38,19 @@ if (!parsed.success) {
   console.error('❌ Variáveis de ambiente inválidas:');
   console.error(parsed.error.flatten().fieldErrors);
   process.exit(1);
+}
+
+if (parsed.data.NODE_ENV === 'production') {
+  const required = [
+    'SMTP_HOST',
+    'SMTP_USER',
+    'SMTP_PASS',
+  ];
+  const missing = required.filter((name) => !process.env[name]?.trim());
+  if (missing.length) {
+    console.error('❌ Variáveis obrigatórias em produção ausentes:', missing);
+    process.exit(1);
+  }
 }
 
 export const env = parsed.data;

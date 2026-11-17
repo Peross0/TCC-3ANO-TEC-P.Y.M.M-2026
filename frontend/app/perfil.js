@@ -1,11 +1,14 @@
 import { Feather } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Skeleton } from '../components/ui/Primitives';
-import { API_URL, apiFetch, clearSession, getSession } from '../lib/api';
+import { API_URL, apiFetch, clearSession, getSession, saveSession } from '../lib/api';
 import { colors } from '../lib/theme';
 
 const PAGE_SIZE = 50;
@@ -14,6 +17,14 @@ function formatDate(value) {
   if (!value) return '';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
+}
+
+function formatFileSize(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size) || size < 0) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} KB`;
+  return `${(size / (1024 * 1024)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
 }
 
 function formatNumber(value) {
@@ -76,15 +87,19 @@ export default function PerfilScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [companyLogoUploading, setCompanyLogoUploading] = useState(false);
   const [companySaving, setCompanySaving] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const [documentActionId, setDocumentActionId] = useState(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ full_name: '', phone: '' });
   const [companyEditing, setCompanyEditing] = useState(false);
   const [companyDraft, setCompanyDraft] = useState({ company_name: '', company_description: '', company_sector: '', location: '' });
   const [feedback, setFeedback] = useState(null);
   const [passwordOpen, setPasswordOpen] = useState(false);
-  const [passwordStep, setPasswordStep] = useState('request');
-  const [resetCode, setResetCode] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
 
@@ -96,6 +111,17 @@ export default function PerfilScreen() {
         return;
       }
 
+      apiFetch('/users/me/documents')
+        .then((documentsData) => setDocuments(documentsData.documents || []))
+        .catch((error) => {
+          setFeedback({
+            type: 'error',
+            message: error instanceof TypeError
+              ? 'Não foi possível carregar os documentos. Verifique a conexão e tente novamente.'
+              : error.message || 'Não foi possível carregar os documentos.',
+          });
+        })
+        .finally(() => setDocumentsLoading(false));
       const [profileData, vacanciesData] = await Promise.all([
         apiFetch('/recruiters/profile'),
         apiFetch(`/recruiters/vacancies?page=1&limit=${PAGE_SIZE}`),
@@ -127,6 +153,7 @@ export default function PerfilScreen() {
       );
       setCandidateTotal(candidateCounts.reduce((total, count) => total + count, 0));
     } catch (error) {
+      setDocumentsLoading(false);
       setFeedback({
         type: 'error',
         message: error instanceof TypeError
@@ -270,6 +297,139 @@ export default function PerfilScreen() {
     }
   };
 
+  const pickDocument = async () => {
+    if (documentUploading) return;
+    setFeedback(null);
+    try {
+      const selection = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (selection.canceled || !selection.assets?.length) return;
+
+      const asset = selection.assets[0];
+      const formData = new FormData();
+      if (Platform.OS === 'web' && asset.file) {
+        formData.append('document', asset.file, asset.name || 'documento');
+      } else {
+        formData.append('document', {
+          uri: asset.uri,
+          name: asset.name || 'documento',
+          type: asset.mimeType || 'application/octet-stream',
+        });
+      }
+
+      setDocumentUploading(true);
+      const response = await apiFetch('/users/me/documents', {
+        method: 'POST',
+        body: formData,
+      });
+      setDocuments((current) => [response.document, ...current]);
+      setFeedback({ type: 'success', message: 'Documento anexado e salvo no perfil.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error instanceof TypeError
+          ? 'Não foi possível conectar ao servidor. Tente novamente.'
+          : error.message || 'Não foi possível anexar o documento.',
+      });
+    } finally {
+      setDocumentUploading(false);
+    }
+  };
+
+  const openDocument = async (item, action) => {
+    if (documentActionId !== null) return;
+    let previewWindow = null;
+    if (Platform.OS === 'web' && action === 'view') {
+      previewWindow = globalThis.open('', '_blank');
+      if (previewWindow) previewWindow.opener = null;
+    }
+
+    setDocumentActionId(item.id);
+    setFeedback(null);
+    try {
+      if (Platform.OS === 'web') {
+        const content = await apiFetch(`/users/me/documents/${item.id}`, { responseType: 'blob' });
+          const blob = new Blob([content], { type: item.mime_type || 'application/octet-stream' });
+          const canPreview = item.mime_type === 'application/pdf'
+            || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(item.mime_type);
+          if (action === 'view' && canPreview && previewWindow) {
+            const objectUrl = URL.createObjectURL(blob);
+            previewWindow.location.replace(objectUrl);
+            previewWindow.addEventListener('beforeunload', () => URL.revokeObjectURL(objectUrl), { once: true });
+        } else {
+          previewWindow?.close();
+          const objectUrl = URL.createObjectURL(blob);
+          const link = globalThis.document.createElement('a');
+          link.href = objectUrl;
+          link.download = item.name;
+          globalThis.document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        }
+        return;
+      }
+
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Não há um aplicativo disponível para abrir ou compartilhar este arquivo.');
+      }
+      const session = await getSession();
+      if (!session.token || !FileSystem.cacheDirectory) {
+        throw new Error('Não foi possível acessar a sessão ou o armazenamento temporário.');
+      }
+      const localName = item.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 180) || 'documento';
+      const localUri = `${FileSystem.cacheDirectory}document-${item.id}-${localName}`;
+      const result = await FileSystem.downloadAsync(
+        `${API_URL}/users/me/documents/${item.id}`,
+        localUri,
+        { headers: { Authorization: `Bearer ${session.token}` } },
+      );
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error('Não foi possível baixar o documento. Entre novamente e tente de novo.');
+      }
+      await Sharing.shareAsync(result.uri, {
+        mimeType: item.mime_type || 'application/octet-stream',
+        dialogTitle: item.name,
+      });
+    } catch (error) {
+      previewWindow?.close();
+      setFeedback({
+        type: 'error',
+        message: error.message || 'Não foi possível abrir o documento.',
+      });
+    } finally {
+      setDocumentActionId(null);
+    }
+  };
+
+  const deleteDocument = async (item) => {
+    setFeedback(null);
+    try {
+      await apiFetch(`/users/me/documents/${item.id}`, { method: 'DELETE' });
+      setDocuments((current) => current.filter((document) => document.id !== item.id));
+      setFeedback({ type: 'success', message: 'Documento excluído do perfil.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error.message || 'Não foi possível excluir o documento.',
+      });
+    }
+  };
+
+  const confirmDeleteDocument = (item) => {
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm(`Excluir "${item.name}" do seu perfil?`)) deleteDocument(item);
+      return;
+    }
+    Alert.alert('Excluir documento?', `Deseja remover "${item.name}" do seu perfil?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: () => deleteDocument(item) },
+    ]);
+  };
+
   const beginEditing = () => {
     setDraft({
       full_name: recruiter?.full_name || '',
@@ -327,49 +487,36 @@ export default function PerfilScreen() {
     }
   };
 
-  const requestPasswordReset = async () => {
-    if (!recruiter?.email) return;
-    setPasswordBusy(true);
-    setFeedback(null);
-    try {
-      const response = await apiFetch('/auth/forgot-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: recruiter.email }),
-      });
-      setPasswordStep('reset');
-      setFeedback({ type: 'success', message: response.message || 'Se a conta estiver cadastrada, você receberá um código de recuperação.' });
-    } catch (error) {
-      setFeedback({ type: 'error', message: error.message || 'Não foi possível solicitar a recuperação de senha.' });
-    } finally {
-      setPasswordBusy(false);
-    }
-  };
-
-  const resetPassword = async () => {
-    if (!/^\d{6}$/.test(resetCode)) {
-      setFeedback({ type: 'error', message: 'Informe o código de 6 dígitos enviado para seu e-mail.' });
+  const changePassword = async () => {
+    if (!currentPassword) {
+      setFeedback({ type: 'error', message: 'Informe sua senha atual.' });
       return;
     }
-    if (newPassword.length < 8) {
-      setFeedback({ type: 'error', message: 'A nova senha deve ter pelo menos 8 caracteres.' });
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      setFeedback({ type: 'error', message: 'A nova senha deve ter entre 8 e 128 caracteres.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setFeedback({ type: 'error', message: 'As senhas não conferem.' });
       return;
     }
 
     setPasswordBusy(true);
     setFeedback(null);
     try {
-      const response = await apiFetch('/auth/reset-password', {
+      const response = await apiFetch('/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({
-          email: recruiter.email,
-          code: resetCode,
-          password: newPassword,
+          current_password: currentPassword,
+          new_password: newPassword,
         }),
       });
+      const session = await getSession();
+      await saveSession(response.token, session.user);
       setPasswordOpen(false);
-      setPasswordStep('request');
-      setResetCode('');
+      setCurrentPassword('');
       setNewPassword('');
+      setConfirmPassword('');
       setFeedback({ type: 'success', message: response.message || 'Senha alterada com sucesso.' });
     } catch (error) {
       setFeedback({ type: 'error', message: error.message || 'Não foi possível alterar a senha.' });
@@ -699,6 +846,78 @@ export default function PerfilScreen() {
                 </View>
 
                 <View style={styles.sectionCard}>
+                  <SectionHeading
+                    title="Documentos"
+                    subtitle="Arquivos privados salvos no seu perfil."
+                    action={(
+                      <Pressable
+                        style={[styles.textAction, documentUploading && styles.disabledButton]}
+                        onPress={pickDocument}
+                        disabled={documentUploading}
+                        accessibilityRole="button"
+                        accessibilityLabel={documentUploading ? 'Enviando documento' : 'Anexar documento'}
+                      >
+                        {documentUploading
+                          ? <ActivityIndicator size="small" color={colors.primaryDark} />
+                          : <Feather name="plus" size={15} color={colors.primaryDark} />}
+                        <Text style={styles.textActionLabel}>{documentUploading ? 'Enviando...' : 'Anexar'}</Text>
+                      </Pressable>
+                    )}
+                  />
+                  {documentsLoading ? (
+                    <ActivityIndicator color={colors.primaryDark} />
+                  ) : documents.length ? (
+                    <View style={styles.documentList}>
+                      {documents.map((item) => (
+                        <View key={item.id} style={styles.documentRow}>
+                          <Feather name="file" size={17} color={colors.primaryDark} />
+                          <View style={styles.documentCopy}>
+                            <Text style={styles.documentName} numberOfLines={1}>{item.name}</Text>
+                            <Text style={styles.documentMeta}>
+                              {[formatFileSize(item.size), formatDate(item.created_at)].filter(Boolean).join(' · ')}
+                            </Text>
+                          </View>
+                          <View style={styles.documentActions}>
+                            <Pressable
+                              style={styles.documentAction}
+                              onPress={() => openDocument(item, 'view')}
+                              disabled={documentActionId !== null}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Visualizar ${item.name}`}
+                            >
+                              {documentActionId === item.id
+                                ? <ActivityIndicator size="small" color={colors.primaryDark} />
+                                : <Feather name="eye" size={15} color={colors.primaryDark} />}
+                            </Pressable>
+                            <Pressable
+                              style={styles.documentAction}
+                              onPress={() => openDocument(item, 'download')}
+                              disabled={documentActionId !== null}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Baixar ${item.name}`}
+                            >
+                              <Feather name="download" size={15} color={colors.primaryDark} />
+                            </Pressable>
+                            <Pressable
+                              style={styles.documentAction}
+                              onPress={() => confirmDeleteDocument(item)}
+                              disabled={documentActionId !== null || documentUploading}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Excluir ${item.name}`}
+                            >
+                              <Feather name="trash-2" size={15} color={colors.danger} />
+                            </Pressable>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.documentEmpty}>Nenhum documento anexado.</Text>
+                  )}
+                  <Text style={styles.documentHint}>São aceitos todos os formatos. PDFs e imagens podem ser visualizados no navegador; os demais podem ser baixados para abrir em um aplicativo compatível.</Text>
+                </View>
+
+                <View style={styles.sectionCard}>
                   <SectionHeading title="Preferências e acesso" />
                   <View style={styles.preferenceRow}>
                     <View style={styles.preferenceCopy}>
@@ -737,9 +956,9 @@ export default function PerfilScreen() {
                     style={styles.securityButton}
                     onPress={() => {
                       setPasswordOpen((current) => !current);
-                      setPasswordStep('request');
-                      setResetCode('');
+                      setCurrentPassword('');
                       setNewPassword('');
+                      setConfirmPassword('');
                       setFeedback(null);
                     }}
                     accessibilityRole="button"
@@ -749,39 +968,39 @@ export default function PerfilScreen() {
                   </Pressable>
                   {passwordOpen && (
                     <View style={styles.passwordPanel}>
-                      {passwordStep === 'request' ? (
-                        <>
-                          <Text style={styles.passwordHint}>Enviaremos um código de recuperação para {recruiter.email}.</Text>
-                          <Pressable style={[styles.primaryButton, passwordBusy && styles.disabledButton]} onPress={requestPasswordReset} disabled={passwordBusy} accessibilityRole="button">
-                            <Text style={styles.primaryButtonText}>{passwordBusy ? 'Enviando...' : 'Enviar código'}</Text>
-                          </Pressable>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.passwordHint}>Informe o código de 6 dígitos recebido e escolha uma senha com pelo menos 8 caracteres.</Text>
-                          <TextInput
-                            style={styles.input}
-                            value={resetCode}
-                            onChangeText={(value) => setResetCode(value.replace(/\D/g, '').slice(0, 6))}
-                            placeholder="Código de recuperação"
-                            placeholderTextColor={colors.muted}
-                            keyboardType="number-pad"
-                            maxLength={6}
-                          />
-                          <TextInput
-                            style={[styles.input, styles.passwordInput]}
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                            placeholder="Nova senha"
-                            placeholderTextColor={colors.muted}
-                            secureTextEntry
-                            maxLength={128}
-                          />
-                          <Pressable style={[styles.primaryButton, passwordBusy && styles.disabledButton]} onPress={resetPassword} disabled={passwordBusy} accessibilityRole="button">
-                            <Text style={styles.primaryButtonText}>{passwordBusy ? 'Salvando...' : 'Salvar nova senha'}</Text>
-                          </Pressable>
-                        </>
-                      )}
+                      <Text style={styles.passwordHint}>Confirme sua senha atual para definir uma nova senha.</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        placeholder="Senha atual"
+                        placeholderTextColor={colors.muted}
+                        secureTextEntry
+                        autoComplete="current-password"
+                      />
+                      <TextInput
+                        style={[styles.input, styles.passwordInput]}
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        placeholder="Nova senha (mínimo 8 caracteres)"
+                        placeholderTextColor={colors.muted}
+                        secureTextEntry
+                        autoComplete="new-password"
+                        maxLength={128}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.passwordInput]}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        placeholder="Confirmar nova senha"
+                        placeholderTextColor={colors.muted}
+                        secureTextEntry
+                        autoComplete="new-password"
+                        maxLength={128}
+                      />
+                      <Pressable style={[styles.primaryButton, passwordBusy && styles.disabledButton]} onPress={changePassword} disabled={passwordBusy} accessibilityRole="button">
+                        <Text style={styles.primaryButtonText}>{passwordBusy ? 'Salvando...' : 'Salvar nova senha'}</Text>
+                      </Pressable>
                     </View>
                   )}
                 </View>
@@ -875,6 +1094,15 @@ const styles = StyleSheet.create({
   activityCopy: { flex: 1 },
   activityLabel: { color: colors.muted, fontSize: 10, fontWeight: '600' },
   activityValue: { color: colors.ink, fontSize: 12, fontWeight: '700', marginTop: 2 },
+  documentList: { gap: 10 },
+  documentRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+  documentCopy: { flex: 1, minWidth: 0 },
+  documentName: { color: colors.ink, fontSize: 11, fontWeight: '700' },
+  documentMeta: { color: colors.muted, fontSize: 9, marginTop: 3 },
+  documentActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  documentAction: { minWidth: 30, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 7 },
+  documentEmpty: { color: colors.muted, fontSize: 11, paddingVertical: 8 },
+  documentHint: { color: colors.muted, fontSize: 9, lineHeight: 14, marginTop: 12 },
   preferenceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.line },
   preferenceCopy: { flex: 1 },
   preferenceDescription: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },

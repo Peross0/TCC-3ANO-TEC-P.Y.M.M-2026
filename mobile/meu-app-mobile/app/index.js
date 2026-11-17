@@ -171,8 +171,8 @@ function LoginScreen({ startupMessage }) {
   const styles = makeStyles(colors);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -234,17 +234,17 @@ function LoginScreen({ startupMessage }) {
     setRecoveryMessage("");
 
     try {
-      await apiFetch("/auth/forgot-password", {
+      const result = await apiFetch("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email: normalizedEmail }),
         token: null,
       });
 
-      setResetCode("");
-      setPasswordRecoveryMode("reset");
-      setRecoveryMessage(
-        "Se o e-mail estiver cadastrado, você receberá um código válido por 10 minutos.",
-      );
+      setPasswordRecoveryMode("sent");
+      setRecoveryCode("");
+      setPassword("");
+      setConfirmNewPassword("");
+      setRecoveryMessage(result.message || "Se o e-mail estiver cadastrado, enviaremos um código válido por 30 minutos.");
     } catch (error) {
       setLoginError(
         error.message || "Não foi possível iniciar a recuperação da senha.",
@@ -255,45 +255,40 @@ function LoginScreen({ startupMessage }) {
   };
 
   const handlePasswordReset = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setLoginError(
-        "Informe o e-mail da sua conta antes de redefinir a senha.",
-      );
+    if (!/^\d{6}$/.test(recoveryCode)) {
+      setLoginError("Informe o código de 6 números recebido por e-mail.");
       return;
     }
-    if (newPassword.length < 8) {
-      setLoginError("A nova senha deve ter no mínimo 8 caracteres.");
+    if (password.length < 8 || password.length > 128) {
+      setLoginError("A nova senha deve ter entre 8 e 128 caracteres.");
       return;
     }
-    if (!/^\d{6}$/.test(resetCode)) {
-      setLoginError("Informe o código de 6 dígitos enviado por e-mail.");
+    if (password !== confirmNewPassword) {
+      setLoginError("As senhas não conferem.");
       return;
     }
 
     setIsSubmitting(true);
     setLoginError("");
-
     try {
-      await apiFetch("/auth/reset-password", {
+      const result = await apiFetch("/auth/reset-password", {
         method: "POST",
         body: JSON.stringify({
-          email: normalizedEmail,
-          code: resetCode,
-          password: newPassword,
+          email: email.trim().toLowerCase(),
+          code: recoveryCode,
+          password,
+          confirm_password: confirmNewPassword,
         }),
         token: null,
       });
-
       setPasswordRecoveryMode("login");
-      setRecoveryMessage("Senha redefinida com sucesso. Entre com sua nova senha.");
-      setResetCode("");
-      setNewPassword("");
+      setRecoveryMessage("");
+      setRecoveryCode("");
       setPassword("");
+      setConfirmNewPassword("");
+      Alert.alert("Senha atualizada", result.message || "Agora você já pode entrar com sua nova senha.");
     } catch (error) {
-      setLoginError(
-        error.message || "Não foi possível redefinir a senha. Tente novamente.",
-      );
+      setLoginError(error.message || "Não foi possível redefinir a senha. Confira o código e tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -322,14 +317,18 @@ function LoginScreen({ startupMessage }) {
             </Text>
           </View>
           <Text style={styles.welcome}>
-            {isRecoveryView
-              ? "Defina sua nova senha"
-              : "Que bom ter você aqui!"}
+            {passwordRecoveryMode === "request"
+              ? "Esqueceu sua senha?"
+              : passwordRecoveryMode === "sent"
+                ? "Confira seu e-mail"
+                : "Que bom ter você aqui!"}
           </Text>
           <Text style={styles.loginSubtitle}>
-            {isRecoveryView
-              ? "Digite o código enviado por e-mail e escolha uma nova senha segura."
-              : "Entre para encontrar sua próxima oportunidade."}
+            {passwordRecoveryMode === "request"
+              ? "Informe o e-mail cadastrado para receber um código de verificação."
+              : passwordRecoveryMode === "sent"
+                ? "Digite o código recebido e escolha uma nova senha."
+                : "Entre para encontrar sua próxima oportunidade."}
           </Text>
 
           {!!startupMessage && (
@@ -347,7 +346,6 @@ function LoginScreen({ startupMessage }) {
                 value={email}
                 onChangeText={(value) => {
                   setEmail(value);
-                  setResetCode("");
                   setLoginError("");
                   setRecoveryMessage("");
                 }}
@@ -355,8 +353,63 @@ function LoginScreen({ startupMessage }) {
                 autoCapitalize="none"
                 autoComplete="email"
                 returnKeyType="next"
+                editable={passwordRecoveryMode !== "sent"}
               />
             </View>
+
+            {passwordRecoveryMode === "sent" && (
+              <>
+                <Text style={styles.fieldLabel}>Código de verificação</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="key" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Código com 6 números"
+                    placeholderTextColor={colors.placeholder}
+                    value={recoveryCode}
+                    onChangeText={(value) => {
+                      setRecoveryCode(value.replace(/\D/g, "").slice(0, 6));
+                      setLoginError("");
+                    }}
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    returnKeyType="next"
+                  />
+                </View>
+                <Text style={styles.fieldLabel}>Nova senha</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Mínimo de 8 caracteres"
+                    placeholderTextColor={colors.placeholder}
+                    value={password}
+                    onChangeText={(value) => { setPassword(value); setLoginError(""); }}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    maxLength={128}
+                  />
+                </View>
+                <Text style={styles.fieldLabel}>Confirmar nova senha</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={19} color={BRAND.gray} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Digite novamente"
+                    placeholderTextColor={colors.placeholder}
+                    value={confirmNewPassword}
+                    onChangeText={(value) => { setConfirmNewPassword(value); setLoginError(""); }}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    maxLength={128}
+                    onSubmitEditing={handlePasswordReset}
+                  />
+                </View>
+              </>
+            )}
 
             {!isRecoveryView && (
               <>
@@ -394,61 +447,6 @@ function LoginScreen({ startupMessage }) {
               </>
             )}
 
-            {isRecoveryView && (
-              <>
-                <Text style={styles.fieldLabel}>Código de recuperação</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="key" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Código de 6 dígitos"
-                    placeholderTextColor={colors.placeholder}
-                    value={resetCode}
-                    onChangeText={(value) => {
-                      setResetCode(value.replace(/\D/g, "").slice(0, 6));
-                      setLoginError("");
-                    }}
-                    keyboardType="number-pad"
-                    autoComplete="one-time-code"
-                    textContentType="oneTimeCode"
-                    maxLength={6}
-                    returnKeyType="next"
-                  />
-                </View>
-                <Text style={styles.fieldLabel}>Nova senha</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Mínimo de 8 caracteres"
-                    placeholderTextColor={colors.placeholder}
-                    value={newPassword}
-                    onChangeText={(value) => {
-                      setNewPassword(value);
-                      setLoginError("");
-                    }}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    returnKeyType="done"
-                    onSubmitEditing={handlePasswordReset}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword((visible) => !visible)}
-                    hitSlop={10}
-                    accessibilityLabel={
-                      showPassword ? "Ocultar senha" : "Mostrar senha"
-                    }
-                  >
-                    <Feather
-                      name={showPassword ? "eye-off" : "eye"}
-                      size={19}
-                      color={BRAND.gray}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
             {!!recoveryMessage && (
               <Text style={styles.loginNoticeText} accessibilityLiveRegion="polite">
                 {recoveryMessage}
@@ -462,30 +460,26 @@ function LoginScreen({ startupMessage }) {
               ]}
             >
               {isRecoveryView ? (
-                <>
-                  <TouchableOpacity
-                    onPress={handlePasswordRecoveryRequest}
-                    disabled={isSubmitting}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.forgotPasswordText}>Reenviar código</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setPasswordRecoveryMode("login");
-                      setResetCode("");
-                      setNewPassword("");
-                      setLoginError("");
-                      setRecoveryMessage("");
-                    }}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
-                  </TouchableOpacity>
-                </>
+                <TouchableOpacity
+                  onPress={() => {
+                    setPasswordRecoveryMode("login");
+                    setLoginError("");
+                    setRecoveryMessage("");
+                    setRecoveryCode("");
+                    setPassword("");
+                    setConfirmNewPassword("");
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  onPress={handlePasswordRecoveryRequest}
+                  onPress={() => {
+                    setPasswordRecoveryMode("request");
+                    setLoginError("");
+                    setRecoveryMessage("");
+                  }}
                   disabled={isSubmitting}
                   accessibilityRole="button"
                 >
@@ -514,12 +508,16 @@ function LoginScreen({ startupMessage }) {
                   styles.loginPrimaryButton,
                   isSubmitting && styles.disabledButton,
                 ]}
-                onPress={handlePasswordReset}
+                onPress={passwordRecoveryMode === "sent" ? handlePasswordReset : handlePasswordRecoveryRequest}
                 disabled={isSubmitting}
                 accessibilityRole="button"
               >
                 <Text style={styles.primaryButtonText}>
-                  {isSubmitting ? "Salvando..." : "Salvar nova senha"}
+                  {isSubmitting
+                    ? passwordRecoveryMode === "sent" ? "Salvando..." : "Enviando..."
+                    : passwordRecoveryMode === "sent"
+                      ? "Redefinir senha"
+                      : "Enviar código"}
                 </Text>
                 {!isSubmitting && (
                   <Feather name="arrow-right" size={18} color={BRAND.white} />
@@ -542,6 +540,17 @@ function LoginScreen({ startupMessage }) {
                 {!isSubmitting && (
                   <Feather name="arrow-right" size={18} color={BRAND.white} />
                 )}
+              </TouchableOpacity>
+            )}
+
+            {passwordRecoveryMode === "sent" && (
+              <TouchableOpacity
+                style={styles.recoveryActions}
+                onPress={handlePasswordRecoveryRequest}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+              >
+                <Text style={styles.forgotPasswordText}>Enviar outro código</Text>
               </TouchableOpacity>
             )}
 

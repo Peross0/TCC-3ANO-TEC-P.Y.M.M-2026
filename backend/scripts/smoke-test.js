@@ -365,7 +365,7 @@ assert.equal(forgot.data.message, forgotUnknown.data.message, 'reset request res
 
 const db = new DatabaseSync('./data/conectafacil.db');
 const resetRequest = db.prepare('SELECT id, code_hash FROM password_reset_requests WHERE user_id = ? ORDER BY requested_at DESC LIMIT 1').get(candidateId);
-assert.ok(resetRequest, 'password reset token should be persisted');
+assert.ok(resetRequest, 'password reset code should be persisted');
 assert.ok(resetRequest.code_hash.startsWith('$2'), 'only the bcrypt code hash should be persisted');
 db.prepare('UPDATE password_reset_requests SET code_hash = ? WHERE id = ?')
   .run(await bcrypt.hash('742981', 12), resetRequest.id);
@@ -373,19 +373,45 @@ db.close();
 
 const invalidReset = await request('/api/auth/reset-password', {
   method: 'POST',
-  body: { email: 'candidate@test.com', code: '000000', password: 'SenhaNova123!' },
+  body: {
+    email: 'candidate@test.com',
+    code: '000000',
+    password: 'SenhaNova123!',
+    confirm_password: 'SenhaNova123!',
+  },
 });
 expectStatus(invalidReset, 400, 'invalid password reset code');
 
+const mismatchedReset = await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: {
+    email: 'candidate@test.com',
+    code: '742981',
+    password: 'SenhaNova123!',
+    confirm_password: 'SenhaDiferente123!',
+  },
+});
+expectStatus(mismatchedReset, 400, 'password reset confirmation must match');
+
 const reset = await request('/api/auth/reset-password', {
   method: 'POST',
-  body: { email: 'candidate@test.com', code: '742981', password: 'SenhaNova123!' },
+  body: {
+    email: 'candidate@test.com',
+    code: '742981',
+    password: 'SenhaNova123!',
+    confirm_password: 'SenhaNova123!',
+  },
 });
 expectStatus(reset, 200, 'reset password');
 
 const resetReuse = await request('/api/auth/reset-password', {
   method: 'POST',
-  body: { email: 'candidate@test.com', code: '742981', password: 'SenhaNova123!' },
+  body: {
+    email: 'candidate@test.com',
+    code: '742981',
+    password: 'SenhaNova123!',
+    confirm_password: 'SenhaNova123!',
+  },
 });
 expectStatus(resetReuse, 400, 'password reset code cannot be reused');
 expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password reset revokes old session');
@@ -405,6 +431,28 @@ const changedPassword = await request('/api/auth/change-password', {
 expectStatus(changedPassword, 200, 'authenticated password change');
 expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password change revokes old session');
 expectStatus(await request('/api/auth/me', { token: changedPassword.data.token }), 200, 'password change returns rotated session');
+
+const unauthenticatedSessionPasswordChange = await request('/api/auth/change-password-with-session', {
+  method: 'POST',
+  body: { new_password: 'SenhaNova789!', confirm_password: 'SenhaNova789!' },
+});
+expectStatus(unauthenticatedSessionPasswordChange, 401, 'session password change requires authentication');
+
+const mismatchedSessionPasswordChange = await request('/api/auth/change-password-with-session', {
+  method: 'POST',
+  token: changedPassword.data.token,
+  body: { new_password: 'SenhaNova789!', confirm_password: 'SenhaDiferente789!' },
+});
+expectStatus(mismatchedSessionPasswordChange, 400, 'session password confirmation must match');
+
+const sessionPasswordChange = await request('/api/auth/change-password-with-session', {
+  method: 'POST',
+  token: changedPassword.data.token,
+  body: { new_password: 'SenhaNova789!', confirm_password: 'SenhaNova789!' },
+});
+expectStatus(sessionPasswordChange, 200, 'session password change');
+expectStatus(await request('/api/auth/me', { token: changedPassword.data.token }), 401, 'session password change revokes previous session');
+expectStatus(await request('/api/auth/me', { token: sessionPasswordChange.data.token }), 200, 'session password change returns rotated session');
 
 const resetCleanup = new DatabaseSync('./data/conectafacil.db');
 resetCleanup.prepare('DELETE FROM password_reset_requests WHERE user_id = ?').run(candidateId);

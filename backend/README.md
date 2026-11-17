@@ -14,11 +14,15 @@ npm start
 A API fica em `http://localhost:3000`.
 As migrations são verificadas ao iniciar o backend; os seeds não são executados automaticamente para evitar recriar contas e apagar dados relacionados a vagas de demonstração a cada reinicialização. Em desenvolvimento, execute `npm run seed` manualmente apenas quando quiser repor os dados de teste.
 
-Para enviar e-mails de recuperação de senha, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `SMTP_FROM` no `.env`. Sem SMTP, o ambiente de desenvolvimento registra no terminal que o e-mail não foi enviado e mostra o código apenas para testes locais. Em outros ambientes, a ausência ou falha do SMTP invalida o código emitido; a API mantém a mesma resposta genérica para não revelar se o e-mail está cadastrado.
+Para enviar códigos de recuperação de senha, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `SMTP_FROM` no `.env`. O código numérico de 6 dígitos expira em 30 minutos, só pode ser usado uma vez e é armazenado como hash; após 5 tentativas inválidas ele é invalidado. Sem SMTP, o ambiente de desenvolvimento registra a mensagem e o código no terminal; em outros ambientes, a falha invalida o código e a resposta genérica da API não revela se o e-mail está cadastrado.
+
+## Documentos do perfil
+
+Os endpoints autenticados `GET/POST /api/users/me/documents` e `GET/DELETE /api/users/me/documents/:documentId` permitem listar, anexar, baixar e excluir arquivos de qualquer formato. O envio usa o campo multipart `document`; o limite padrão é 25 MB por arquivo (`MAX_DOCUMENT_MB`). Os arquivos ficam fora do diretório público em `DOCUMENT_UPLOAD_DIR` (padrão `./uploads/documents`); em produção, monte esse caminho em armazenamento persistente e faça backup conforme a política do serviço.
 
 ## Cadastro
 
-O cadastro cria a conta e inicia a sessão imediatamente; a confirmação de e-mail não é exigida. A recuperação de senha continua usando código temporário enviado por e-mail.
+O cadastro cria a conta e inicia a sessão imediatamente; a confirmação de e-mail não é exigida. Para recuperar a senha, informe o e-mail cadastrado, valide o código recebido e defina a nova senha com confirmação.
 
 ## Testes
 

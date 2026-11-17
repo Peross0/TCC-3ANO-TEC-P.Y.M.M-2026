@@ -1,20 +1,18 @@
 import bcrypt from "bcryptjs";
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { getKnex } from "../../config/database.js";
-import {
-    createAuthTokens,
-    generatePasswordResetCode,
-} from "../../utils/jwt.js";
-import { sendPasswordResetEmail } from "../../utils/mailer.js";
+import { createAuthTokens } from "../../utils/jwt.js";
+import { sendPasswordResetCodeEmail } from "../../utils/mailer.js";
 
-const CODE_EXPIRY_MINUTES = 10;
-const MAX_RESET_ATTEMPTS = 5;
+const RESET_CODE_EXPIRY_MINUTES = 30;
+const MAX_RESET_CODE_ATTEMPTS = 5;
 const MAX_RESET_REQUESTS_PER_EMAIL = 3;
 const MAX_RESET_REQUESTS_PER_IP = 12;
 const RESET_EMAIL_WINDOW_MS = 60 * 60 * 1000;
 const RESET_IP_WINDOW_MS = 15 * 60 * 1000;
 const RESET_LOG_RETENTION_MS = 24 * 60 * 60 * 1000;
-const RESET_RESPONSE_MESSAGE = 'Se o e-mail estiver cadastrado, as instruções de recuperação serão processadas.';
+const RESET_RESPONSE_MESSAGE = 'Se o e-mail estiver cadastrado, você receberá um código para redefinir sua senha.';
+const INVALID_RESET_CODE_MESSAGE = 'Código inválido ou expirado. Solicite um novo código.';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -150,6 +148,9 @@ export async function forgotPassword(email, clientIp = '') {
   await knex('password_reset_attempts')
     .where('created_at', '<', new Date(now.getTime() - RESET_LOG_RETENTION_MS).toISOString())
     .delete();
+  await knex('password_reset_requests')
+    .where('expires_at', '<', new Date(now.getTime() - RESET_LOG_RETENTION_MS).toISOString())
+    .delete();
 
   const rateLimited = await isResetRateLimited(knex, emailHash, ipHash, now);
   if (rateLimited) return { message: RESET_RESPONSE_MESSAGE };
@@ -161,9 +162,10 @@ export async function forgotPassword(email, clientIp = '') {
 
   if (!user) return { message: RESET_RESPONSE_MESSAGE };
 
-  const code = generatePasswordResetCode();
+  const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
   const requestedAt = now.toISOString();
-  const codeExpiresAt = new Date(now.getTime() + CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  const codeExpiresAt = new Date(now.getTime() + RESET_CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  const codeHash = await bcrypt.hash(code, 12);
 
   await knex('password_reset_requests')
     .where({ user_id: user.id })
@@ -172,14 +174,14 @@ export async function forgotPassword(email, clientIp = '') {
 
   const [requestId] = await knex('password_reset_requests').insert({
     user_id: user.id,
-    code_hash: await bcrypt.hash(code, 12),
+    code_hash: codeHash,
     requested_at: requestedAt,
     expires_at: codeExpiresAt,
     failed_attempts: 0,
   });
 
   try {
-    await sendPasswordResetEmail(normalizedEmail, code, CODE_EXPIRY_MINUTES);
+    await sendPasswordResetCodeEmail(normalizedEmail, code, RESET_CODE_EXPIRY_MINUTES);
   } catch (error) {
     await knex('password_reset_requests').where({ id: requestId }).update({ consumed_at: new Date().toISOString() });
     console.error('[PASSWORD_RESET_EMAIL_FAILED] Não foi possível enviar o e-mail de recuperação.', error.code || 'SMTP_ERROR');
@@ -188,12 +190,18 @@ export async function forgotPassword(email, clientIp = '') {
   return { message: RESET_RESPONSE_MESSAGE };
 }
 
-export async function resetPassword(email, code, password) {
+export async function resetPassword(email, code, password, confirmPassword) {
   const knex = getKnex();
-
-  const normalizedEmail = email.trim().toLowerCase();
   const now = new Date().toISOString();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (password !== confirmPassword) {
+    const error = new Error('As senhas não conferem.');
+    error.statusCode = 400;
+    throw error;
+  }
+
   let invalidCode = false;
+  let userNotFound = false;
 
   await knex.transaction(async (trx) => {
     const user = await trx('users')
@@ -201,7 +209,7 @@ export async function resetPassword(email, code, password) {
       .whereNull('deleted_at')
       .first('id', 'token_version');
     if (!user) {
-      invalidCode = true;
+      userNotFound = true;
       return;
     }
 
@@ -209,18 +217,23 @@ export async function resetPassword(email, code, password) {
       .where({ user_id: user.id })
       .whereNull('consumed_at')
       .where('expires_at', '>', now)
+      .where('failed_attempts', '<', MAX_RESET_CODE_ATTEMPTS)
       .orderBy('requested_at', 'desc')
       .first();
-    if (!request || request.failed_attempts >= MAX_RESET_ATTEMPTS) {
+    if (!request) {
       invalidCode = true;
       return;
     }
 
-    const matches = await bcrypt.compare(code, request.code_hash);
-    if (!matches) {
+    if (!(await bcrypt.compare(code, request.code_hash || ''))) {
+      const failedAttempts = request.failed_attempts + 1;
       await trx('password_reset_requests')
         .where({ id: request.id })
-        .increment('failed_attempts', 1);
+        .whereNull('consumed_at')
+        .update({
+          failed_attempts: failedAttempts,
+          ...(failedAttempts >= MAX_RESET_CODE_ATTEMPTS ? { consumed_at: now } : {}),
+        });
       invalidCode = true;
       return;
     }
@@ -229,7 +242,6 @@ export async function resetPassword(email, code, password) {
       .where({ id: request.id })
       .whereNull('consumed_at')
       .where('expires_at', '>', now)
-      .where('failed_attempts', '<', MAX_RESET_ATTEMPTS)
       .update({ consumed_at: now });
     if (!consumed) {
       invalidCode = true;
@@ -246,8 +258,8 @@ export async function resetPassword(email, code, password) {
     });
   });
 
-  if (invalidCode) {
-    const error = new Error('Código inválido ou expirado. Solicite um novo código.');
+  if (userNotFound || invalidCode) {
+    const error = new Error(INVALID_RESET_CODE_MESSAGE);
     error.statusCode = 400;
     throw error;
   }
@@ -267,6 +279,33 @@ export async function changePassword(userId, currentPassword, newPassword) {
   if (!user || !(await bcrypt.compare(currentPassword, user.password_hash))) {
     const error = new Error('A senha atual está incorreta.');
     error.statusCode = 401;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  const tokenVersion = Number(user.token_version || 0) + 1;
+  await knex('users').where({ id: user.id }).update({
+    password_hash: passwordHash,
+    token_version: tokenVersion,
+    updated_at: new Date().toISOString(),
+  });
+
+  return {
+    token: createAuthTokens({ ...user, token_version: tokenVersion }).token,
+    message: 'Senha alterada com sucesso.',
+  };
+}
+
+export async function changePasswordWithSession(userId, newPassword) {
+  const knex = getKnex();
+  const user = await knex('users')
+    .where({ id: userId })
+    .whereNull('deleted_at')
+    .first('id', 'email', 'full_name', 'user_type', 'token_version');
+
+  if (!user) {
+    const error = new Error('Usuário não encontrado.');
+    error.statusCode = 404;
     throw error;
   }
 

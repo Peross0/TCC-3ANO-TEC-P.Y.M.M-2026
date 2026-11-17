@@ -12,6 +12,7 @@ router.post('/login', validate(authSchemas.loginSchema), authController.login);
 router.post('/forgot-password', validate(authSchemas.forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password', validate(authSchemas.resetPasswordSchema), authController.resetPassword);
 router.post('/change-password', authMiddleware, validate(authSchemas.changePasswordSchema), authController.changePassword);
+router.post('/change-password-with-session', authMiddleware, validate(authSchemas.changePasswordWithSessionSchema), authController.changePasswordWithSession);
 
 // Protected routes
 router.get('/me', authMiddleware, authController.me);

@@ -1,5 +1,6 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { stat, unlink } from 'node:fs/promises';
+import { basename, join, resolve } from 'node:path';
 import { getKnex } from '../../config/database.js';
 import { env } from '../../config/env.js';
 
@@ -42,6 +43,125 @@ export async function updateAvatar(userId, avatarFilename) {
     },
     message: 'Avatar atualizado com sucesso',
   };
+}
+
+function sanitizeDocumentName(name) {
+  const normalized = basename(String(name || '').replace(/\\/g, '/'))
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, 255);
+  return normalized || 'documento';
+}
+
+function documentFilePath(storageFilename) {
+  return join(env.DOCUMENT_UPLOAD_DIR, basename(storageFilename));
+}
+
+function mapDocument(row) {
+  return {
+    id: row.id,
+    name: row.original_name,
+    mime_type: row.mime_type,
+    size: row.size,
+    created_at: row.created_at,
+  };
+}
+
+export async function getDocuments(userId) {
+  const documents = await getKnex()('user_documents')
+    .where({ user_id: userId })
+    .orderBy('created_at', 'desc')
+    .select('id', 'original_name', 'mime_type', 'size', 'created_at');
+  return documents.map(mapDocument);
+}
+
+export async function saveDocument(userId, file) {
+  if (file.size === 0) {
+    await unlink(file.path);
+    const err = new Error('Selecione um arquivo não vazio para anexar.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const knex = getKnex();
+  const user = await knex('users')
+    .where({ id: userId })
+    .whereNull('deleted_at')
+    .first('id');
+  if (!user) {
+    await unlink(file.path);
+    const err = new Error('Usuário não encontrado');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  try {
+    const [id] = await knex('user_documents').insert({
+      user_id: userId,
+      storage_filename: basename(file.filename),
+      original_name: sanitizeDocumentName(file.originalname),
+      mime_type: file.mimetype || 'application/octet-stream',
+      size: file.size,
+      created_at: new Date().toISOString(),
+    });
+
+    const document = await knex('user_documents')
+      .where({ id, user_id: userId })
+      .first('id', 'original_name', 'mime_type', 'size', 'created_at');
+    return mapDocument(document);
+  } catch (error) {
+    await unlink(file.path).catch((cleanupError) => {
+      console.error('[DOCUMENT_UPLOAD_CLEANUP_FAILED] Não foi possível remover um upload incompleto.', cleanupError);
+    });
+    throw error;
+  }
+}
+
+export async function getDocumentFile(userId, documentId) {
+  const document = await getKnex()('user_documents')
+    .where({ id: documentId, user_id: userId })
+    .first('id', 'storage_filename', 'original_name');
+
+  if (!document) {
+    const err = new Error('Documento não encontrado.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  try {
+    await stat(documentFilePath(document.storage_filename));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    const missingFile = new Error('O arquivo deste documento não está disponível.');
+    missingFile.statusCode = 404;
+    throw missingFile;
+  }
+
+  return {
+    ...document,
+    filePath: documentFilePath(document.storage_filename),
+  };
+}
+
+export async function deleteDocument(userId, documentId) {
+  const document = await getKnex()('user_documents')
+    .where({ id: documentId, user_id: userId })
+    .first('id', 'storage_filename');
+  if (!document) {
+    const err = new Error('Documento não encontrado.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  try {
+    await unlink(documentFilePath(document.storage_filename));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+
+  await getKnex()('user_documents')
+    .where({ id: document.id, user_id: userId })
+    .delete();
 }
 
 export async function getUsers() {

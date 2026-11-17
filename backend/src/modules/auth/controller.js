@@ -18,14 +18,20 @@ export async function forgotPassword(req, res) {
 }
 
 export async function resetPassword(req, res) {
-  const { email, code, password } = req.validated.body;
-  const result = await authService.resetPassword(email, code, password);
+  const { email, code, password, confirm_password } = req.validated.body;
+  const result = await authService.resetPassword(email, code, password, confirm_password);
   res.json(result);
 }
 
 export async function changePassword(req, res) {
   const { current_password, new_password } = req.validated.body;
   const result = await authService.changePassword(req.user.id, current_password, new_password);
+  res.json(result);
+}
+
+export async function changePasswordWithSession(req, res) {
+  const { new_password } = req.validated.body;
+  const result = await authService.changePasswordWithSession(req.user.id, new_password);
   res.json(result);
 }
 

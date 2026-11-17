@@ -54,8 +54,12 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z.object({
   body: z.object({
     email: z.string().trim().toLowerCase().email("E-mail inválido"),
-    code: z.string().regex(/^\d{6}$/, "Informe o código de 6 dígitos enviado por e-mail"),
-    password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+    code: z.string().regex(/^\d{6}$/, "O código deve conter 6 números."),
+    password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").max(128, "Senha muito longa"),
+    confirm_password: z.string().min(8, "Confirme sua nova senha").max(128, "Senha muito longa"),
+  }).refine((data) => data.password === data.confirm_password, {
+    message: "As senhas não conferem.",
+    path: ["confirm_password"],
   }),
 });
 
@@ -66,5 +70,15 @@ export const changePasswordSchema = z.object({
   }).refine((data) => data.current_password !== data.new_password, {
     message: 'A nova senha deve ser diferente da senha atual.',
     path: ['new_password'],
+  }),
+});
+
+export const changePasswordWithSessionSchema = z.object({
+  body: z.object({
+    new_password: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.').max(128, 'Senha muito longa.'),
+    confirm_password: z.string().min(8, 'Confirme sua nova senha.').max(128, 'Senha muito longa.'),
+  }).refine((data) => data.new_password === data.confirm_password, {
+    message: 'As senhas não conferem.',
+    path: ['confirm_password'],
   }),
 });

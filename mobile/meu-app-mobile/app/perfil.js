@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +22,7 @@ import { useRouter } from 'expo-router';
 import AnimatedScreen from '../components/layout/AnimatedScreen';
 import { useAppPreferences } from '../context/PreferencesContext';
 import { SessionContext } from '../context/SessionContext';
-import { apiFetch, getAssetUrl } from '../lib/api';
+import { API_URL, apiFetch, getAssetUrl, getToken } from '../lib/api';
 
 export default function PerfilScreen() {
   const { sessionData, setSessionData } = useContext(SessionContext);
@@ -31,27 +33,43 @@ export default function PerfilScreen() {
   const [curso, setCurso] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentsLoadedForUser, setDocumentsLoadedForUser] = useState(null);
+  const [documentActionId, setDocumentActionId] = useState(null);
+  const [documents, setDocuments] = useState([]);
   const [avatarUri, setAvatarUri] = useState(null);
-  const [resumeName, setResumeName] = useState(null);
   const router = useRouter();
   const user = sessionData?.user;
   const profile = sessionData?.profile;
   const isCandidate = user?.user_type === 'CANDIDATE';
+  const loadingDocuments = Boolean(user?.id && documentsLoadedForUser !== user.id);
 
   useEffect(() => {
     setNome(profile?.full_name || user?.full_name || '');
     setTelefone(profile?.phone || user?.phone || '');
     setCurso(profile?.course || user?.course || '');
     setAvatarUri(getAssetUrl(profile?.avatar_url || user?.avatar_url));
-    
-    // Se houver um currículo salvo no perfil/usuário, extraímos o nome ou definimos um rótulo padrão
-    const currentResumeUrl = profile?.resume_url || user?.resume_url;
-    if (currentResumeUrl) {
-      const parts = currentResumeUrl.split('/');
-      setResumeName(parts[parts.length - 1] || 'Currículo anexado');
-    }
   }, [profile, user]);
+
+  useEffect(() => {
+    let active = true;
+    if (!user?.id) return () => { active = false; };
+    apiFetch('/users/me/documents')
+      .then((result) => {
+        if (active) setDocuments(result.documents || []);
+      })
+      .catch((error) => {
+        if (active) {
+          setDocuments([]);
+          Alert.alert('Não foi possível carregar os documentos', error.message || 'Tente novamente.');
+        }
+      })
+      .finally(() => {
+        if (active) setDocumentsLoadedForUser(user.id);
+      });
+
+    return () => { active = false; };
+  }, [user?.id]);
 
   const changeAvatar = async () => {
     if (isUploadingAvatar) return;
@@ -96,47 +114,133 @@ export default function PerfilScreen() {
     }
   };
 
-  const handlePickResume = async () => {
-    if (isUploadingResume) return;
+  const handlePickDocument = async () => {
+    if (isUploadingDocument) return;
 
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        type: '*/*',
         copyToCacheDirectory: true,
+        multiple: false,
       });
-
       if (result.canceled || !result.assets?.length) return;
 
       const fileAsset = result.assets[0];
       const formData = new FormData();
-
       if (Platform.OS === 'web' && fileAsset.file) {
-        formData.append('resume', fileAsset.file, fileAsset.name || 'curriculo.pdf');
+        formData.append('document', fileAsset.file, fileAsset.name || 'documento');
       } else {
-        formData.append('resume', {
+        formData.append('document', {
           uri: fileAsset.uri,
-          name: fileAsset.name || 'curriculo.pdf',
-          type: fileAsset.mimeType || 'application/pdf',
+          name: fileAsset.name || 'documento',
+          type: fileAsset.mimeType || 'application/octet-stream',
         });
       }
 
-      setIsUploadingResume(true);
-      // Rota de API para upload de currículo do candidato (ajuste conforme o seu backend)
-      const apiResult = await apiFetch('/candidates/resume', { method: 'POST', body: formData });
-      const updatedResumeUrl = apiResult.candidate?.resume_url || apiResult.resume_url;
-
-      setResumeName(fileAsset.name);
-      setSessionData((current) => ({
-        ...current,
-        profile: { ...current.profile, resume_url: updatedResumeUrl },
-      }));
-
-      Alert.alert('Currículo enviado', 'Seu currículo foi anexado com sucesso.');
+      setIsUploadingDocument(true);
+      const response = await apiFetch('/users/me/documents', {
+        method: 'POST',
+        body: formData,
+        timeoutMs: 120000,
+      });
+      setDocuments((current) => [response.document, ...current]);
+      Alert.alert('Documento anexado', 'O arquivo foi salvo no seu perfil.');
     } catch (error) {
-      Alert.alert('Não foi possível enviar o currículo', error.message || 'Tente novamente.');
+      Alert.alert('Não foi possível anexar o documento', error.message || 'Tente novamente.');
     } finally {
-      setIsUploadingResume(false);
+      setIsUploadingDocument(false);
     }
+  };
+
+  const openDocument = async (document, action) => {
+    if (documentActionId) return;
+    let previewWindow = null;
+    if (Platform.OS === 'web' && action === 'view') {
+      previewWindow = globalThis.open('', '_blank');
+      if (previewWindow) previewWindow.opener = null;
+    }
+
+    setDocumentActionId(document.id);
+    try {
+      if (Platform.OS === 'web') {
+        const content = await apiFetch(`/users/me/documents/${document.id}`, {
+          responseType: 'blob',
+          timeoutMs: 120000,
+        });
+        const blob = new Blob([content], { type: document.mime_type || 'application/octet-stream' });
+        const canPreview = document.mime_type === 'application/pdf'
+          || ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(document.mime_type);
+
+        if (action === 'view' && canPreview && previewWindow) {
+          const objectUrl = URL.createObjectURL(blob);
+          previewWindow.location.replace(objectUrl);
+          previewWindow.addEventListener('beforeunload', () => URL.revokeObjectURL(objectUrl), { once: true });
+        } else {
+          previewWindow?.close();
+          const objectUrl = URL.createObjectURL(blob);
+          const link = globalThis.document.createElement('a');
+          link.href = objectUrl;
+          link.download = document.name;
+          globalThis.document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        }
+        return;
+      }
+
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Não há um aplicativo disponível para abrir ou compartilhar este arquivo.');
+      }
+      const token = await getToken();
+      if (!token || !FileSystem.cacheDirectory) {
+        throw new Error('Não foi possível acessar a sessão ou o armazenamento temporário.');
+      }
+      const localName = document.name
+        .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+        .slice(0, 180) || 'documento';
+      const localUri = `${FileSystem.cacheDirectory}document-${document.id}-${localName}`;
+      const result = await FileSystem.downloadAsync(
+        `${API_URL}/users/me/documents/${document.id}`,
+        localUri,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error('Não foi possível baixar o documento. Entre novamente e tente de novo.');
+      }
+      await Sharing.shareAsync(result.uri, {
+        mimeType: document.mime_type || 'application/octet-stream',
+        dialogTitle: document.name,
+      });
+    } catch (error) {
+      previewWindow?.close();
+      Alert.alert('Não foi possível abrir o documento', error.message || 'Tente novamente.');
+    } finally {
+      setDocumentActionId(null);
+    }
+  };
+
+  const removeDocument = async (document) => {
+    try {
+      await apiFetch(`/users/me/documents/${document.id}`, { method: 'DELETE' });
+      setDocuments((current) => current.filter((item) => item.id !== document.id));
+      Alert.alert('Documento excluído', 'O arquivo foi removido do seu perfil.');
+    } catch (error) {
+      Alert.alert('Não foi possível excluir o documento', error.message || 'Tente novamente.');
+    }
+  };
+
+  const confirmRemoveDocument = (document) => {
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm(`Excluir "${document.name}" do seu perfil?`)) {
+        removeDocument(document);
+      }
+      return;
+    }
+    Alert.alert('Excluir documento?', `Deseja remover "${document.name}" do seu perfil?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: () => removeDocument(document) },
+    ]);
   };
 
   const handleSave = async () => {
@@ -276,39 +380,76 @@ export default function PerfilScreen() {
             ) : null}
           </View>
 
-          {/* Seção específica para o currículo cas o usuário seja candidato */}
-          {isCandidate && (
-            <View style={styles.formCard}>
-              <Text style={styles.sectionTitle}>Currículo Profissional</Text>
-              <Text style={styles.subtitleResume}>Envie seu currículo em formato PDF ou Word</Text>
-              
-              <View style={styles.resumeRow}>
-                <View style={styles.resumeInfo}>
-                  <Feather name="file-text" size={20} color={colors.tint} />
-                  <Text style={styles.resumeName} numberOfLines={1}>
-                    {resumeName || 'Nenhum currículo anexado'}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.resumeButton, isUploadingResume && styles.disabledButton]}
-                  onPress={handlePickResume}
-                  disabled={isUploadingResume}
-                >
-                  {isUploadingResume ? (
-                    <ActivityIndicator size="small" color={colors.surface} />
-                  ) : (
-                    <>
-                      <Feather name="upload" size={14} color={colors.surface} />
-                      <Text style={styles.resumeButtonText}>
-                        {resumeName ? 'Alterar' : 'Anexar'}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+          <View style={styles.formCard}>
+            <View style={styles.documentHeading}>
+              <View style={styles.documentHeadingCopy}>
+                <Text style={styles.sectionTitle}>Documentos do perfil</Text>
+                <Text style={styles.documentHint}>Anexe arquivos de qualquer formato, respeitando o limite definido pelo servidor. PDFs e imagens podem ser visualizados; outros formatos podem ser abertos em aplicativos compatíveis.</Text>
               </View>
+              <TouchableOpacity
+                style={[styles.documentUploadButton, isUploadingDocument && styles.disabledButton]}
+                onPress={handlePickDocument}
+                disabled={isUploadingDocument}
+                accessibilityRole="button"
+                accessibilityLabel="Anexar documento"
+              >
+                {isUploadingDocument
+                  ? <ActivityIndicator size="small" color={colors.surface} />
+                  : <Feather name="upload" size={16} color={colors.surface} />}
+              </TouchableOpacity>
             </View>
-          )}
+
+            {loadingDocuments ? (
+              <ActivityIndicator color={colors.tint} />
+            ) : documents.length ? (
+              <View style={styles.documentList}>
+                {documents.map((document) => (
+                  <View key={document.id} style={styles.documentItem}>
+                    <Feather name="file" size={20} color={colors.tint} />
+                    <View style={styles.documentDetails}>
+                      <Text style={styles.documentName} numberOfLines={1}>{document.name}</Text>
+                      <Text style={styles.documentMeta}>
+                        {formatDocumentSize(document.size)} · {new Date(document.created_at).toLocaleDateString('pt-BR')}
+                      </Text>
+                    </View>
+                    <View style={styles.documentActions}>
+                      <TouchableOpacity
+                        onPress={() => openDocument(document, 'view')}
+                        disabled={documentActionId !== null}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Visualizar ${document.name}`}
+                        style={styles.documentAction}
+                      >
+                        {documentActionId === document.id
+                          ? <ActivityIndicator size="small" color={colors.tint} />
+                          : <Feather name="eye" size={17} color={colors.tint} />}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => openDocument(document, 'download')}
+                        disabled={documentActionId !== null}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Baixar ${document.name}`}
+                        style={styles.documentAction}
+                      >
+                        <Feather name="download" size={17} color={colors.tint} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => confirmRemoveDocument(document)}
+                        disabled={documentActionId !== null}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Excluir ${document.name}`}
+                        style={styles.documentAction}
+                      >
+                        <Feather name="trash-2" size={17} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.documentEmpty}>Nenhum documento anexado.</Text>
+            )}
+          </View>
 
           <TouchableOpacity
             style={[styles.saveButton, isSaving && styles.disabledButton]}
@@ -325,6 +466,14 @@ export default function PerfilScreen() {
       </SafeAreaView>
     </AnimatedScreen>
   );
+}
+
+function formatDocumentSize(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size) || size < 0) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function Field({ colors, styles, label, ...inputProps }) {
@@ -357,7 +506,6 @@ function makeStyles(colors, largeText) {
     headerCopy: { flex: 1 },
     title: { color: colors.text, fontSize: 20 * scale, fontWeight: '800' },
     subtitle: { color: colors.muted, fontSize: 12 * scale, marginTop: 3 },
-    subtitleResume: { color: colors.muted, fontSize: 12 * scale, marginBottom: 4 },
     content: { gap: 16, padding: 18, paddingBottom: 34 },
     avatarSection: { alignItems: 'center', paddingVertical: 8 },
     avatar: {
@@ -406,43 +554,43 @@ function makeStyles(colors, largeText) {
       paddingVertical: 10,
     },
     readOnlyInput: { color: colors.muted, opacity: 0.85 },
-    resumeRow: {
+    documentHeading: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 12,
+    },
+    documentHeadingCopy: { flex: 1 },
+    documentHint: { color: colors.muted, fontSize: 11 * scale, lineHeight: 16 },
+    documentUploadButton: {
+      alignItems: 'center',
+      backgroundColor: colors.tint,
+      borderRadius: 9,
+      height: 40,
+      justifyContent: 'center',
+      width: 42,
+    },
+    documentList: { gap: 9 },
+    documentItem: {
       alignItems: 'center',
       backgroundColor: colors.background,
       borderColor: colors.line,
       borderRadius: 11,
       borderWidth: 1,
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-    },
-    resumeInfo: {
-      alignItems: 'center',
-      flex: 1,
-      flexDirection: 'row',
       gap: 10,
-      marginRight: 10,
+      paddingHorizontal: 11,
+      paddingVertical: 9,
     },
-    resumeName: {
+    documentDetails: { flex: 1, minWidth: 0 },
+    documentName: {
       color: colors.text,
       fontSize: 13 * scale,
-      flex: 1,
-    },
-    resumeButton: {
-      alignItems: 'center',
-      backgroundColor: colors.tint,
-      borderRadius: 8,
-      flexDirection: 'row',
-      gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-    },
-    resumeButtonText: {
-      color: colors.surface,
-      fontSize: 12 * scale,
       fontWeight: '700',
     },
+    documentMeta: { color: colors.muted, fontSize: 10 * scale, marginTop: 3 },
+    documentActions: { flexDirection: 'row', alignItems: 'center' },
+    documentAction: { padding: 6 },
+    documentEmpty: { color: colors.muted, fontSize: 12 * scale },
     saveButton: {
       alignItems: 'center',
       backgroundColor: colors.tint,

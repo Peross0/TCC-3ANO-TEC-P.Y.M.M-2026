@@ -62,7 +62,7 @@ export const hasSeenOnboarding = async () => (await readStoredValue(ONBOARDING_K
 export const markOnboardingSeen = () => writeStoredValue(ONBOARDING_KEY, 'true');
 
 export async function apiFetch(path, options = {}) {
-  const { token: explicitToken, timeoutMs = 15000, ...requestOptions } = options;
+  const { token: explicitToken, timeoutMs = 15000, responseType = 'json', ...requestOptions } = options;
   const token = explicitToken === undefined ? await getToken() : explicitToken;
   const hasBody = requestOptions.body !== undefined;
   const isFormData = typeof FormData !== 'undefined' && requestOptions.body instanceof FormData;
@@ -82,7 +82,9 @@ export async function apiFetch(path, options = {}) {
       signal: controller.signal,
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = response.ok && responseType === 'blob'
+      ? await response.blob()
+      : await response.json().catch(() => ({}));
 
     if (!response.ok) {
       const details = Array.isArray(data.details)

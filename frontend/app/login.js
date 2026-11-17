@@ -26,17 +26,15 @@ export default function LoginScreen() {
   const [isRegistering, setIsRegistering] = useState(params.cadastro === '1');
   const [recoveryMode, setRecoveryMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationPending, setVerificationPending] = useState(false);
-  const [recoveryCode, setRecoveryCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [recoveryMessage, setRecoveryMessage] = useState('');
   const [recoveryError, setRecoveryError] = useState('');
   const [recoveryCooldown, setRecoveryCooldown] = useState(0);
@@ -77,11 +75,53 @@ export default function LoginScreen() {
         method: 'POST',
         body: JSON.stringify({ email: normalizedEmail }),
       });
-      setRecoveryMessage(result.message || 'Se o e-mail estiver cadastrado, as instruções serão processadas.');
-      setRecoveryMode('reset');
+      setRecoveryCode('');
+      setPassword('');
+      setConfirmNewPassword('');
+      setRecoveryMessage(result.message || 'Se o e-mail estiver cadastrado, você receberá um código para redefinir sua senha.');
+      setRecoveryMode('sent');
       setRecoveryCooldown(30);
     } catch (error) {
       setRecoveryError(error.message || 'Não foi possível solicitar a recuperação. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!/^\d{6}$/.test(recoveryCode)) {
+      setRecoveryError('Informe o código de 6 números recebido por e-mail.');
+      return;
+    }
+    if (password.length < 8 || password.length > 128) {
+      setRecoveryError('A nova senha deve ter entre 8 e 128 caracteres.');
+      return;
+    }
+    if (password !== confirmNewPassword) {
+      setRecoveryError('As senhas não conferem.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setRecoveryError('');
+    try {
+      const result = await apiFetch('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          code: recoveryCode,
+          password,
+          confirm_password: confirmNewPassword,
+        }),
+      });
+      setRecoveryMode('login');
+      setRecoveryMessage('');
+      setRecoveryCode('');
+      setPassword('');
+      setConfirmNewPassword('');
+      Alert.alert('Senha atualizada', result.message || 'Agora você já pode entrar com sua nova senha.');
+    } catch (error) {
+      setRecoveryError(error.message || 'Não foi possível redefinir a senha. Confira o código e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -92,41 +132,6 @@ export default function LoginScreen() {
 
     if (recoveryMode === 'request') {
       await requestRecovery();
-      return;
-    }
-
-    if (recoveryMode === 'reset') {
-      if (!/^\d{6}$/.test(recoveryCode.trim())) {
-        setRecoveryError('Digite o código de seis dígitos recebido por e-mail.');
-        return;
-      }
-      if (newPassword.length < 8) {
-        setRecoveryError('A nova senha precisa ter pelo menos 8 caracteres.');
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        setRecoveryError('As senhas não conferem.');
-        return;
-      }
-
-      setIsSubmitting(true);
-      setRecoveryError('');
-      try {
-        const result = await apiFetch('/auth/reset-password', {
-          method: 'POST',
-          body: JSON.stringify({ email: normalizedEmail, code: recoveryCode.trim(), password: newPassword }),
-        });
-        setRecoveryMode('login');
-        setRecoveryCode('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setPassword('');
-        setRecoveryMessage(result.message || 'Senha redefinida. Entre com sua nova senha.');
-      } catch (error) {
-        setRecoveryError(error.message || 'Não foi possível redefinir a senha. Confira o código.');
-      } finally {
-        setIsSubmitting(false);
-      }
       return;
     }
 
@@ -272,9 +277,9 @@ export default function LoginScreen() {
               </Pressable>
               <View style={styles.formCard}>
                 <Text style={styles.formEyebrow}>{isRegistering ? 'PRIMEIRO ACESSO' : recoveryMode === 'login' ? 'SUA CONTA' : 'RECUPERAÇÃO DE ACESSO'}</Text>
-                <Text style={styles.title}>{isRegistering ? 'Crie seu acesso' : recoveryMode === 'request' ? 'Esqueceu sua senha?' : recoveryMode === 'reset' ? 'Defina uma nova senha' : 'Que bom ter você de volta'}</Text>
+                <Text style={styles.title}>{isRegistering ? 'Crie seu acesso' : recoveryMode === 'request' ? 'Esqueceu sua senha?' : recoveryMode === 'sent' ? 'Confira seu e-mail' : 'Que bom ter você de volta'}</Text>
                 <Text style={styles.subtitle}>
-                  {isRegistering ? 'Informe os dados da pessoa responsável e da empresa.' : recoveryMode === 'request' ? 'Informe o e-mail cadastrado para receber as instruções de recuperação.' : recoveryMode === 'reset' ? 'Digite o código enviado por e-mail e escolha uma nova senha.' : 'Entre para acompanhar e administrar suas oportunidades.'}
+                  {isRegistering ? 'Informe os dados da pessoa responsável e da empresa.' : recoveryMode === 'request' ? 'Informe o e-mail cadastrado para receber um código de verificação.' : recoveryMode === 'sent' ? 'Digite o código recebido e escolha uma nova senha.' : 'Entre para acompanhar e administrar suas oportunidades.'}
                 </Text>
 
                 {isRegistering && renderField('Nome do responsável', 'user', name, setName, {
@@ -287,7 +292,25 @@ export default function LoginScreen() {
                   placeholder: 'Código com 6 números', keyboardType: 'number-pad', maxLength: 6,
                 })}
                 {renderField('E-mail', 'mail', email, setEmail, {
-                  placeholder: 'voce@empresa.com.br', keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false, editable: recoveryMode !== 'reset',
+                  placeholder: 'voce@empresa.com.br', keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false, editable: recoveryMode !== 'sent',
+                })}
+                {recoveryMode === 'sent' && renderField('Código de verificação', 'key', recoveryCode, (value) => {
+                  setRecoveryCode(value.replace(/\D/g, '').slice(0, 6));
+                  setRecoveryError('');
+                }, {
+                  placeholder: 'Código com 6 números', keyboardType: 'number-pad', autoComplete: 'one-time-code', maxLength: 6,
+                })}
+                {recoveryMode === 'sent' && renderField('Nova senha', 'lock', password, (value) => {
+                  setPassword(value);
+                  setRecoveryError('');
+                }, {
+                  placeholder: 'Mínimo de 8 caracteres', secureTextEntry: true, autoCapitalize: 'none', autoComplete: 'new-password', maxLength: 128,
+                })}
+                {recoveryMode === 'sent' && renderField('Confirmar nova senha', 'lock', confirmNewPassword, (value) => {
+                  setConfirmNewPassword(value);
+                  setRecoveryError('');
+                }, {
+                  placeholder: 'Digite novamente', secureTextEntry: true, autoCapitalize: 'none', autoComplete: 'new-password', maxLength: 128,
                 })}
 
                 {recoveryMode === 'login' && <View style={styles.fieldGroup}>
@@ -304,48 +327,47 @@ export default function LoginScreen() {
                   </View>
                 </View>}
 
-                {recoveryMode === 'reset' && (
-                  <>
-                    {renderField('Código de recuperação', 'key', recoveryCode, (value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6)), {
-                      placeholder: '6 dígitos', keyboardType: 'number-pad', maxLength: 6,
-                    })}
-                    <View style={styles.fieldGroup}>
-                      <Text style={styles.label}>Nova senha</Text>
-                      <View style={styles.inputRow}>
-                        <Feather name="lock" size={17} color={colors.muted} />
-                        <TextInput style={styles.input} accessibilityLabel="Nova senha" placeholder="Mínimo de 8 caracteres" placeholderTextColor={colors.muted} secureTextEntry={!showNewPassword} value={newPassword} onChangeText={setNewPassword} />
-                        <Pressable onPress={() => setShowNewPassword((visible) => !visible)} accessibilityLabel={showNewPassword ? 'Ocultar nova senha' : 'Mostrar nova senha'}>
-                          <Feather name={showNewPassword ? 'eye-off' : 'eye'} size={18} color={colors.muted} />
-                        </Pressable>
-                      </View>
-                    </View>
-                    {renderField('Confirmar nova senha', 'lock', confirmPassword, setConfirmPassword, {
-                      placeholder: 'Digite novamente', secureTextEntry: !showNewPassword,
-                    })}
-                    <Text style={styles.recoveryHint}>{newPassword.length >= 8 ? '✓ ' : '○ '}Pelo menos 8 caracteres</Text>
-                  </>
-                )}
-
                 {recoveryMessage ? <Text style={styles.recoveryMessage}>{recoveryMessage}</Text> : null}
                 {recoveryError ? <Text style={styles.recoveryError}>{recoveryError}</Text> : null}
 
                 {recoveryMode !== 'login' && (
                   <View style={styles.recoveryActions}>
-                    <Pressable onPress={() => { setRecoveryMode('login'); setRecoveryError(''); setRecoveryMessage(''); }} accessibilityRole="button">
+                    <Pressable onPress={() => {
+                      setRecoveryMode('login');
+                      setRecoveryError('');
+                      setRecoveryMessage('');
+                      setRecoveryCode('');
+                      setPassword('');
+                      setConfirmNewPassword('');
+                    }} accessibilityRole="button">
                       <Text style={styles.forgotPassword}>Voltar ao login</Text>
                     </Pressable>
-                    {recoveryMode === 'reset' && (
-                      <Pressable onPress={requestRecovery} disabled={isSubmitting || recoveryCooldown > 0} accessibilityRole="button">
-                        <Text style={styles.forgotPassword}>{recoveryCooldown > 0 ? `Reenviar em ${recoveryCooldown}s` : 'Reenviar código'}</Text>
-                      </Pressable>
-                    )}
                   </View>
                 )}
 
-                <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]} onPress={verificationPending ? handleVerifyEmail : handleSubmit} disabled={isSubmitting} accessibilityRole="button">
-                  <Text style={styles.submitText}>{isSubmitting ? 'Aguarde…' : verificationPending ? 'Verificar e-mail' : isRegistering ? 'Criar meu acesso' : recoveryMode === 'request' ? 'Enviar link de recuperação' : recoveryMode === 'reset' ? 'Redefinir senha' : 'Entrar na conta'}</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]}
+                  onPress={verificationPending ? handleVerifyEmail : recoveryMode === 'sent' ? resetPassword : handleSubmit}
+                  disabled={isSubmitting}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.submitText}>
+                    {isSubmitting ? 'Aguarde…' : verificationPending ? 'Verificar e-mail' : isRegistering ? 'Criar meu acesso' : recoveryMode === 'request' ? 'Enviar código' : recoveryMode === 'sent' ? 'Redefinir senha' : 'Entrar na conta'}
+                  </Text>
                   {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.onPrimary} />}
                 </Pressable>
+                {recoveryMode === 'sent' && (
+                  <Pressable
+                    style={styles.recoveryActions}
+                    onPress={requestRecovery}
+                    disabled={isSubmitting || recoveryCooldown > 0}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.forgotPassword}>
+                      {recoveryCooldown > 0 ? `Reenviar código em ${recoveryCooldown}s` : 'Enviar outro código'}
+                    </Text>
+                  </Pressable>
+                )}
 
                 {recoveryMode === 'login' && <View style={styles.switchRow}>
                   <Text style={styles.switchText}>{isRegistering ? 'Já tem acesso?' : 'Sua empresa ainda não tem acesso?'}</Text>
@@ -394,7 +416,6 @@ const styles = StyleSheet.create({
   recoveryActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4, marginBottom: 10 },
   recoveryMessage: { color: colors.success, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   recoveryError: { color: colors.danger, fontSize: 12, lineHeight: 18, marginBottom: 12 },
-  recoveryHint: { color: colors.muted, fontSize: 12, marginBottom: 12 },
   inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: colors.surface },
   input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14 },
   submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },

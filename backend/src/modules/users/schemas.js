@@ -20,3 +20,9 @@ export const updatePreferencesSchema = z.object({
     message: 'Informe ao menos uma preferência para atualizar.',
   }),
 });
+
+export const documentIdSchema = z.object({
+  params: z.object({
+    documentId: z.coerce.number().int().positive(),
+  }),
+});
