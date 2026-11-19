@@ -1,4 +1,4 @@
-import * as candidateService from './service.js';
+import * as candidateService from "./service.js";
 
 export async function getProfile(req, res) {
   const result = await candidateService.getProfile(req.user.id);
@@ -6,17 +6,23 @@ export async function getProfile(req, res) {
 }
 
 export async function updateProfile(req, res) {
-  const result = await candidateService.updateProfile(req.user.id, req.validated.body);
+  const result = await candidateService.updateProfile(
+    req.user.id,
+    req.validated.body,
+  );
   res.json(result);
 }
 
 export async function listVacancies(req, res) {
-  const result = await candidateService.listVacancies(req.user.id, req.validated.query);
+  const result = await candidateService.listVacancies(
+    req.user.id,
+    req.validated.query,
+  );
   res.json(result);
 }
 
 export async function listCompanies(req, res) {
-  const result = await candidateService.listCompanies();
+  const result = await candidateService.listCompanies(req.user.id);
   res.json(result);
 }
 
@@ -39,13 +45,19 @@ export async function listApplications(req, res) {
 
 export async function deleteApplication(req, res) {
   const { vacancyId } = req.params;
-  const result = await candidateService.deleteApplication(req.user.id, Number(vacancyId));
+  const result = await candidateService.deleteApplication(
+    req.user.id,
+    Number(vacancyId),
+  );
   res.json(result);
 }
 
 export async function toggleNotification(req, res) {
   const { active_notification } = req.validated.body;
-  const result = await candidateService.toggleNotification(req.user.id, active_notification);
+  const result = await candidateService.toggleNotification(
+    req.user.id,
+    active_notification,
+  );
   res.json(result);
 }
 
@@ -55,11 +67,17 @@ export async function listFavorites(req, res) {
 }
 
 export async function addFavorite(req, res) {
-  const result = await candidateService.addFavorite(req.user.id, Number(req.params.id));
+  const result = await candidateService.addFavorite(
+    req.user.id,
+    Number(req.params.id),
+  );
   res.status(201).json(result);
 }
 
 export async function removeFavorite(req, res) {
-  const result = await candidateService.removeFavorite(req.user.id, Number(req.params.id));
+  const result = await candidateService.removeFavorite(
+    req.user.id,
+    Number(req.params.id),
+  );
   res.json(result);
 }

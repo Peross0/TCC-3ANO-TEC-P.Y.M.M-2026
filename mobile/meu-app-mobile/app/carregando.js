@@ -174,12 +174,20 @@ export default function LoadingScreen() {
         ? apiFetch('/candidates/applications')
         : Promise.resolve({ applications: [] });
 
-      const [profileData, historyData, messagesData, preferencesData] = await Promise.all([
+      const [profileData, historyData] = await Promise.all([
         profileRequest,
         historyRequest,
+      ]);
+      const [messagesResult, preferencesResult] = await Promise.allSettled([
         apiFetch('/messages'),
         apiFetch('/users/me/preferences'),
       ]);
+      const messagesData = messagesResult.status === 'fulfilled'
+        ? messagesResult.value
+        : { conversations: [], messages: [] };
+      const preferencesData = preferencesResult.status === 'fulfilled'
+        ? preferencesResult.value
+        : { preferences: null };
 
       await minimumSkeletonDuration;
       setSessionData({
