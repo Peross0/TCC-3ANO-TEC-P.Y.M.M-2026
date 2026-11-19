@@ -372,7 +372,7 @@ cleanupMessages.prepare('DELETE FROM messages WHERE id = ?').run(candidateMessag
 cleanupMessages.close();
 
 for (const removedRoute of [
-  'forgot-password', 'reset-password', 'verify-email', 'confirm-email',
+  'forgot-password', 'verify-email', 'confirm-email',
   'send-code', 'resend-code', 'confirm-code', 'validate-code',
 ]) {
   const result = await request(`/api/auth/${removedRoute}`, { method: 'POST', body: {} });
@@ -442,6 +442,37 @@ expectStatus(await request('/api/auth/login', {
   method: 'POST',
   body: { email: 'recruiter@test.com', password: 'Senha123!' },
 }), 200, 'another account password is unchanged');
+
+const recoveryPayload = {
+  email: ' CANDIDATE@TEST.COM ',
+  new_password: 'Recuperada123!',
+  confirm_password: 'Recuperada123!',
+};
+expectStatus(await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: { ...recoveryPayload, email: 'unknown@smoke.test' },
+}), 404, 'unknown recovery email');
+expectStatus(await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: { ...recoveryPayload, confirm_password: 'OutraSenha123!' },
+}), 400, 'recovery confirmation must match');
+expectStatus(await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: { ...recoveryPayload, new_password: 'short', confirm_password: 'short' },
+}), 400, 'recovery password must meet length requirement');
+expectStatus(await request('/api/auth/reset-password', {
+  method: 'POST',
+  body: recoveryPayload,
+}), 200, 'development password recovery without session');
+expectStatus(await request('/api/auth/me', { token: sessionPasswordChange.data.token }), 401, 'recovery revokes existing sessions');
+expectStatus(await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'SenhaNova789!' },
+}), 401, 'recovery rejects old password');
+expectStatus(await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'Recuperada123!' },
+}), 200, 'recovery accepts new password');
 
 const resetCleanup = new DatabaseSync(databasePath);
 resetCleanup.prepare('UPDATE users SET password_hash = ?, token_version = 0 WHERE id = ?')

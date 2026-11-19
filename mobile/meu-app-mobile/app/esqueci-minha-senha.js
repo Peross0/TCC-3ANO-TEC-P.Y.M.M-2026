@@ -51,35 +51,39 @@ export default function EsqueciMinhaSenhaScreen() {
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      const token = await getToken();
-      if (!token) {
-        setErrorMessage('É necessária uma sessão válida desta conta neste dispositivo. Entre na conta para alterar a senha.');
-        return;
-      }
-      const result = await apiFetch('/auth/change-password-with-session', {
-        method: 'POST',
-        token,
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          new_password: password,
-          confirm_password: confirmPassword,
-        }),
+      const body = JSON.stringify({
+        email: email.trim().toLowerCase(),
+        new_password: password,
+        confirm_password: confirmPassword,
       });
+      let result;
+      if (origem === 'configuracoes') {
+        const token = await getToken();
+        if (!token) {
+          setErrorMessage('Sua sessão não está disponível. Entre novamente para alterar a senha.');
+          return;
+        }
+        result = await apiFetch('/auth/change-password-with-session', { method: 'POST', token, body });
+      } else {
+        result = await apiFetch('/auth/reset-password', { method: 'POST', token: null, body });
+      }
       setPassword('');
       setConfirmPassword('');
-      if (!result.token) {
-        setErrorMessage('A senha foi alterada, mas o servidor não retornou uma nova sessão. Entre novamente.');
-        return;
-      }
-      try {
-        await saveToken(result.token);
-      } catch {
-        setErrorMessage('A senha foi alterada, mas não foi possível salvar a nova sessão. Entre novamente.');
-        return;
+      if (origem === 'configuracoes') {
+        if (!result.token) {
+          setErrorMessage('A senha foi alterada, mas o servidor não retornou uma nova sessão. Entre novamente.');
+          return;
+        }
+        try {
+          await saveToken(result.token);
+        } catch {
+          setErrorMessage('A senha foi alterada, mas não foi possível salvar a nova sessão. Entre novamente.');
+          return;
+        }
       }
       setSuccess(true);
     } catch (error) {
-      setErrorMessage(error.status === 401
+      setErrorMessage(origem === 'configuracoes' && error.status === 401
         ? 'A sessão expirou ou não é válida. Entre na conta para alterar a senha.'
         : error.message || 'Não foi possível alterar a senha. Tente novamente.');
     } finally {
@@ -95,7 +99,7 @@ export default function EsqueciMinhaSenhaScreen() {
           <View style={styles.card}>
             <View style={styles.icon}><Feather name="lock" size={24} color={colors.tint} /></View>
             <Text style={styles.title}>Esqueci minha senha</Text>
-            <Text style={styles.subtitle}>É necessária uma sessão válida da conta neste dispositivo.</Text>
+            <Text style={styles.subtitle}>{origem === 'configuracoes' ? 'Use sua sessão ativa para alterar a senha.' : 'Informe o e-mail cadastrado e escolha uma nova senha.'}</Text>
 
             <Text style={styles.label}>E-mail cadastrado</Text>
             <TextInput

@@ -45,6 +45,17 @@ export const loginSchema = z.object({
   }),
 });
 
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().trim().toLowerCase().email('E-mail inválido'),
+    new_password: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.').max(128, 'Senha muito longa.'),
+    confirm_password: z.string().min(8, 'Confirme sua nova senha.').max(128, 'Senha muito longa.'),
+  }).refine((data) => data.new_password === data.confirm_password, {
+    message: 'As senhas não conferem.',
+    path: ['confirm_password'],
+  }),
+});
+
 export const changePasswordSchema = z.object({
   body: z.object({
     current_password: z.string().min(1, 'Informe sua senha atual.'),

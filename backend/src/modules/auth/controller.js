@@ -11,6 +11,12 @@ export async function login(req, res) {
   res.json(result);
 }
 
+export async function resetPassword(req, res) {
+  const { email, new_password } = req.validated.body;
+  const result = await authService.resetPassword(email, new_password);
+  res.json(result);
+}
+
 export async function changePassword(req, res) {
   const { current_password, new_password } = req.validated.body;
   const result = await authService.changePassword(req.user.id, current_password, new_password);

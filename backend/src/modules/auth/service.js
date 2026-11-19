@@ -95,6 +95,27 @@ export async function loginUser(email, password) {
   };
 }
 
+export async function resetPassword(email, newPassword) {
+  const knex = getKnex();
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  const updated = await knex('users')
+    .where({ email })
+    .whereNull('deleted_at')
+    .update({
+      password_hash: passwordHash,
+      token_version: knex.raw('token_version + 1'),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (!updated) {
+    const error = new Error('E-mail não cadastrado.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return { message: 'Senha alterada com sucesso. Entre com sua nova senha.' };
+}
+
 export async function changePassword(userId, currentPassword, newPassword) {
   const knex = getKnex();
   const user = await knex('users')

@@ -14,7 +14,7 @@ npm start
 A API fica em `http://localhost:3000`.
 As migrations são verificadas ao iniciar o backend; os seeds não são executados automaticamente para evitar recriar contas e apagar dados relacionados a vagas de demonstração a cada reinicialização. Em desenvolvimento, execute `npm run seed` manualmente apenas quando quiser repor os dados de teste.
 
-O envio de e-mails não está disponível. Alterações de senha exigem uma sessão autenticada.
+O envio de e-mails não está disponível.
 
 ## Documentos do perfil
 
@@ -24,7 +24,7 @@ Os endpoints autenticados `GET/POST /api/users/me/documents` e `GET/DELETE /api/
 
 O cadastro cria a conta e inicia a sessão imediatamente. Usuários autenticados podem alterar a senha nas configurações.
 
-A tela de redefinição no mobile exige uma sessão válida no próprio dispositivo e o e-mail correspondente à sessão. Sem sessão válida ela não consegue recuperar o acesso. A senha é atualizada no servidor e as sessões anteriores são revogadas.
+A recuperação sem sessão está disponível somente fora de produção (`NODE_ENV=development` ou `test`). **É insegura:** qualquer pessoa que conheça um e-mail cadastrado pode assumir a conta. Não use dados reais nem exponha esse backend a redes não confiáveis. Em produção a rota não existe. A redefinição revoga as sessões anteriores. A alteração nas configurações continua exigindo sessão válida.
 
 ## Testes
 
