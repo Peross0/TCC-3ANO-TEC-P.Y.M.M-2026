@@ -1,44 +1,6 @@
 import bcrypt from "bcryptjs";
-import { createHash, randomInt } from 'node:crypto';
 import { getKnex } from "../../config/database.js";
 import { createAuthTokens } from "../../utils/jwt.js";
-import { sendPasswordResetCodeEmail } from "../../utils/mailer.js";
-
-const RESET_CODE_EXPIRY_MINUTES = 30;
-const MAX_RESET_CODE_ATTEMPTS = 5;
-const MAX_RESET_REQUESTS_PER_EMAIL = 3;
-const MAX_RESET_REQUESTS_PER_IP = 12;
-const RESET_EMAIL_WINDOW_MS = 60 * 60 * 1000;
-const RESET_IP_WINDOW_MS = 15 * 60 * 1000;
-const RESET_LOG_RETENTION_MS = 24 * 60 * 60 * 1000;
-const RESET_RESPONSE_MESSAGE = 'Se o e-mail estiver cadastrado, você receberá um código para redefinir sua senha.';
-const INVALID_RESET_CODE_MESSAGE = 'Código inválido ou expirado. Solicite um novo código.';
-
-const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-
-async function isResetRateLimited(knex, emailHash, ipHash, now) {
-  const [emailCount, ipCount] = await Promise.all([
-    knex('password_reset_attempts')
-      .where({ email_hash: emailHash })
-      .where('created_at', '>', new Date(now.getTime() - RESET_EMAIL_WINDOW_MS).toISOString())
-      .count({ total: '*' })
-      .first(),
-    knex('password_reset_attempts')
-      .where({ ip_hash: ipHash })
-      .where('created_at', '>', new Date(now.getTime() - RESET_IP_WINDOW_MS).toISOString())
-      .count({ total: '*' })
-      .first(),
-  ]);
-
-  await knex('password_reset_attempts').insert({
-    email_hash: emailHash,
-    ip_hash: ipHash,
-    created_at: now.toISOString(),
-  });
-
-  return Number(emailCount.total) >= MAX_RESET_REQUESTS_PER_EMAIL
-    || Number(ipCount.total) >= MAX_RESET_REQUESTS_PER_IP;
-}
 
 export async function registerUser(data) {
   const knex = getKnex();
@@ -76,15 +38,12 @@ export async function registerUser(data) {
       phone: data.phone || null,
       course: data.course || null,
       avatar_url: null,
-      verified_email: true,
-      code_email_verification: null,
-      code_expires_at: null,
       active_notification: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       deleted_at: null,
     })
-    .returning(["id", "email", "full_name", "user_type", "verified_email"]);
+    .returning(["id", "email", "full_name", "user_type"]);
 
   const tokens = createAuthTokens(user);
 
@@ -94,7 +53,6 @@ export async function registerUser(data) {
       email: user.email,
       full_name: user.full_name,
       user_type: user.user_type,
-      verified_email: user.verified_email,
     },
     ...tokens,
     message: "Cadastro realizado com sucesso.",
@@ -130,142 +88,10 @@ export async function loginUser(email, password) {
       email: user.email,
       full_name: user.full_name,
       user_type: user.user_type,
-      verified_email: user.verified_email,
       avatar_url: user.avatar_url,
       active_notification: user.active_notification,
     },
     ...tokens,
-  };
-}
-
-export async function forgotPassword(email, clientIp = '') {
-  const knex = getKnex();
-  const now = new Date();
-  const normalizedEmail = email.trim().toLowerCase();
-  const emailHash = sha256(normalizedEmail);
-  const ipHash = sha256(clientIp || 'unknown');
-
-  await knex('password_reset_attempts')
-    .where('created_at', '<', new Date(now.getTime() - RESET_LOG_RETENTION_MS).toISOString())
-    .delete();
-  await knex('password_reset_requests')
-    .where('expires_at', '<', new Date(now.getTime() - RESET_LOG_RETENTION_MS).toISOString())
-    .delete();
-
-  const rateLimited = await isResetRateLimited(knex, emailHash, ipHash, now);
-  if (rateLimited) return { message: RESET_RESPONSE_MESSAGE };
-
-  const user = await knex("users")
-    .where({ email: normalizedEmail })
-    .whereNull("deleted_at")
-    .first();
-
-  if (!user) return { message: RESET_RESPONSE_MESSAGE };
-
-  const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
-  const requestedAt = now.toISOString();
-  const codeExpiresAt = new Date(now.getTime() + RESET_CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
-  const codeHash = await bcrypt.hash(code, 12);
-
-  await knex('password_reset_requests')
-    .where({ user_id: user.id })
-    .whereNull('consumed_at')
-    .update({ consumed_at: requestedAt });
-
-  const [requestId] = await knex('password_reset_requests').insert({
-    user_id: user.id,
-    code_hash: codeHash,
-    requested_at: requestedAt,
-    expires_at: codeExpiresAt,
-    failed_attempts: 0,
-  });
-
-  try {
-    await sendPasswordResetCodeEmail(normalizedEmail, code, RESET_CODE_EXPIRY_MINUTES);
-  } catch (error) {
-    await knex('password_reset_requests').where({ id: requestId }).update({ consumed_at: new Date().toISOString() });
-    console.error('[PASSWORD_RESET_EMAIL_FAILED] Não foi possível enviar o e-mail de recuperação.', error.code || 'SMTP_ERROR');
-  }
-
-  return { message: RESET_RESPONSE_MESSAGE };
-}
-
-export async function resetPassword(email, code, password, confirmPassword) {
-  const knex = getKnex();
-  const now = new Date().toISOString();
-  const normalizedEmail = email.trim().toLowerCase();
-  if (password !== confirmPassword) {
-    const error = new Error('As senhas não conferem.');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  let invalidCode = false;
-  let userNotFound = false;
-
-  await knex.transaction(async (trx) => {
-    const user = await trx('users')
-      .where({ email: normalizedEmail })
-      .whereNull('deleted_at')
-      .first('id', 'token_version');
-    if (!user) {
-      userNotFound = true;
-      return;
-    }
-
-    const request = await trx('password_reset_requests')
-      .where({ user_id: user.id })
-      .whereNull('consumed_at')
-      .where('expires_at', '>', now)
-      .where('failed_attempts', '<', MAX_RESET_CODE_ATTEMPTS)
-      .orderBy('requested_at', 'desc')
-      .first();
-    if (!request) {
-      invalidCode = true;
-      return;
-    }
-
-    if (!(await bcrypt.compare(code, request.code_hash || ''))) {
-      const failedAttempts = request.failed_attempts + 1;
-      await trx('password_reset_requests')
-        .where({ id: request.id })
-        .whereNull('consumed_at')
-        .update({
-          failed_attempts: failedAttempts,
-          ...(failedAttempts >= MAX_RESET_CODE_ATTEMPTS ? { consumed_at: now } : {}),
-        });
-      invalidCode = true;
-      return;
-    }
-
-    const consumed = await trx('password_reset_requests')
-      .where({ id: request.id })
-      .whereNull('consumed_at')
-      .where('expires_at', '>', now)
-      .update({ consumed_at: now });
-    if (!consumed) {
-      invalidCode = true;
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    await trx('users').where({ id: user.id }).update({
-      password_hash: passwordHash,
-      code_email_verification: null,
-      code_expires_at: null,
-      token_version: Number(user.token_version || 0) + 1,
-      updated_at: now,
-    });
-  });
-
-  if (userNotFound || invalidCode) {
-    const error = new Error(INVALID_RESET_CODE_MESSAGE);
-    error.statusCode = 400;
-    throw error;
-  }
-
-  return {
-    message: "Senha redefinida com sucesso. Agora você pode fazer login.",
   };
 }
 
@@ -296,7 +122,7 @@ export async function changePassword(userId, currentPassword, newPassword) {
   };
 }
 
-export async function changePasswordWithSession(userId, newPassword) {
+export async function changePasswordWithSession(userId, newPassword, email, sessionVersion) {
   const knex = getKnex();
   const user = await knex('users')
     .where({ id: userId })
@@ -309,13 +135,28 @@ export async function changePasswordWithSession(userId, newPassword) {
     throw error;
   }
 
+  if (email && email !== user.email.toLowerCase()) {
+    const error = new Error('O e-mail informado não corresponde à sessão atual.');
+    error.statusCode = 403;
+    throw error;
+  }
+
   const passwordHash = await bcrypt.hash(newPassword, 12);
-  const tokenVersion = Number(user.token_version || 0) + 1;
-  await knex('users').where({ id: user.id }).update({
-    password_hash: passwordHash,
-    token_version: tokenVersion,
-    updated_at: new Date().toISOString(),
-  });
+  const tokenVersion = sessionVersion + 1;
+  const updated = await knex('users')
+    .where({ id: user.id, token_version: sessionVersion })
+    .whereNull('deleted_at')
+    .update({
+      password_hash: passwordHash,
+      token_version: tokenVersion,
+      updated_at: new Date().toISOString(),
+    });
+
+  if (!updated) {
+    const error = new Error('Sessão encerrada. Entre novamente.');
+    error.statusCode = 401;
+    throw error;
+  }
 
   return {
     token: createAuthTokens({ ...user, token_version: tokenVersion }).token,
@@ -334,7 +175,6 @@ export async function getMe(userId) {
       "email",
       "full_name",
       "user_type",
-      "verified_email",
       "avatar_url",
       "active_notification",
       "phone",

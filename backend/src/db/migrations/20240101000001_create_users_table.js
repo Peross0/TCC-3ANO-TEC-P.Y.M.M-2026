@@ -9,9 +9,6 @@ export async function up(knex) {
     table.string('document_number', 18).notNullable().unique();
     table.string('phone', 20).nullable();
     table.string('avatar_url', 500).nullable();
-    table.boolean('verified_email').notNullable().defaultTo(false);
-    table.string('code_email_verification', 6).nullable();
-    table.timestamp('code_expires_at').nullable();
     table.boolean('active_notification').notNullable().defaultTo(true);
     table.timestamp('created_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
     table.timestamp('updated_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));

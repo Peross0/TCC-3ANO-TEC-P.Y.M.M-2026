@@ -17,14 +17,6 @@ const envSchema = z.object({
   // Database
   DATABASE_PATH: z.string().default('./data/conectafacil.db').transform(toBackendPath),
 
-  // SMTP
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().default('ConectaFácil <noreply@conectafacil.com>'),
-
   // Upload
   UPLOAD_DIR: z.string().default('./uploads/avatars').transform(toBackendPath),
   MAX_AVATAR_MB: z.coerce.number().int().positive().default(2),
@@ -38,19 +30,6 @@ if (!parsed.success) {
   console.error('❌ Variáveis de ambiente inválidas:');
   console.error(parsed.error.flatten().fieldErrors);
   process.exit(1);
-}
-
-if (parsed.data.NODE_ENV === 'production') {
-  const required = [
-    'SMTP_HOST',
-    'SMTP_USER',
-    'SMTP_PASS',
-  ];
-  const missing = required.filter((name) => !process.env[name]?.trim());
-  if (missing.length) {
-    console.error('❌ Variáveis obrigatórias em produção ausentes:', missing);
-    process.exit(1);
-  }
 }
 
 export const env = parsed.data;

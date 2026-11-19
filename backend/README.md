@@ -14,7 +14,7 @@ npm start
 A API fica em `http://localhost:3000`.
 As migrations são verificadas ao iniciar o backend; os seeds não são executados automaticamente para evitar recriar contas e apagar dados relacionados a vagas de demonstração a cada reinicialização. Em desenvolvimento, execute `npm run seed` manualmente apenas quando quiser repor os dados de teste.
 
-Para enviar códigos de recuperação de senha, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `SMTP_FROM` no `.env`. O código numérico de 6 dígitos expira em 30 minutos, só pode ser usado uma vez e é armazenado como hash; após 5 tentativas inválidas ele é invalidado. Sem SMTP, o ambiente de desenvolvimento registra a mensagem e o código no terminal; em outros ambientes, a falha invalida o código e a resposta genérica da API não revela se o e-mail está cadastrado.
+O envio de e-mails não está disponível. Alterações de senha exigem uma sessão autenticada.
 
 ## Documentos do perfil
 
@@ -22,7 +22,9 @@ Os endpoints autenticados `GET/POST /api/users/me/documents` e `GET/DELETE /api/
 
 ## Cadastro
 
-O cadastro cria a conta e inicia a sessão imediatamente; a confirmação de e-mail não é exigida. Para recuperar a senha, informe o e-mail cadastrado, valide o código recebido e defina a nova senha com confirmação.
+O cadastro cria a conta e inicia a sessão imediatamente. Usuários autenticados podem alterar a senha nas configurações.
+
+A tela de redefinição no mobile exige uma sessão válida no próprio dispositivo e o e-mail correspondente à sessão. Sem sessão válida ela não consegue recuperar o acesso. A senha é atualizada no servidor e as sessões anteriores são revogadas.
 
 ## Testes
 

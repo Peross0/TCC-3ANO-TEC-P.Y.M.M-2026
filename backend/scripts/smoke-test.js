@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 
 const baseUrl = process.env.API_URL || 'http://localhost:3000';
+const databasePath = process.env.DATABASE_PATH || './data/conectafacil.db';
 
 async function request(path, options = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -63,6 +63,26 @@ const recruiterToken = recruiterLogin.data.token;
 const adminToken = adminLogin.data.token;
 const candidateId = candidateLogin.data.user.id;
 
+const registeredEmail = `candidate-${Date.now()}@smoke.test`;
+const registered = await request('/api/auth/register', {
+  method: 'POST',
+  body: {
+    email: registeredEmail,
+    password: 'Senha123!',
+    full_name: 'Cadastro Smoke',
+    user_type: 'CANDIDATE',
+    document_type: 'CPF',
+    document_number: '16899535009',
+  },
+});
+expectStatus(registered, 201, 'registration without code verification');
+expectStatus(await request('/api/auth/me', { token: registered.data.token }), 200, 'registration returns active session');
+const registeredLogin = await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: registeredEmail, password: 'Senha123!' },
+});
+expectStatus(registeredLogin, 200, 'login after registration');
+
 const initialCandidateMessages = await request('/api/messages', { token: candidateToken });
 expectStatus(initialCandidateMessages, 200, 'candidate messages before applying');
 assert.ok(!initialCandidateMessages.data.conversations.some((item) => item.job_title === 'Desenvolvedor Frontend' && item.company_name === 'StartupXYZ'));
@@ -116,14 +136,14 @@ const preferenceReset = await request('/api/users/me/preferences', {
 });
 expectStatus(preferenceReset, 200, 'candidate preferences cleanup');
 
-const setupDb = new DatabaseSync('./data/conectafacil.db');
+const setupDb = new DatabaseSync(databasePath);
 setupDb.prepare('DELETE FROM users WHERE email = ?').run('second-recruiter@smoke.test');
 const secondPasswordHash = await bcrypt.hash('Senha123!', 12);
 setupDb.prepare(`
   INSERT INTO users (
     email, password_hash, full_name, user_type, document_type, document_number,
-    verified_email, active_notification, created_at, updated_at
-  ) VALUES (?, ?, ?, 'RECRUITER', 'CNPJ', ?, 1, 1, ?, ?)
+    active_notification, created_at, updated_at
+  ) VALUES (?, ?, ?, 'RECRUITER', 'CNPJ', ?, 1, ?, ?)
 `).run(
   'second-recruiter@smoke.test',
   secondPasswordHash,
@@ -347,86 +367,22 @@ const unrelatedRecruiterMessage = await request('/api/messages', {
 });
 expectStatus(unrelatedRecruiterMessage, 403, 'unrelated recruiter cannot message');
 
-const cleanupMessages = new DatabaseSync('./data/conectafacil.db');
+const cleanupMessages = new DatabaseSync(databasePath);
 cleanupMessages.prepare('DELETE FROM messages WHERE id = ?').run(candidateMessage.data.message.id);
 cleanupMessages.close();
 
-const forgot = await request('/api/auth/forgot-password', {
-  method: 'POST',
-  body: { email: 'candidate@test.com' },
-});
-expectStatus(forgot, 200, 'forgot password');
-const forgotUnknown = await request('/api/auth/forgot-password', {
-  method: 'POST',
-  body: { email: 'unknown-reset@test.com' },
-});
-expectStatus(forgotUnknown, 200, 'forgot password for unknown address');
-assert.equal(forgot.data.message, forgotUnknown.data.message, 'reset request response must not disclose account existence');
-
-const db = new DatabaseSync('./data/conectafacil.db');
-const resetRequest = db.prepare('SELECT id, code_hash FROM password_reset_requests WHERE user_id = ? ORDER BY requested_at DESC LIMIT 1').get(candidateId);
-assert.ok(resetRequest, 'password reset code should be persisted');
-assert.ok(resetRequest.code_hash.startsWith('$2'), 'only the bcrypt code hash should be persisted');
-db.prepare('UPDATE password_reset_requests SET code_hash = ? WHERE id = ?')
-  .run(await bcrypt.hash('742981', 12), resetRequest.id);
-db.close();
-
-const invalidReset = await request('/api/auth/reset-password', {
-  method: 'POST',
-  body: {
-    email: 'candidate@test.com',
-    code: '000000',
-    password: 'SenhaNova123!',
-    confirm_password: 'SenhaNova123!',
-  },
-});
-expectStatus(invalidReset, 400, 'invalid password reset code');
-
-const mismatchedReset = await request('/api/auth/reset-password', {
-  method: 'POST',
-  body: {
-    email: 'candidate@test.com',
-    code: '742981',
-    password: 'SenhaNova123!',
-    confirm_password: 'SenhaDiferente123!',
-  },
-});
-expectStatus(mismatchedReset, 400, 'password reset confirmation must match');
-
-const reset = await request('/api/auth/reset-password', {
-  method: 'POST',
-  body: {
-    email: 'candidate@test.com',
-    code: '742981',
-    password: 'SenhaNova123!',
-    confirm_password: 'SenhaNova123!',
-  },
-});
-expectStatus(reset, 200, 'reset password');
-
-const resetReuse = await request('/api/auth/reset-password', {
-  method: 'POST',
-  body: {
-    email: 'candidate@test.com',
-    code: '742981',
-    password: 'SenhaNova123!',
-    confirm_password: 'SenhaNova123!',
-  },
-});
-expectStatus(resetReuse, 400, 'password reset code cannot be reused');
-expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password reset revokes old session');
-
-const resetLogin = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: 'candidate@test.com', password: 'SenhaNova123!' },
-});
-expectStatus(resetLogin, 200, 'login with reset password');
-candidateToken = resetLogin.data.token;
+for (const removedRoute of [
+  'forgot-password', 'reset-password', 'verify-email', 'confirm-email',
+  'send-code', 'resend-code', 'confirm-code', 'validate-code',
+]) {
+  const result = await request(`/api/auth/${removedRoute}`, { method: 'POST', body: {} });
+  expectStatus(result, 404, `removed auth route ${removedRoute}`);
+}
 
 const changedPassword = await request('/api/auth/change-password', {
   method: 'POST',
   token: candidateToken,
-  body: { current_password: 'SenhaNova123!', new_password: 'SenhaNova456!' },
+  body: { current_password: 'Senha123!', new_password: 'SenhaNova456!' },
 });
 expectStatus(changedPassword, 200, 'authenticated password change');
 expectStatus(await request('/api/auth/me', { token: candidateToken }), 401, 'password change revokes old session');
@@ -445,24 +401,54 @@ const mismatchedSessionPasswordChange = await request('/api/auth/change-password
 });
 expectStatus(mismatchedSessionPasswordChange, 400, 'session password confirmation must match');
 
+for (const email of ['recruiter@test.com', 'unknown@smoke.test']) {
+  const otherAccountPasswordChange = await request('/api/auth/change-password-with-session', {
+    method: 'POST',
+    token: changedPassword.data.token,
+    body: { email, new_password: 'SenhaNova789!', confirm_password: 'SenhaNova789!' },
+  });
+  expectStatus(otherAccountPasswordChange, 403, 'session cannot change password for another email');
+}
+expectStatus(await request('/api/auth/me', { token: changedPassword.data.token }), 200, 'rejected change preserves session');
+const weakSessionPasswordChange = await request('/api/auth/change-password-with-session', {
+  method: 'POST',
+  token: changedPassword.data.token,
+  body: { email: 'candidate@test.com', new_password: 'short', confirm_password: 'short' },
+});
+expectStatus(weakSessionPasswordChange, 400, 'session password must meet length requirement');
+
 const sessionPasswordChange = await request('/api/auth/change-password-with-session', {
   method: 'POST',
   token: changedPassword.data.token,
-  body: { new_password: 'SenhaNova789!', confirm_password: 'SenhaNova789!' },
+  body: { email: ' CANDIDATE@TEST.COM ', new_password: 'SenhaNova789!', confirm_password: 'SenhaNova789!' },
 });
 expectStatus(sessionPasswordChange, 200, 'session password change');
 expectStatus(await request('/api/auth/me', { token: changedPassword.data.token }), 401, 'session password change revokes previous session');
 expectStatus(await request('/api/auth/me', { token: sessionPasswordChange.data.token }), 200, 'session password change returns rotated session');
+expectStatus(await request('/api/auth/change-password-with-session', {
+  method: 'POST',
+  token: changedPassword.data.token,
+  body: { email: 'candidate@test.com', new_password: 'SenhaNova000!', confirm_password: 'SenhaNova000!' },
+}), 401, 'old session cannot change password again');
+expectStatus(await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'SenhaNova456!' },
+}), 401, 'old password is rejected');
+expectStatus(await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'candidate@test.com', password: 'SenhaNova789!' },
+}), 200, 'new password works');
+expectStatus(await request('/api/auth/login', {
+  method: 'POST',
+  body: { email: 'recruiter@test.com', password: 'Senha123!' },
+}), 200, 'another account password is unchanged');
 
-const resetCleanup = new DatabaseSync('./data/conectafacil.db');
-resetCleanup.prepare('DELETE FROM password_reset_requests WHERE user_id = ?').run(candidateId);
-resetCleanup.prepare('DELETE FROM password_reset_attempts WHERE email_hash = ?')
-  .run(createHash('sha256').update('candidate@test.com').digest('hex'));
+const resetCleanup = new DatabaseSync(databasePath);
 resetCleanup.prepare('UPDATE users SET password_hash = ?, token_version = 0 WHERE id = ?')
   .run(await bcrypt.hash('Senha123!', 12), candidateId);
 resetCleanup.close();
 
-const linkedDb = new DatabaseSync('./data/conectafacil.db');
+const linkedDb = new DatabaseSync(databasePath);
 const linkedUser = linkedDb.prepare('SELECT user_id FROM vacancies LIMIT 1').get();
 linkedDb.close();
 
@@ -472,12 +458,13 @@ const linkedUserDelete = await request(`/api/admin/users/${linkedUser.user_id}`,
 });
 expectStatus(linkedUserDelete, 409, 'linked user delete');
 
-const cleanupDb = new DatabaseSync('./data/conectafacil.db');
+const cleanupDb = new DatabaseSync(databasePath);
 cleanupDb.prepare('DELETE FROM messages WHERE application_id IN (SELECT id FROM interests WHERE vacancy_id = ?)').run(vacancyId);
   cleanupDb.prepare('DELETE FROM saved_vacancies WHERE vacancy_id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM interests WHERE vacancy_id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM vacancies WHERE id = ?').run(vacancyId);
 cleanupDb.prepare('DELETE FROM users WHERE email = ?').run('second-recruiter@smoke.test');
+cleanupDb.prepare('DELETE FROM users WHERE email = ?').run(registeredEmail);
 cleanupDb.close();
 
 console.log('Smoke tests passed.');

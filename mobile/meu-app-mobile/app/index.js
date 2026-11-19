@@ -171,13 +171,9 @@ function LoginScreen({ startupMessage }) {
   const styles = makeStyles(colors);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [recoveryMessage, setRecoveryMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState("login");
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -220,82 +216,6 @@ function LoginScreen({ startupMessage }) {
     }
   };
 
-  const handlePasswordRecoveryRequest = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setLoginError(
-        "Informe o e-mail cadastrado para receber a recuperação da senha.",
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
-    setLoginError("");
-    setRecoveryMessage("");
-
-    try {
-      const result = await apiFetch("/auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify({ email: normalizedEmail }),
-        token: null,
-      });
-
-      setPasswordRecoveryMode("sent");
-      setRecoveryCode("");
-      setPassword("");
-      setConfirmNewPassword("");
-      setRecoveryMessage(result.message || "Se o e-mail estiver cadastrado, enviaremos um código válido por 30 minutos.");
-    } catch (error) {
-      setLoginError(
-        error.message || "Não foi possível iniciar a recuperação da senha.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!/^\d{6}$/.test(recoveryCode)) {
-      setLoginError("Informe o código de 6 números recebido por e-mail.");
-      return;
-    }
-    if (password.length < 8 || password.length > 128) {
-      setLoginError("A nova senha deve ter entre 8 e 128 caracteres.");
-      return;
-    }
-    if (password !== confirmNewPassword) {
-      setLoginError("As senhas não conferem.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setLoginError("");
-    try {
-      const result = await apiFetch("/auth/reset-password", {
-        method: "POST",
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: recoveryCode,
-          password,
-          confirm_password: confirmNewPassword,
-        }),
-        token: null,
-      });
-      setPasswordRecoveryMode("login");
-      setRecoveryMessage("");
-      setRecoveryCode("");
-      setPassword("");
-      setConfirmNewPassword("");
-      Alert.alert("Senha atualizada", result.message || "Agora você já pode entrar com sua nova senha.");
-    } catch (error) {
-      setLoginError(error.message || "Não foi possível redefinir a senha. Confira o código e tente novamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const isRecoveryView = passwordRecoveryMode !== "login";
-
   return (
     <SafeAreaView style={styles.loginScreen}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={BRAND.background} />
@@ -316,20 +236,8 @@ function LoginScreen({ startupMessage }) {
               Conecta<Text style={styles.brandAccent}>Fácil</Text>
             </Text>
           </View>
-          <Text style={styles.welcome}>
-            {passwordRecoveryMode === "request"
-              ? "Esqueceu sua senha?"
-              : passwordRecoveryMode === "sent"
-                ? "Confira seu e-mail"
-                : "Que bom ter você aqui!"}
-          </Text>
-          <Text style={styles.loginSubtitle}>
-            {passwordRecoveryMode === "request"
-              ? "Informe o e-mail cadastrado para receber um código de verificação."
-              : passwordRecoveryMode === "sent"
-                ? "Digite o código recebido e escolha uma nova senha."
-                : "Entre para encontrar sua próxima oportunidade."}
-          </Text>
+          <Text style={styles.welcome}>Que bom ter você aqui!</Text>
+          <Text style={styles.loginSubtitle}>Entre para encontrar sua próxima oportunidade.</Text>
 
           {!!startupMessage && (
             <Text style={styles.startupMessage}>{startupMessage}</Text>
@@ -347,148 +255,53 @@ function LoginScreen({ startupMessage }) {
                 onChangeText={(value) => {
                   setEmail(value);
                   setLoginError("");
-                  setRecoveryMessage("");
                 }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
                 returnKeyType="next"
-                editable={passwordRecoveryMode !== "sent"}
               />
             </View>
 
-            {passwordRecoveryMode === "sent" && (
-              <>
-                <Text style={styles.fieldLabel}>Código de verificação</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="key" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Código com 6 números"
-                    placeholderTextColor={colors.placeholder}
-                    value={recoveryCode}
-                    onChangeText={(value) => {
-                      setRecoveryCode(value.replace(/\D/g, "").slice(0, 6));
-                      setLoginError("");
-                    }}
-                    keyboardType="number-pad"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    returnKeyType="next"
-                  />
-                </View>
-                <Text style={styles.fieldLabel}>Nova senha</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Mínimo de 8 caracteres"
-                    placeholderTextColor={colors.placeholder}
-                    value={password}
-                    onChangeText={(value) => { setPassword(value); setLoginError(""); }}
-                    secureTextEntry
-                    autoCapitalize="none"
-                    autoComplete="new-password"
-                    maxLength={128}
-                  />
-                </View>
-                <Text style={styles.fieldLabel}>Confirmar nova senha</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Digite novamente"
-                    placeholderTextColor={colors.placeholder}
-                    value={confirmNewPassword}
-                    onChangeText={(value) => { setConfirmNewPassword(value); setLoginError(""); }}
-                    secureTextEntry
-                    autoCapitalize="none"
-                    autoComplete="new-password"
-                    maxLength={128}
-                    onSubmitEditing={handlePasswordReset}
-                  />
-                </View>
-              </>
-            )}
-
-            {!isRecoveryView && (
-              <>
-                <Text style={styles.fieldLabel}>Senha</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={19} color={BRAND.gray} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Digite sua senha"
-                    placeholderTextColor={colors.placeholder}
-                    value={password}
-                    onChangeText={(value) => {
-                      setPassword(value);
-                      setLoginError("");
-                    }}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    returnKeyType="go"
-                    onSubmitEditing={handleLogin}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword((visible) => !visible)}
-                    hitSlop={10}
-                    accessibilityLabel={
-                      showPassword ? "Ocultar senha" : "Mostrar senha"
-                    }
-                  >
-                    <Feather
-                      name={showPassword ? "eye-off" : "eye"}
-                      size={19}
-                      color={BRAND.gray}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            {!!recoveryMessage && (
-              <Text style={styles.loginNoticeText} accessibilityLiveRegion="polite">
-                {recoveryMessage}
-              </Text>
-            )}
-
-            <View
-              style={[
-                styles.forgotPasswordRow,
-                isRecoveryView && styles.recoveryActions,
-              ]}
-            >
-              {isRecoveryView ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setPasswordRecoveryMode("login");
-                    setLoginError("");
-                    setRecoveryMessage("");
-                    setRecoveryCode("");
-                    setPassword("");
-                    setConfirmNewPassword("");
-                  }}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.forgotPasswordText}>Voltar ao login</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    setPasswordRecoveryMode("request");
-                    setLoginError("");
-                    setRecoveryMessage("");
-                  }}
-                  disabled={isSubmitting}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.forgotPasswordText}>
-                    Esqueci minha senha
-                  </Text>
-                </TouchableOpacity>
-              )}
+            <Text style={styles.fieldLabel}>Senha</Text>
+            <View style={styles.inputWrapper}>
+              <Feather name="lock" size={19} color={BRAND.gray} />
+              <TextInput
+                style={styles.input}
+                placeholder="Digite sua senha"
+                placeholderTextColor={colors.placeholder}
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  setLoginError("");
+                }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((visible) => !visible)}
+                hitSlop={10}
+                accessibilityLabel={
+                  showPassword ? "Ocultar senha" : "Mostrar senha"
+                }
+              >
+                <Feather
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={19}
+                  color={BRAND.gray}
+                />
+              </TouchableOpacity>
             </View>
+
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => router.push("/esqueci-minha-senha")}
+              accessibilityRole="button"
+            >
+              <Text style={styles.forgotPasswordText}>Esqueci minha senha?</Text>
+            </TouchableOpacity>
 
             {!!loginError && (
               <View
@@ -501,69 +314,32 @@ function LoginScreen({ startupMessage }) {
               </View>
             )}
 
-            {isRecoveryView ? (
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  styles.loginPrimaryButton,
-                  isSubmitting && styles.disabledButton,
-                ]}
-                onPress={passwordRecoveryMode === "sent" ? handlePasswordReset : handlePasswordRecoveryRequest}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isSubmitting
-                    ? passwordRecoveryMode === "sent" ? "Salvando..." : "Enviando..."
-                    : passwordRecoveryMode === "sent"
-                      ? "Redefinir senha"
-                      : "Enviar código"}
-                </Text>
-                {!isSubmitting && (
-                  <Feather name="arrow-right" size={18} color={BRAND.white} />
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  styles.loginPrimaryButton,
-                  isSubmitting && styles.disabledButton,
-                ]}
-                onPress={handleLogin}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isSubmitting ? "Entrando..." : "Entrar"}
-                </Text>
-                {!isSubmitting && (
-                  <Feather name="arrow-right" size={18} color={BRAND.white} />
-                )}
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                styles.loginPrimaryButton,
+                isSubmitting && styles.disabledButton,
+              ]}
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+            >
+              <Text style={styles.primaryButtonText}>
+                {isSubmitting ? "Entrando..." : "Entrar"}
+              </Text>
+              {!isSubmitting && (
+                <Feather name="arrow-right" size={18} color={BRAND.white} />
+              )}
+            </TouchableOpacity>
 
-            {passwordRecoveryMode === "sent" && (
-              <TouchableOpacity
-                style={styles.recoveryActions}
-                onPress={handlePasswordRecoveryRequest}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-              >
-                <Text style={styles.forgotPasswordText}>Enviar outro código</Text>
+            <View style={styles.registerLine}>
+              <Text style={styles.registerText}>
+                Ainda não tem uma conta?{" "}
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/cadastro")}>
+                <Text style={styles.registerLink}>Cadastre-se</Text>
               </TouchableOpacity>
-            )}
-
-            {!isRecoveryView && (
-              <View style={styles.registerLine}>
-                <Text style={styles.registerText}>
-                  Ainda não tem uma conta?{" "}
-                </Text>
-                <TouchableOpacity onPress={() => router.push("/cadastro")}>
-                  <Text style={styles.registerLink}>Cadastre-se</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            </View>
           </View>
 
           <View style={styles.secureNote}>
@@ -876,25 +652,9 @@ const makeStyles = (colors) => StyleSheet.create({
     color: colors.text,
     fontSize: 15,
   },
-  forgotPasswordRow: { alignItems: "flex-end", marginTop: 10, marginBottom: 8 },
-  recoveryActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  forgotPasswordText: {
-    color: colors.tint,
-    fontSize: 13,
-    fontWeight: "600",
-    paddingVertical: 4,
-  },
-  loginNoticeText: {
-    color: colors.tint,
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 8,
-  },
   loginPrimaryButton: { marginTop: 8 },
+  forgotPassword: { alignSelf: "flex-end", paddingVertical: 10 },
+  forgotPasswordText: { color: colors.tint, fontSize: 13, fontWeight: "600" },
   disabledButton: { opacity: 0.65 },
   registerLine: {
     flexDirection: "row",

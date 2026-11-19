@@ -40,6 +40,7 @@ export async function authMiddleware(req, res, next) {
     req.user = {
       id: user.id,
       type: user.user_type,
+      tokenVersion: Number(user.token_version || 0),
     };
 
     next();

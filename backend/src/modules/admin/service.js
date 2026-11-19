@@ -3,17 +3,14 @@ import { getKnex } from '../../config/database.js';
 export async function listUsers(filters) {
   const knex = getKnex();
 
-  const { user_type, verified_email, search, page = 1, limit = 10 } = filters;
+  const { user_type, search, page = 1, limit = 10 } = filters;
 
   let query = knex('users')
     .whereNull('deleted_at')
-    .select('id', 'email', 'full_name', 'user_type', 'document_type', 'document_number', 'phone', 'avatar_url', 'verified_email', 'active_notification', 'created_at', 'updated_at');
+    .select('id', 'email', 'full_name', 'user_type', 'document_type', 'document_number', 'phone', 'avatar_url', 'active_notification', 'created_at', 'updated_at');
 
   if (user_type) {
     query = query.where({ user_type });
-  }
-  if (verified_email !== undefined) {
-    query = query.where({ verified_email });
   }
   if (search) {
     query = query.where(function() {
@@ -49,7 +46,7 @@ export async function getUser(userId) {
   const user = await knex('users')
     .where({ id: userId })
     .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'user_type', 'document_type', 'document_number', 'phone', 'avatar_url', 'verified_email', 'active_notification', 'created_at', 'updated_at');
+    .first('id', 'email', 'full_name', 'user_type', 'document_type', 'document_number', 'phone', 'avatar_url', 'active_notification', 'created_at', 'updated_at');
 
   if (!user) {
     const err = new Error('Usuário não encontrado');
@@ -63,7 +60,7 @@ export async function getUser(userId) {
 export async function updateUser(userId, data) {
   const knex = getKnex();
 
-  const allowedFields = ['full_name', 'phone', 'active_notification', 'user_type', 'verified_email'];
+  const allowedFields = ['full_name', 'phone', 'active_notification', 'user_type'];
   const updateData = {};
   for (const field of allowedFields) {
     if (data[field] !== undefined) {

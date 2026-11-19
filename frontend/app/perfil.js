@@ -101,7 +101,6 @@ export default function PerfilScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
-  const [notificationBusy, setNotificationBusy] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -525,28 +524,6 @@ export default function PerfilScreen() {
     }
   };
 
-  const toggleNotifications = async () => {
-    setNotificationBusy(true);
-    setFeedback(null);
-    try {
-      const { recruiter: updatedRecruiter } = await apiFetch('/recruiters/profile', {
-        method: 'PUT',
-        body: JSON.stringify({ active_notification: !recruiter.active_notification }),
-      });
-      setRecruiter(updatedRecruiter);
-      setFeedback({
-        type: 'success',
-        message: updatedRecruiter.active_notification
-          ? 'Preferência de notificações ativada.'
-          : 'Preferência de notificações desativada.',
-      });
-    } catch (error) {
-      setFeedback({ type: 'error', message: error.message || 'Não foi possível atualizar esta preferência.' });
-    } finally {
-      setNotificationBusy(false);
-    }
-  };
-
   const signOut = async () => {
     await clearSession();
     router.replace('/');
@@ -835,10 +812,6 @@ export default function PerfilScreen() {
                       <View style={styles.activityCopy}><Text style={styles.activityLabel}>Data de cadastro</Text><Text style={styles.activityValue}>{formatDate(recruiter.created_at) || 'Não disponível'}</Text></View>
                     </View>
                     <View style={styles.activityRow}>
-                      <Feather name="check-circle" size={16} color={recruiter.verified_email ? colors.limeDark : colors.muted} />
-                      <View style={styles.activityCopy}><Text style={styles.activityLabel}>E-mail</Text><Text style={styles.activityValue}>{recruiter.verified_email ? 'Verificado' : 'Status não disponível'}</Text></View>
-                    </View>
-                    <View style={styles.activityRow}>
                       <Feather name="briefcase" size={16} color={colors.primaryDark} />
                       <View style={styles.activityCopy}><Text style={styles.activityLabel}>Conta vinculada</Text><Text style={styles.activityValue}>{companyName || 'Dados da empresa pendentes'}</Text></View>
                     </View>
@@ -919,22 +892,6 @@ export default function PerfilScreen() {
 
                 <View style={styles.sectionCard}>
                   <SectionHeading title="Preferências e acesso" />
-                  <View style={styles.preferenceRow}>
-                    <View style={styles.preferenceCopy}>
-                      <Text style={styles.activityLabel}>Notificações por e-mail</Text>
-                      <Text style={styles.preferenceDescription}>Receba atualizações relacionadas à sua conta.</Text>
-                    </View>
-                    <Pressable
-                      style={[styles.toggle, recruiter.active_notification && styles.toggleActive, notificationBusy && styles.disabledButton]}
-                      onPress={toggleNotifications}
-                      disabled={notificationBusy}
-                      accessibilityRole="switch"
-                      accessibilityState={{ checked: Boolean(recruiter.active_notification), disabled: notificationBusy }}
-                      accessibilityLabel="Notificações por e-mail"
-                    >
-                      <View style={[styles.toggleKnob, recruiter.active_notification && styles.toggleKnobActive]} />
-                    </Pressable>
-                  </View>
                   <Pressable style={styles.signOutButton} onPress={signOut} accessibilityRole="button">
                     <Feather name="log-out" size={15} color={colors.danger} />
                     <Text style={styles.signOutText}>Sair da conta</Text>
@@ -950,7 +907,6 @@ export default function PerfilScreen() {
                     </View>
                   </View>
                   <View style={styles.securityCheck}><Feather name="check" size={15} color={colors.limeDark} /><Text style={styles.securityCheckText}>Conta ativa</Text></View>
-                  <View style={styles.securityCheck}><Feather name={recruiter.verified_email ? 'check' : 'minus'} size={15} color={recruiter.verified_email ? colors.limeDark : colors.muted} /><Text style={styles.securityCheckText}>{recruiter.verified_email ? 'E-mail verificado' : 'E-mail cadastrado'}</Text></View>
                   <View style={styles.securityCheck}><Feather name="check" size={15} color={colors.limeDark} /><Text style={styles.securityCheckText}>Acesso empresarial protegido</Text></View>
                   <Pressable
                     style={styles.securityButton}
@@ -1103,13 +1059,6 @@ const styles = StyleSheet.create({
   documentAction: { minWidth: 30, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 7 },
   documentEmpty: { color: colors.muted, fontSize: 11, paddingVertical: 8 },
   documentHint: { color: colors.muted, fontSize: 9, lineHeight: 14, marginTop: 12 },
-  preferenceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.line },
-  preferenceCopy: { flex: 1 },
-  preferenceDescription: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
-  toggle: { width: 42, height: 24, justifyContent: 'center', padding: 3, borderRadius: 12, backgroundColor: colors.line },
-  toggleActive: { backgroundColor: colors.primary },
-  toggleKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.surface },
-  toggleKnobActive: { alignSelf: 'flex-end' },
   signOutButton: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingTop: 15 },
   signOutText: { color: colors.danger, fontSize: 12, fontWeight: '700' },
   securityCard: { padding: 19, borderWidth: 1, borderColor: colors.line, borderRadius: 15, backgroundColor: colors.primaryWash },

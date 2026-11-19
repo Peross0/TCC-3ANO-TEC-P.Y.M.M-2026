@@ -1,6 +1,5 @@
 import { getKnex } from '../../config/database.js';
 import { env } from '../../config/env.js';
-import { sendApplicationStatusEmail, sendVacancyUpdateEmail } from '../../utils/mailer.js';
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -32,7 +31,7 @@ export async function getProfile(userId) {
   const user = await knex('users')
     .where({ id: userId, user_type: 'RECRUITER' })
     .whereNull('deleted_at')
-    .first('id', 'email', 'full_name', 'phone', 'avatar_url', 'company_logo_url', 'document_type', 'document_number', 'verified_email', 'active_notification', 'created_at');
+    .first('id', 'email', 'full_name', 'phone', 'avatar_url', 'company_logo_url', 'document_type', 'document_number', 'active_notification', 'created_at');
 
   if (!user) {
     const err = new Error('Perfil de recrutador não encontrado');
@@ -321,23 +320,6 @@ export async function updateVacancy(userId, vacancyId, data) {
     .where({ id: vacancyId })
     .update(updateData);
 
-  // Notify every interested candidate who enabled vacancy notifications.
-  const updatedFields = Object.keys(updateData).filter(f => f !== 'updated_at' && f !== 'status');
-  if (updatedFields.length > 0) {
-    const interestedCandidates = await knex('interests')
-      .where({ vacancy_id: vacancyId })
-      .join('users', 'interests.user_id', 'users.id')
-      .where('users.active_notification', true)
-      .whereNull('users.deleted_at')
-      .select('users.email', 'users.full_name');
-
-    const updatedVacancy = await knex('vacancies').where({ id: vacancyId }).first('job_title');
-
-    for (const candidate of interestedCandidates) {
-      await sendVacancyUpdateEmail(candidate.email, updatedVacancy.job_title);
-    }
-  }
-
   return getMyVacancy(userId, vacancyId);
 }
 
@@ -406,7 +388,7 @@ export async function listCandidatesForVacancy(userId, vacancyId, filters) {
 export async function updateCandidateStatus(userId, vacancyId, candidateId, status) {
   const knex = getKnex();
 
-  const vacancy = await getOwnedVacancy(userId, vacancyId);
+  await getOwnedVacancy(userId, vacancyId);
 
   // Check if candidate applied
   const interest = await knex('interests')
@@ -425,14 +407,6 @@ export async function updateCandidateStatus(userId, vacancyId, candidateId, stat
       status,
       updated_at: new Date().toISOString(),
     });
-
-  // Get candidate info for email
-  const candidate = await knex('users')
-    .where({ id: candidateId })
-    .first('email', 'full_name');
-
-  // Send email to candidate
-  await sendApplicationStatusEmail(candidate.email, vacancy.job_title, status);
 
   return {
     message: `Candidatura ${status === 'ACCEPTED' ? 'aceita' : 'rejeitada'} com sucesso`,

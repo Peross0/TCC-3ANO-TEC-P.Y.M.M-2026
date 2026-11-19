@@ -1,5 +1,4 @@
 import { getKnex } from '../../config/database.js';
-import { sendApplicationNotificationEmail } from '../../utils/mailer.js';
 
 export async function getProfile(userId) {
   const knex = getKnex();
@@ -272,18 +271,6 @@ export async function applyToVacancy(userId, vacancyId) {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
-
-  // Get candidate info for email
-  const candidate = await knex('users')
-    .where({ id: userId })
-    .first('full_name', 'email');
-
-  // Send notification to recruiter
-  await sendApplicationNotificationEmail(
-    vacancy.recruiter_email,
-    candidate.full_name,
-    vacancy.job_title
-  );
 
   return {
     message: 'Candidatura enviada com sucesso',

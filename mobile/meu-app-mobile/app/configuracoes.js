@@ -143,6 +143,20 @@ export default function ConfiguracoesScreen() {
             <Feather name="chevron-right" size={21} color={colors.muted} />
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push({ pathname: '/esqueci-minha-senha', params: { origem: 'configuracoes' } })}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+          >
+            <View style={styles.iconBox}><Feather name="key" size={19} color={colors.tint} /></View>
+            <View style={styles.itemCopy}>
+              <Text style={styles.itemTitle}>Redefinir senha com sessão</Text>
+              <Text style={styles.itemSubtitle}>Use a sessão ativa neste dispositivo</Text>
+            </View>
+            <Feather name="chevron-right" size={21} color={colors.muted} />
+          </TouchableOpacity>
+
           <View style={styles.notificationCard}>
             <View style={styles.iconBox}><Feather name="bell" size={19} color={colors.tint} /></View>
             <View style={styles.itemCopy}>

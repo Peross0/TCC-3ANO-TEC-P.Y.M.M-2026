@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -24,34 +24,18 @@ export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 860;
   const [isRegistering, setIsRegistering] = useState(params.cadastro === '1');
-  const [recoveryMode, setRecoveryMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [recoveryCode, setRecoveryCode] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationPending, setVerificationPending] = useState(false);
-  const [recoveryMessage, setRecoveryMessage] = useState('');
-  const [recoveryError, setRecoveryError] = useState('');
-  const [recoveryCooldown, setRecoveryCooldown] = useState(0);
-
-  useEffect(() => {
-    if (recoveryCooldown <= 0) return undefined;
-    const timer = setTimeout(() => setRecoveryCooldown((current) => Math.max(0, current - 1)), 1000);
-    return () => clearTimeout(timer);
-  }, [recoveryCooldown]);
 
   const clearFields = () => {
     setName('');
     setEmail('');
     setPassword('');
     setDocumentNumber('');
-    setVerificationCode('');
-    setVerificationPending(false);
     setShowPassword(false);
   };
 
@@ -61,79 +45,8 @@ export default function LoginScreen() {
     return true;
   };
 
-  const requestRecovery = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setRecoveryError('Digite um e-mail válido para continuar.');
-      return;
-    }
-    if (recoveryCooldown > 0) return;
-    setIsSubmitting(true);
-    setRecoveryError('');
-    try {
-      const result = await apiFetch('/auth/forgot-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: normalizedEmail }),
-      });
-      setRecoveryCode('');
-      setPassword('');
-      setConfirmNewPassword('');
-      setRecoveryMessage(result.message || 'Se o e-mail estiver cadastrado, você receberá um código para redefinir sua senha.');
-      setRecoveryMode('sent');
-      setRecoveryCooldown(30);
-    } catch (error) {
-      setRecoveryError(error.message || 'Não foi possível solicitar a recuperação. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const resetPassword = async () => {
-    if (!/^\d{6}$/.test(recoveryCode)) {
-      setRecoveryError('Informe o código de 6 números recebido por e-mail.');
-      return;
-    }
-    if (password.length < 8 || password.length > 128) {
-      setRecoveryError('A nova senha deve ter entre 8 e 128 caracteres.');
-      return;
-    }
-    if (password !== confirmNewPassword) {
-      setRecoveryError('As senhas não conferem.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setRecoveryError('');
-    try {
-      const result = await apiFetch('/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: recoveryCode,
-          password,
-          confirm_password: confirmNewPassword,
-        }),
-      });
-      setRecoveryMode('login');
-      setRecoveryMessage('');
-      setRecoveryCode('');
-      setPassword('');
-      setConfirmNewPassword('');
-      Alert.alert('Senha atualizada', result.message || 'Agora você já pode entrar com sua nova senha.');
-    } catch (error) {
-      setRecoveryError(error.message || 'Não foi possível redefinir a senha. Confira o código e tente novamente.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleSubmit = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-
-    if (recoveryMode === 'request') {
-      await requestRecovery();
-      return;
-    }
 
     if (isRegistering && !name.trim()) {
       Alert.alert('Nome obrigatório', 'Digite seu nome completo para continuar.');
@@ -177,7 +90,6 @@ export default function LoginScreen() {
         });
 
         Alert.alert('Cadastro realizado', data.message || 'Seu cadastro foi concluído com sucesso.');
-        setVerificationPending(false);
         setIsRegistering(false);
         setName('');
         setPassword('');
@@ -198,29 +110,6 @@ export default function LoginScreen() {
         ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
         : error.message;
       Alert.alert(isRegistering ? 'Não foi possível cadastrar' : 'Não foi possível entrar', message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerifyEmail = async () => {
-    if (verificationCode.trim().length !== 6) {
-      Alert.alert('Código inválido', 'Digite o código de 6 números recebido por e-mail.');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await apiFetch('/auth/verify-email', {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
-      });
-      Alert.alert('E-mail verificado', 'Agora você já pode entrar na sua conta.');
-      setVerificationPending(false);
-      setIsRegistering(false);
-      setPassword('');
-      setVerificationCode('');
-    } catch (error) {
-      Alert.alert('Não foi possível verificar', error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -276,10 +165,10 @@ export default function LoginScreen() {
                 <Text style={styles.backLinkText}>Voltar ao início</Text>
               </Pressable>
               <View style={styles.formCard}>
-                <Text style={styles.formEyebrow}>{isRegistering ? 'PRIMEIRO ACESSO' : recoveryMode === 'login' ? 'SUA CONTA' : 'RECUPERAÇÃO DE ACESSO'}</Text>
-                <Text style={styles.title}>{isRegistering ? 'Crie seu acesso' : recoveryMode === 'request' ? 'Esqueceu sua senha?' : recoveryMode === 'sent' ? 'Confira seu e-mail' : 'Que bom ter você de volta'}</Text>
+                <Text style={styles.formEyebrow}>{isRegistering ? 'PRIMEIRO ACESSO' : 'SUA CONTA'}</Text>
+                <Text style={styles.title}>{isRegistering ? 'Crie seu acesso' : 'Que bom ter você de volta'}</Text>
                 <Text style={styles.subtitle}>
-                  {isRegistering ? 'Informe os dados da pessoa responsável e da empresa.' : recoveryMode === 'request' ? 'Informe o e-mail cadastrado para receber um código de verificação.' : recoveryMode === 'sent' ? 'Digite o código recebido e escolha uma nova senha.' : 'Entre para acompanhar e administrar suas oportunidades.'}
+                  {isRegistering ? 'Informe os dados da pessoa responsável e da empresa.' : 'Entre para acompanhar e administrar suas oportunidades.'}
                 </Text>
 
                 {isRegistering && renderField('Nome do responsável', 'user', name, setName, {
@@ -288,35 +177,12 @@ export default function LoginScreen() {
                 {isRegistering && renderField('CNPJ da empresa', 'briefcase', documentNumber, setDocumentNumber, {
                   placeholder: '00.000.000/0000-00', keyboardType: 'number-pad',
                 })}
-                {verificationPending && renderField('Código de verificação', 'check-circle', verificationCode, setVerificationCode, {
-                  placeholder: 'Código com 6 números', keyboardType: 'number-pad', maxLength: 6,
-                })}
                 {renderField('E-mail', 'mail', email, setEmail, {
-                  placeholder: 'voce@empresa.com.br', keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false, editable: recoveryMode !== 'sent',
+                  placeholder: 'voce@empresa.com.br', keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false,
                 })}
-                {recoveryMode === 'sent' && renderField('Código de verificação', 'key', recoveryCode, (value) => {
-                  setRecoveryCode(value.replace(/\D/g, '').slice(0, 6));
-                  setRecoveryError('');
-                }, {
-                  placeholder: 'Código com 6 números', keyboardType: 'number-pad', autoComplete: 'one-time-code', maxLength: 6,
-                })}
-                {recoveryMode === 'sent' && renderField('Nova senha', 'lock', password, (value) => {
-                  setPassword(value);
-                  setRecoveryError('');
-                }, {
-                  placeholder: 'Mínimo de 8 caracteres', secureTextEntry: true, autoCapitalize: 'none', autoComplete: 'new-password', maxLength: 128,
-                })}
-                {recoveryMode === 'sent' && renderField('Confirmar nova senha', 'lock', confirmNewPassword, (value) => {
-                  setConfirmNewPassword(value);
-                  setRecoveryError('');
-                }, {
-                  placeholder: 'Digite novamente', secureTextEntry: true, autoCapitalize: 'none', autoComplete: 'new-password', maxLength: 128,
-                })}
-
-                {recoveryMode === 'login' && <View style={styles.fieldGroup}>
+                <View style={styles.fieldGroup}>
                   <View style={styles.labelLine}>
                     <Text style={styles.label}>Senha</Text>
-                    {!isRegistering && <Pressable onPress={() => { setRecoveryMode('request'); setRecoveryError(''); setRecoveryMessage(''); }} accessibilityRole="button"><Text style={styles.forgotPassword}>Esqueci minha senha</Text></Pressable>}
                   </View>
                   <View style={styles.inputRow}>
                     <Feather name="lock" size={17} color={colors.muted} />
@@ -325,56 +191,25 @@ export default function LoginScreen() {
                       <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.muted} />
                     </Pressable>
                   </View>
-                </View>}
-
-                {recoveryMessage ? <Text style={styles.recoveryMessage}>{recoveryMessage}</Text> : null}
-                {recoveryError ? <Text style={styles.recoveryError}>{recoveryError}</Text> : null}
-
-                {recoveryMode !== 'login' && (
-                  <View style={styles.recoveryActions}>
-                    <Pressable onPress={() => {
-                      setRecoveryMode('login');
-                      setRecoveryError('');
-                      setRecoveryMessage('');
-                      setRecoveryCode('');
-                      setPassword('');
-                      setConfirmNewPassword('');
-                    }} accessibilityRole="button">
-                      <Text style={styles.forgotPassword}>Voltar ao login</Text>
-                    </Pressable>
-                  </View>
-                )}
+                </View>
 
                 <Pressable
                   style={({ pressed }) => [styles.submitButton, pressed && styles.pressedButton, isSubmitting && styles.disabledButton]}
-                  onPress={verificationPending ? handleVerifyEmail : recoveryMode === 'sent' ? resetPassword : handleSubmit}
+                  onPress={handleSubmit}
                   disabled={isSubmitting}
                   accessibilityRole="button"
                 >
                   <Text style={styles.submitText}>
-                    {isSubmitting ? 'Aguarde…' : verificationPending ? 'Verificar e-mail' : isRegistering ? 'Criar meu acesso' : recoveryMode === 'request' ? 'Enviar código' : recoveryMode === 'sent' ? 'Redefinir senha' : 'Entrar na conta'}
+                    {isSubmitting ? 'Aguarde…' : isRegistering ? 'Criar meu acesso' : 'Entrar na conta'}
                   </Text>
                   {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.onPrimary} />}
                 </Pressable>
-                {recoveryMode === 'sent' && (
-                  <Pressable
-                    style={styles.recoveryActions}
-                    onPress={requestRecovery}
-                    disabled={isSubmitting || recoveryCooldown > 0}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.forgotPassword}>
-                      {recoveryCooldown > 0 ? `Reenviar código em ${recoveryCooldown}s` : 'Enviar outro código'}
-                    </Text>
-                  </Pressable>
-                )}
-
-                {recoveryMode === 'login' && <View style={styles.switchRow}>
+                <View style={styles.switchRow}>
                   <Text style={styles.switchText}>{isRegistering ? 'Já tem acesso?' : 'Sua empresa ainda não tem acesso?'}</Text>
                   <Pressable onPress={toggleMode} accessibilityRole="button">
                     <Text style={styles.switchLink}>{isRegistering ? 'Entrar' : 'Criar conta'}</Text>
                   </Pressable>
-                </View>}
+                </View>
               </View>
               <Text style={styles.terms}>Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade da plataforma.</Text>
             </View>
@@ -412,10 +247,6 @@ const styles = StyleSheet.create({
   fieldGroup: { marginBottom: 15 },
   labelLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 },
   label: { color: colors.ink, fontSize: 13, fontWeight: '700', marginBottom: 7 },
-  forgotPassword: { color: colors.primaryDark, fontSize: 12, fontWeight: '700', marginBottom: 7 },
-  recoveryActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4, marginBottom: 10 },
-  recoveryMessage: { color: colors.success, fontSize: 12, lineHeight: 18, marginBottom: 12 },
-  recoveryError: { color: colors.danger, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   inputRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 11, paddingHorizontal: 13, backgroundColor: colors.surface },
   input: { flex: 1, minWidth: 0, height: 48, paddingHorizontal: 10, color: colors.ink, fontSize: 14 },
   submitButton: { minHeight: 50, borderRadius: 11, backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 9, marginTop: 5 },
