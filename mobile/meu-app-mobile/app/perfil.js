@@ -11,7 +11,6 @@ import {
     Image,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -20,6 +19,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AnimatedScreen from "../components/layout/AnimatedScreen";
 import { useAppPreferences } from "../context/PreferencesContext";
 import { SessionContext } from "../context/SessionContext";

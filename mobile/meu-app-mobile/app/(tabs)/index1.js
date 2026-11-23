@@ -10,11 +10,11 @@ import {
 } from "react";
 import {
     Alert,
+    AppState,
     FlatList,
     Image,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Text,
@@ -22,6 +22,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AnimatedScreen from "../../components/layout/AnimatedScreen";
 import MessageHeader from "../../components/messages/MessageHeader";
 import MessageInput from "../../components/messages/MessageInput";
@@ -131,7 +132,9 @@ export default function MessagesScreen() {
     useCallback(() => {
       setIsLoading(true);
       loadMessages(true);
-      const refreshInterval = setInterval(() => loadMessages(), 5000);
+      const refreshInterval = setInterval(() => {
+        if (AppState.currentState === "active") loadMessages();
+      }, 5000);
       return () => clearInterval(refreshInterval);
     }, [loadMessages]),
   );

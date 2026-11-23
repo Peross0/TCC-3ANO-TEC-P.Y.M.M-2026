@@ -2,12 +2,12 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext, useEffect, useState } from "react";
 import {
+  AppState,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AnimatedScreen from "../../components/layout/AnimatedScreen";
 import { useAppPreferences } from "../../context/PreferencesContext";
 import { SessionContext } from "../../context/SessionContext";
@@ -164,7 +165,9 @@ export default function HomeScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(Date.now()), 60_000);
+    const interval = setInterval(() => {
+      if (AppState.currentState === "active") setCurrentTime(Date.now());
+    }, 60_000);
     return () => clearInterval(interval);
   }, []);
 

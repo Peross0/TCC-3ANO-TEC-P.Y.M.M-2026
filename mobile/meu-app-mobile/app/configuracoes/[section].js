@@ -2,7 +2,6 @@ import React, { useContext, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';

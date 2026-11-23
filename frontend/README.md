@@ -1,8 +1,8 @@
-# Publicação do frontend no Azure Static Web Apps
+# Publicação do frontend no Azure Storage Static Website
 
-O frontend usa Expo SDK 54 e Expo Router com exportação web estática.
+O frontend usa Expo SDK 54, Expo Router e exportação web estática.
 
-## Build local
+## Build de produção
 
 Na pasta `frontend`:
 
@@ -11,28 +11,27 @@ npm ci
 npm run build
 ```
 
-O comando gera o site em `dist/`. As páginas, bundles, imagens, fontes e o
-`staticwebapp.config.json` são incluídos nessa pasta.
+O build gera os arquivos em `dist/`. O `index.html`, o bundle JavaScript, os
+estilos e os recursos usados pelo app ficam nessa pasta.
 
-## Configuração do Azure Static Web Apps
+## Publicação no Azure Storage
 
-Use estas configurações para o frontend:
+1. Ative **Static website** na conta de Storage.
+2. Configure `index.html` como **Index document name**.
+3. Configure `index.html` como **Error document path** para que rotas do Expo
+   Router, como `/home` e `/login`, carreguem a aplicação no acesso direto ou
+   após atualizar a página.
+4. Envie o **conteúdo** de `frontend/dist/` diretamente para o contêiner `$web`.
+   Não envie a pasta `dist` como uma subpasta: `index.html`, `_expo/` e `assets/`
+   precisam ficar na raiz publicada.
 
-- Localização do aplicativo: `frontend`
-- Localização da API do Azure Static Web Apps: vazia (a API atual é um backend
-  separado)
-- Comando de build: `npm run build`
-- Localização da saída: `dist`
-
-O arquivo `public/staticwebapp.config.json` é copiado para a raiz da saída pelo
-Expo. Ele faz o fallback das rotas do Expo Router para `index.html`, mantendo
-arquivos estáticos ausentes fora desse fallback.
+O arquivo `public/staticwebapp.config.json` é específico do Azure Static Web
+Apps; o Azure Storage Static Website não usa esse arquivo para roteamento.
 
 ## Backend
 
-Defina `EXPO_PUBLIC_API_URL` no ambiente do workflow de build com a URL pública
-do backend terminada em `/api` (por exemplo, `https://api.exemplo.com/api`).
-Essa variável é incorporada ao JavaScript durante o build; defini-la apenas nas
-configurações de runtime do Azure não altera o bundle já gerado. Não use
-credenciais nessa variável. O backend também deve aceitar requisições CORS da
-origem pública do Static Web App e estar disponível por HTTPS.
+Defina `EXPO_PUBLIC_API_URL` no ambiente usado para gerar o build, com a URL
+pública HTTPS do backend terminada em `/api`. Essa variável é incorporada ao
+JavaScript durante o build; defini-la apenas nas configurações de runtime do
+Storage não altera o bundle. Não use credenciais nessa variável. O backend
+também deve permitir CORS para a origem pública do site.

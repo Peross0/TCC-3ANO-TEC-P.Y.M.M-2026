@@ -4,7 +4,6 @@ import { useCallback, useContext, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -12,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import JobCard from "../components/jobs/JobCard";
 import AnimatedScreen from "../components/layout/AnimatedScreen";
 import { useAppPreferences } from "../context/PreferencesContext";

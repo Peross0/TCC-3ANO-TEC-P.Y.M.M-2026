@@ -1,6 +1,6 @@
 import { Stack, useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { PreferencesProvider } from "../context/PreferencesContext";
 import { SessionContext } from "../context/SessionContext";
 import { apiFetch } from "../lib/api";
@@ -115,7 +115,9 @@ export default function RootLayout() {
     };
 
     checkForMessages();
-    const interval = setInterval(checkForMessages, 5000);
+    const interval = setInterval(() => {
+      if (AppState.currentState === "active") checkForMessages();
+    }, 5000);
     return () => {
       active = false;
       clearInterval(interval);

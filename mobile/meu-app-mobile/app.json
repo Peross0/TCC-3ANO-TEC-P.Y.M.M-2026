@@ -4,19 +4,18 @@
     "slug": "meu-app-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/app-icon.png",
     "scheme": "meuappmobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F9F2E7",
-        "foregroundImage": "./assets/images/logo.png"
+        "foregroundImage": "./assets/images/app-icon.png"
       },
-      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -45,7 +44,8 @@
       ],
       "expo-image",
       "expo-web-browser",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -6,13 +6,13 @@ import {
   FlatList,
   Image,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppPreferences } from "../../context/PreferencesContext";
 import { SessionContext } from "../../context/SessionContext";
 import { apiFetch, getAssetUrl } from "../../lib/api";
