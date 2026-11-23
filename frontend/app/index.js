@@ -9,10 +9,10 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 
 import { colors } from '../lib/theme';
+import { useHydratedWidth } from '../lib/useHydratedWidth';
 
 const benefits = [
   {
@@ -33,7 +33,7 @@ const benefits = [
 ];
 
 export default function LandingPage() {
-  const { width } = useWindowDimensions();
+  const width = useHydratedWidth();
   const scrollRef = useRef(null);
   const [benefitsY, setBenefitsY] = useState(0);
   const isWide = width >= 760;

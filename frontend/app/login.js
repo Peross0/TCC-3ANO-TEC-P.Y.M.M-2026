@@ -1,35 +1,42 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-    useWindowDimensions,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { apiFetch, saveSession } from '../lib/api';
 import { colors } from '../lib/theme';
+import { useHydratedWidth } from '../lib/useHydratedWidth';
 
 export default function LoginScreen() {
   const params = useLocalSearchParams();
-  const { width } = useWindowDimensions();
+  const width = useHydratedWidth();
   const isWide = width >= 860;
-  const [isRegistering, setIsRegistering] = useState(params.cadastro === '1');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setIsRegistering(params.cadastro === '1');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [params.cadastro]);
 
   const clearFields = () => {
     setName('');

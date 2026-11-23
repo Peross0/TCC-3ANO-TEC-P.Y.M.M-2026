@@ -10,12 +10,12 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
 
 import { Skeleton } from '../components/ui/Primitives';
 import { apiFetch, getSession } from '../lib/api';
 import { colors } from '../lib/theme';
+import { useHydratedWidth } from '../lib/useHydratedWidth';
 
 function formatTime(value) {
   if (!value) return '';
@@ -26,7 +26,7 @@ function formatTime(value) {
 }
 
 export default function MensagensScreen() {
-  const { width } = useWindowDimensions();
+  const width = useHydratedWidth();
   const isWide = width >= 760;
   const [userId, setUserId] = useState(null);
   const [conversationsData, setConversationsData] = useState([]);

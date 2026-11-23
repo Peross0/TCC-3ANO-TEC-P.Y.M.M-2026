@@ -3,8 +3,11 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 function getApiUrl() {
-  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  if (Platform.OS === 'web') return 'http://localhost:3000/api';
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+  if (configuredUrl) return configuredUrl;
+  if (Platform.OS === 'web') {
+    return process.env.NODE_ENV === 'development' ? 'http://localhost:3000/api' : '';
+  }
 
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
   const host = hostUri?.split(':')[0];
@@ -66,6 +69,10 @@ export async function getSession() {
 // }
 
 export async function apiFetch(path, options = {}) {
+  if (!API_URL) {
+    throw new Error('API não configurada. Defina EXPO_PUBLIC_API_URL com a URL pública do backend e gere novamente o frontend.');
+  }
+
   const { token } = await getSession();
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const { responseType, ...fetchOptions } = options;
@@ -92,3 +99,4 @@ export async function apiFetch(path, options = {}) {
 }
 
 export { TOKEN_KEY };
+

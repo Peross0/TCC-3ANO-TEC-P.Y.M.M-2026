@@ -3,11 +3,12 @@ import { Stack, router, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, SafeAreaView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import RecruiterNavigation from '../components/layout/RecruiterNavigation';
 import { clearSession, getSession } from '../lib/api';
 import { colors, theme } from '../lib/theme';
+import { useHydratedWidth } from '../lib/useHydratedWidth';
 
 const privateRoutes = ['/home', '/candidaturas', '/vagas', '/mensagens', '/perfil'];
 const routeTitles = {
@@ -29,7 +30,7 @@ function getInitials(name = '') {
 
 export default function RootLayout() {
   const pathname = usePathname();
-  const { width } = useWindowDimensions();
+  const width = useHydratedWidth();
   const isDesktop = width >= 1024;
   const isRecruiterRoute = privateRoutes.includes(pathname);
   const [user, setUser] = useState(null);

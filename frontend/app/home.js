@@ -13,7 +13,6 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useWindowDimensions,
     View,
 } from "react-native";
 
@@ -27,6 +26,7 @@ import {
 } from "../components/ui/Primitives";
 import { API_URL, apiFetch, getSession } from "../lib/api";
 import { colors } from "../lib/theme";
+import { useHydratedWidth } from "../lib/useHydratedWidth";
 
 function getImageUri(value) {
   if (!value) return null;
@@ -64,7 +64,7 @@ function formatActivityDate(value) {
 }
 
 export default function Home() {
-  const { width } = useWindowDimensions();
+  const width = useHydratedWidth();
   const summaryCardWidth =
     width >= 1280 ? "23%" : width >= 600 ? "47%" : "100%";
   const [editarEmpresaModalAberto, setEditarEmpresaModalAberto] =
