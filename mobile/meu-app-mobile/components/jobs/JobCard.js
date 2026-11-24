@@ -64,13 +64,15 @@ export default function JobCard({
             />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.interestButton, (isApplied || isApplying) && styles.interestButtonDisabled]}
+            style={[styles.interestButton, isApplied && styles.interestButtonActive]}
             onPress={() => onApply?.(item.vacancyId)}
-            disabled={isApplied || isApplying}
+            disabled={isApplying}
             accessibilityRole="button"
+            accessibilityLabel={isApplied ? 'Remover interesse na vaga' : 'Demonstrar interesse na vaga'}
+            accessibilityState={{ disabled: isApplying, selected: isApplied }}
           >
-            <Text style={styles.interestButtonText}>
-              {isApplying ? 'Enviando...' : isApplied ? 'Candidatado' : 'Tenho interesse'}
+            <Text style={[styles.interestButtonText, isApplied && styles.interestButtonActiveText]}>
+              {isApplying ? 'Processando...' : isApplied ? 'Interesse registrado' : 'Tenho interesse'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -178,14 +180,19 @@ function makeStyles(colors, largeText) {
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
+    backgroundColor: 'transparent',
   },
-  interestButtonDisabled: {
-    opacity: 0.6,
+  interestButtonActive: {
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   interestButtonText: {
     fontSize: 12 * scale,
     fontWeight: '700',
     color: colors.primaryDark,
+  },
+  interestButtonActiveText: {
+    color: colors.surface,
   },
     highContrastCard: { borderWidth: 2 },
     bookmarkSelected: { borderColor: colors.tint, borderWidth: 1 },

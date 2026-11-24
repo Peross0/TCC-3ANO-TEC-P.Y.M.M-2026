@@ -284,44 +284,74 @@ export default function HomeScreen() {
   const applyToJob = async (vacancyId) => {
     if (applyingToJob !== null) return;
 
-    setApplyingToJob(String(vacancyId));
+    const vacancyIdStr = String(vacancyId);
+    const isCurrentlyApplied = appliedVacancyIdSet.has(vacancyIdStr);
+
+    setApplyingToJob(vacancyIdStr);
     try {
-      const result = await apiFetch(
-        `/candidates/vacancies/${vacancyId}/apply`,
-        {
-          method: "POST",
-        },
-      );
-      const application = {
-        ...result.application,
-        vacancy_id: vacancyId,
-        job_title: jobs.find(
-          (job) => String(job.vacancyId) === String(vacancyId),
-        )?.title,
-      };
-      setAppliedVacancyIds((current) => [
-        ...new Set([...current, String(vacancyId)]),
-      ]);
-      setSessionData((current) =>
-        current
-          ? {
-              ...current,
-              applications: [
-                application,
-                ...(current.applications || []).filter(
-                  (item) => String(item.vacancy_id) !== String(vacancyId),
+      if (isCurrentlyApplied) {
+        // Remove interest
+        await apiFetch(`/candidates/applications/${vacancyId}`, {
+          method: "DELETE",
+        });
+        setAppliedVacancyIds((current) =>
+          current.filter((id) => id !== vacancyIdStr),
+        );
+        setSessionData((current) =>
+          current
+            ? {
+                ...current,
+                applications: (current.applications || []).filter(
+                  (item) => String(item.vacancy_id) !== vacancyIdStr,
                 ),
-              ],
-            }
-          : current,
-      );
-      Alert.alert(
-        "Candidatura enviada",
-        "A empresa poderá conversar com você pela aba Mensagens.",
-      );
+              }
+            : current,
+        );
+        Alert.alert(
+          "Interesse removido",
+          "Você removeu seu interesse nesta vaga.",
+        );
+      } else {
+        // Add interest
+        const result = await apiFetch(
+          `/candidates/vacancies/${vacancyId}/apply`,
+          {
+            method: "POST",
+          },
+        );
+        const application = {
+          ...result.application,
+          vacancy_id: vacancyId,
+          job_title: jobs.find(
+            (job) => String(job.vacancyId) === String(vacancyId),
+          )?.title,
+        };
+        setAppliedVacancyIds((current) => [
+          ...new Set([...current, vacancyIdStr]),
+        ]);
+        setSessionData((current) =>
+          current
+            ? {
+                ...current,
+                applications: [
+                  application,
+                  ...(current.applications || []).filter(
+                    (item) => String(item.vacancy_id) !== vacancyIdStr,
+                  ),
+                ],
+              }
+            : current,
+        );
+        Alert.alert(
+          "Candidatura enviada",
+          "A empresa poderá conversar com você pela aba Mensagens.",
+        );
+      }
     } catch (error) {
       Alert.alert(
-        "Não foi possível se candidatar",
+        isCurrentlyApplied
+          ? "Não foi possível remover seu interesse"
+          : "Não foi possível se candidatar",
         error.message || "Tente novamente.",
       );
     } finally {
