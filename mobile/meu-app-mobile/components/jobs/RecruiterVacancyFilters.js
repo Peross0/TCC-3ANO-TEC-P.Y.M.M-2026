@@ -536,7 +536,7 @@ function FilterOptionGroup({
 function makeStyles(colors, largeText) {
   const scale = largeText ? 1.1 : 1;
   return StyleSheet.create({
-    quickFilters: { flexDirection: "row", gap: 7, paddingBottom: 8 },
+    quickFilters: { flexDirection: "row", gap: 7, paddingBottom: 4 },
     quickChip: {
       minHeight: 34,
       justifyContent: "center",
@@ -562,7 +562,7 @@ function makeStyles(colors, largeText) {
       justifyContent: "space-between",
       gap: 8,
       marginTop: 2,
-      marginBottom: 8,
+      marginBottom: 4,
     },
     allFiltersButton: {
       minHeight: 40,
@@ -595,7 +595,7 @@ function makeStyles(colors, largeText) {
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 7,
-      marginBottom: 12,
+      marginBottom: 8,
     },
     activeTag: {
       minHeight: 29,

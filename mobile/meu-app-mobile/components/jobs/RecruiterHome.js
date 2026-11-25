@@ -260,21 +260,6 @@ export default function RecruiterHome() {
           <Text style={styles.subtitle}>{companyName}</Text>
         </View>
 
-        <View style={styles.shortcuts}>
-          <Shortcut
-            icon="plus"
-            label="Criar vaga"
-            onPress={() => router.push("/criar-vaga")}
-            styles={styles}
-          />
-          <Shortcut
-            icon="message-square"
-            label="Mensagens"
-            onPress={() => router.push("/(tabs)/index1")}
-            styles={styles}
-          />
-        </View>
-
         <SectionHeading
           title="Vagas de outras empresas"
           caption="Oportunidades públicas disponíveis"
@@ -383,19 +368,6 @@ function SectionHeading({ title, caption, action, onAction, styles }) {
   );
 }
 
-function Shortcut({ icon, label, onPress, styles }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={styles.shortcut}
-      accessibilityRole="button"
-    >
-      <Feather name={icon} size={17} color={styles.tintColor} />
-      <Text style={styles.shortcutText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 function LoadingState({ message, styles }) {
   return (
     <View style={styles.feedback}>
@@ -425,7 +397,7 @@ function makeStyles(colors, largeText) {
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     content: { paddingHorizontal: 18, paddingBottom: 28 },
-    greeting: { marginTop: 2, marginBottom: 18 },
+    greeting: { marginTop: 0, marginBottom: 8 },
     eyebrow: {
       color: colors.tint,
       fontSize: 11 * scale,
@@ -439,32 +411,13 @@ function makeStyles(colors, largeText) {
       marginTop: 4,
     },
     subtitle: { color: colors.muted, fontSize: 14 * scale, marginTop: 3 },
-    shortcuts: { flexDirection: "row", gap: 10, marginBottom: 26 },
-    shortcut: {
-      flex: 1,
-      minHeight: 48,
-      paddingHorizontal: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.line,
-      backgroundColor: colors.surface,
-    },
-    shortcutText: {
-      color: colors.text,
-      fontSize: 13 * scale,
-      fontWeight: "700",
-    },
     sectionHeading: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 8,
-      marginTop: 4,
-      marginBottom: 12,
+      marginTop: 0,
+      marginBottom: 8,
     },
     sectionCopy: { flex: 1 },
     sectionTitle: {
