@@ -32,20 +32,20 @@ export function validateCPF(cpf) {
 }
 
 export function validateCNPJ(cnpj) {
-  const cleaned = cleanDocument(cnpj);
+  const cleaned = cnpj.toUpperCase().replace(/[.\/\-\s]/g, '');
 
-  if (cleaned.length !== 14) return false;
+  if (!/^[A-Z0-9]{12}\d{2}$/.test(cleaned)) return false;
   if (/^(\d)\1{13}$/.test(cleaned)) return false; // Não aceita sequência repetida
 
-  // Para cadastro, aceitamos qualquer CNPJ com formato válido,
-  // sem exigir que o documento seja um CNPJ "real" para fins de teste/desenvolvimento.
-  return true;
+  const numbers = Array.from(cleaned, (character) => character.charCodeAt(0) - 48);
+  const digit1 = calculateDigit(numbers.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const digit2 = calculateDigit(numbers.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return numbers[12] === digit1 && numbers[13] === digit2;
 }
 
 export function validateDocument(document, type) {
-  const cleaned = cleanDocument(document);
-  if (type === 'CPF') return validateCPF(cleaned);
-  if (type === 'CNPJ') return validateCNPJ(cleaned);
+  if (type === 'CPF') return validateCPF(document);
+  if (type === 'CNPJ') return validateCNPJ(document);
   return false;
 }
 

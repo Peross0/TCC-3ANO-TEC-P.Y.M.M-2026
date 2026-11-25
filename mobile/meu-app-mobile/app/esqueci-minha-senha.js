@@ -2,15 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppPreferences } from '../context/PreferencesContext';
@@ -30,6 +30,7 @@ export default function EsqueciMinhaSenhaScreen() {
 
   const handleSubmit = async () => {
     if (isSubmitting || success) return;
+    if (origem !== 'configuracoes') return;
     setSuccess(false);
     if (!email.trim() || !password || !confirmPassword) {
       setErrorMessage('Preencha todos os campos.');
@@ -56,17 +57,12 @@ export default function EsqueciMinhaSenhaScreen() {
         new_password: password,
         confirm_password: confirmPassword,
       });
-      let result;
-      if (origem === 'configuracoes') {
-        const token = await getToken();
-        if (!token) {
-          setErrorMessage('Sua sessão não está disponível. Entre novamente para alterar a senha.');
-          return;
-        }
-        result = await apiFetch('/auth/change-password-with-session', { method: 'POST', token, body });
-      } else {
-        result = await apiFetch('/auth/reset-password', { method: 'POST', token: null, body });
+      const token = await getToken();
+      if (!token) {
+        setErrorMessage('Sua sessão não está disponível. Entre novamente para alterar a senha.');
+        return;
       }
+      const result = await apiFetch('/auth/change-password-with-session', { method: 'POST', token, body });
       setPassword('');
       setConfirmPassword('');
       if (origem === 'configuracoes') {
@@ -99,8 +95,9 @@ export default function EsqueciMinhaSenhaScreen() {
           <View style={styles.card}>
             <View style={styles.icon}><Feather name="lock" size={24} color={colors.tint} /></View>
             <Text style={styles.title}>Esqueci minha senha</Text>
-            <Text style={styles.subtitle}>{origem === 'configuracoes' ? 'Use sua sessão ativa para alterar a senha.' : 'Informe o e-mail cadastrado e escolha uma nova senha.'}</Text>
+            <Text style={styles.subtitle}>{origem === 'configuracoes' ? 'Use sua sessão ativa para alterar a senha.' : 'A recuperação de senha está indisponível. Entre em contato com o suporte para recuperar o acesso.'}</Text>
 
+            {origem === 'configuracoes' && <>
             <Text style={styles.label}>E-mail cadastrado</Text>
             <TextInput
               style={styles.input}
@@ -158,6 +155,7 @@ export default function EsqueciMinhaSenhaScreen() {
             <TouchableOpacity style={[styles.button, (isSubmitting || success) && styles.disabledButton]} onPress={handleSubmit} disabled={isSubmitting || success} accessibilityRole="button">
               <Text style={styles.buttonText}>{isSubmitting ? 'Salvando...' : 'Redefinir senha'}</Text>
             </TouchableOpacity>
+            </>}
             <TouchableOpacity style={styles.backButton} onPress={() => origem === 'configuracoes' ? router.back() : router.replace('/')} accessibilityRole="button">
               <Text style={styles.backText}>{origem === 'configuracoes' ? 'Voltar às configurações' : 'Voltar para o login'}</Text>
             </TouchableOpacity>

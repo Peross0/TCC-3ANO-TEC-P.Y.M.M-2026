@@ -1,8 +1,10 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
+import { useContext } from "react";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppPreferences } from "../../context/PreferencesContext";
+import { SessionContext } from "../../context/SessionContext";
 
 function blurFocusedWebElement() {
   if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -12,7 +14,10 @@ function blurFocusedWebElement() {
 
 export default function TabLayout() {
   const { colors } = useAppPreferences();
+  const { sessionData } = useContext(SessionContext);
   const insets = useSafeAreaInsets();
+
+  if (!sessionData?.user) return <Redirect href="/" />;
 
   return (
     <Tabs
@@ -58,6 +63,7 @@ export default function TabLayout() {
         name="index2"
         options={{
           title: "Empresas",
+          href: sessionData.user.user_type === "CANDIDATE" ? undefined : null,
           tabBarAccessibilityLabel: "Empresas de interesse",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="business" size={26} color={color} />

@@ -37,6 +37,7 @@ export async function registerUser(data) {
       document_number: data.document_number,
       phone: data.phone || null,
       course: data.course || null,
+      company_name: data.user_type === 'RECRUITER' ? data.company_name || null : null,
       avatar_url: null,
       active_notification: true,
       created_at: new Date().toISOString(),

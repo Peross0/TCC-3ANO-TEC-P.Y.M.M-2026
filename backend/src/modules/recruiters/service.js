@@ -36,6 +36,7 @@ export async function getProfile(userId) {
       "email",
       "full_name",
       "phone",
+      "company_name",
       "avatar_url",
       "company_logo_url",
       "document_type",

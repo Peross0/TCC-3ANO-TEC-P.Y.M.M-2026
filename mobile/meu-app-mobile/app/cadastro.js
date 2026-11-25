@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,10 +14,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { apiFetch, saveToken } from '../lib/api';
 import { useAppPreferences } from '../context/PreferencesContext';
+import { apiFetch, saveToken } from '../lib/api';
+import { isValidCnpj } from '../lib/cnpj';
 
 const makeBrand = (colors) => ({
   blue: colors.tint,
@@ -49,6 +50,8 @@ function formatCpf(value) {
 }
 
 export default function RegisterScreen() {
+  const { tipo } = useLocalSearchParams();
+  const isRecruiter = tipo === 'recrutador';
   const { colors, isDark } = useAppPreferences();
   const BRAND = makeBrand(colors);
   const styles = makeStyles(colors);
@@ -58,18 +61,25 @@ export default function RegisterScreen() {
   const [telefone, setTelefone] = useState('');
   const [curso, setCurso] = useState('');
   const [cpf, setCpf] = useState('');
+  const [empresa, setEmpresa] = useState('');
+  const [confirmacao, setConfirmacao] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
   const handleRegister = async () => {
+    if (isSubmitting) return;
     setErrorMessage('');
 
     const nomeLimpo = nome.trim();
     const emailLimpo = email.trim().toLowerCase();
-    const documento = cpf.replace(/\D/g, '');
+    const documento = isRecruiter ? cpf.toUpperCase().replace(/[.\/\-\s]/g, '') : cpf.replace(/\D/g, '');
 
+    if (isRecruiter && empresa.trim().length < 2) {
+      setErrorMessage('Informe o nome da empresa.');
+      return;
+    }
     if (nomeLimpo.length < 2) {
       setErrorMessage('Informe seu nome completo.');
       return;
@@ -82,7 +92,19 @@ export default function RegisterScreen() {
       setErrorMessage('A senha deve conter no mínimo 8 caracteres.');
       return;
     }
-    if (documento.length !== 11) {
+    if (isRecruiter && senha !== confirmacao) {
+      setErrorMessage('As senhas não coincidem.');
+      return;
+    }
+    if (isRecruiter && !isValidCnpj(cpf)) {
+      setErrorMessage('Informe um CNPJ válido.');
+      return;
+    }
+    if (isRecruiter && !telefone.trim()) {
+      setErrorMessage('Informe o telefone.');
+      return;
+    }
+    if (!isRecruiter && documento.length !== 11) {
       setErrorMessage('Informe um CPF com 11 números.');
       return;
     }
@@ -97,8 +119,9 @@ export default function RegisterScreen() {
           password: senha,
           phone: telefone.trim() || undefined,
           course: curso.trim() || undefined,
-          user_type: 'CANDIDATE',
-          document_type: 'CPF',
+          company_name: isRecruiter ? empresa.trim() : undefined,
+          user_type: isRecruiter ? 'RECRUITER' : 'CANDIDATE',
+          document_type: isRecruiter ? 'CNPJ' : 'CPF',
           document_number: documento,
         }),
         token: null,
@@ -107,7 +130,7 @@ export default function RegisterScreen() {
       router.replace('/carregando');
     } catch (error) {
       if (error.status === 409) {
-        setErrorMessage('Este e-mail ou CPF já está cadastrado. Entre com sua conta ou confira os dados.');
+        setErrorMessage(`Este e-mail ou ${isRecruiter ? 'CNPJ' : 'CPF'} já está cadastrado. Entre com sua conta ou confira os dados.`);
       } else if (error instanceof TypeError) {
         setErrorMessage('Não foi possível conectar ao servidor. Confira se o backend está ativo.');
       } else {
@@ -147,13 +170,16 @@ export default function RegisterScreen() {
             <Text style={styles.backText}>Voltar</Text>
           </TouchableOpacity>
 
-          <Text style={styles.title}>Crie sua conta</Text>
-          <Text style={styles.subtitle}>Preencha seus dados para encontrar sua próxima oportunidade.</Text>
+          <Text style={styles.title}>{isRecruiter ? 'Cadastre sua empresa' : 'Crie sua conta'}</Text>
+          <Text style={styles.subtitle}>{isRecruiter ? 'Crie seu acesso para gerenciar oportunidades.' : 'Preencha seus dados para encontrar sua próxima oportunidade.'}</Text>
 
           <View style={styles.formCard}>
             <Text style={styles.sectionTitle}>Seus dados</Text>
             <Text style={styles.sectionSubtitle}>Os campos com * são obrigatórios.</Text>
-            <FormField label="Nome completo *" icon="user">
+            {isRecruiter && <FormField label="Nome da empresa *" icon="briefcase">
+              <TextInput style={styles.input} placeholder="Nome da empresa" placeholderTextColor={colors.placeholder} value={empresa} onChangeText={setEmpresa} autoCapitalize="words" maxLength={255} />
+            </FormField>}
+            <FormField label={isRecruiter ? 'Nome do responsável *' : 'Nome completo *'} icon="user">
               <TextInput
                 style={styles.input}
                 placeholder="Como podemos chamar você?"
@@ -198,19 +224,23 @@ export default function RegisterScreen() {
                 <Feather name={showPassword ? 'eye-off' : 'eye'} size={19} color={colors.muted} />
               </TouchableOpacity>
             </FormField>
-            <FormField label="CPF *" icon="credit-card">
+            {isRecruiter && <FormField label="Confirmar senha *" icon="lock">
+              <TextInput style={styles.input} placeholder="Digite a senha novamente" placeholderTextColor={colors.placeholder} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+            </FormField>}
+            <FormField label={isRecruiter ? 'CNPJ *' : 'CPF *'} icon="credit-card">
               <TextInput
                 style={styles.input}
-                placeholder="000.000.000-00"
+                placeholder={isRecruiter ? '00.000.000/0000-00' : '000.000.000-00'}
                 placeholderTextColor={colors.placeholder}
                 value={cpf}
-                onChangeText={(value) => { setCpf(formatCpf(value)); setErrorMessage(''); }}
-                keyboardType="number-pad"
-                maxLength={14}
+                onChangeText={(value) => { setCpf(isRecruiter ? value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 14) : formatCpf(value)); setErrorMessage(''); }}
+                keyboardType={isRecruiter ? 'default' : 'number-pad'}
+                autoCapitalize={isRecruiter ? 'characters' : 'none'}
+                maxLength={isRecruiter ? 18 : 14}
                 returnKeyType="next"
               />
             </FormField>
-            <FormField label="Telefone (opcional)" icon="phone">
+            <FormField label={isRecruiter ? 'Telefone *' : 'Telefone (opcional)'} icon="phone">
               <TextInput
                 style={styles.input}
                 placeholder="(00) 00000-0000"
@@ -218,11 +248,12 @@ export default function RegisterScreen() {
                 value={telefone}
                 onChangeText={setTelefone}
                 keyboardType="phone-pad"
+                maxLength={20}
                 autoComplete="tel"
                 returnKeyType="next"
               />
             </FormField>
-            <FormField label="Curso (opcional)" icon="book-open">
+            {!isRecruiter && <FormField label="Curso (opcional)" icon="book-open">
               <TextInput
                 style={styles.input}
                 placeholder="Ex.: Técnico em Informática"
@@ -231,7 +262,7 @@ export default function RegisterScreen() {
                 onChangeText={setCurso}
                 returnKeyType="done"
               />
-            </FormField>
+            </FormField>}
             {!!errorMessage && <Text style={styles.errorMessage} accessibilityRole="alert">{errorMessage}</Text>}
             <TouchableOpacity
               style={[styles.primaryButton, isSubmitting && styles.disabledButton]}
@@ -264,7 +295,7 @@ export default function RegisterScreen() {
 const makeStyles = (colors) => StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
+  scrollContent: { flexGrow: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 28 },
   brandIcon: {
     width: 38,

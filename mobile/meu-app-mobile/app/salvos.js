@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
 import {
     ActivityIndicator,
@@ -87,8 +87,8 @@ export default function SavedVacanciesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadFavorites();
-    }, [loadFavorites]),
+      if (sessionData?.user?.user_type === "CANDIDATE") loadFavorites();
+    }, [loadFavorites, sessionData?.user?.user_type]),
   );
 
   const removeFavorite = async (vacancyId) => {
@@ -164,6 +164,10 @@ export default function SavedVacanciesScreen() {
       setApplyingId(null);
     }
   };
+
+  if (sessionData?.user?.user_type !== "CANDIDATE") {
+    return <Redirect href={sessionData?.user ? "/(tabs)/home" : "/"} />;
+  }
 
   return (
     <AnimatedScreen>

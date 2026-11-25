@@ -1,16 +1,16 @@
 import { Feather } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { Redirect, useFocusEffect } from "expo-router";
 import { useCallback, useContext, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppPreferences } from "../../context/PreferencesContext";
@@ -68,6 +68,8 @@ export default function EmpresasScreen() {
   };
 
   const isCandidate = sessionData?.user?.user_type === "CANDIDATE";
+
+  if (!isCandidate) return <Redirect href={sessionData?.user ? "/(tabs)/home" : "/"} />;
 
   return (
     <SafeAreaView style={styles.container}>

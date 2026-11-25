@@ -16,6 +16,7 @@ export const registerSchema = z.object({
       document_number: z.string().min(11, "Documento inválido").max(18),
       phone: z.string().max(20).optional(),
       course: z.string().trim().max(255).optional(),
+      company_name: z.string().trim().min(2).max(255).optional(),
     })
     .refine(
       (data) => {

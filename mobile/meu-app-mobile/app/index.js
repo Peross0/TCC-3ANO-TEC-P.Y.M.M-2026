@@ -2,27 +2,27 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppPreferences } from "../context/PreferencesContext";
 import {
-  apiFetch,
-  clearToken,
-  getToken,
-  hasSeenOnboarding,
-  markOnboardingSeen,
-  saveToken,
+    apiFetch,
+    clearToken,
+    getToken,
+    hasSeenOnboarding,
+    markOnboardingSeen,
+    saveToken,
 } from "../lib/api";
 
 const MIN_SPLASH_DURATION_MS = 1700;
@@ -174,12 +174,14 @@ function LoginScreen({ startupMessage }) {
   const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecruiter, setIsRecruiter] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (isSubmitting) return;
     setLoginError("");
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setLoginError("Informe um e-mail válido.");
       return;
     }
@@ -195,6 +197,10 @@ function LoginScreen({ startupMessage }) {
         body: JSON.stringify({ email: normalizedEmail, password }),
         token: null,
       });
+      if (isRecruiter && data.user?.user_type !== "RECRUITER") {
+        setLoginError("Esta conta não possui acesso de recrutador.");
+        return;
+      }
       await saveToken(data.token);
       router.replace("/carregando");
     } catch (error) {
@@ -237,7 +243,7 @@ function LoginScreen({ startupMessage }) {
             </Text>
           </View>
           <Text style={styles.welcome}>Que bom ter você aqui!</Text>
-          <Text style={styles.loginSubtitle}>Entre para encontrar sua próxima oportunidade.</Text>
+          <Text style={styles.loginSubtitle}>{isRecruiter ? "Acesse a área da sua empresa." : "Entre para encontrar sua próxima oportunidade."}</Text>
 
           {!!startupMessage && (
             <Text style={styles.startupMessage}>{startupMessage}</Text>
@@ -336,10 +342,17 @@ function LoginScreen({ startupMessage }) {
               <Text style={styles.registerText}>
                 Ainda não tem uma conta?{" "}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/cadastro")}>
-                <Text style={styles.registerLink}>Cadastre-se</Text>
+              <TouchableOpacity onPress={() => router.push(isRecruiter ? "/cadastro?tipo=recrutador" : "/cadastro")}>
+                <Text style={styles.registerLink}>{isRecruiter ? "Cadastre sua empresa" : "Cadastre-se"}</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => { setIsRecruiter((current) => !current); setLoginError(""); }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.forgotPasswordText}>{isRecruiter ? "Acesso para candidatos" : "Acesso para recrutadores"}</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.secureNote}>

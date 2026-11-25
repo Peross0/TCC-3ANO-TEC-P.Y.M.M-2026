@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
     Alert,
@@ -64,10 +64,13 @@ const INITIAL_FORM = {
 
 export default function CreateVacancyScreen() {
   const router = useRouter();
-  const { setSessionData } = useContext(SessionContext);
+  const { sessionData, setSessionData } = useContext(SessionContext);
   const { colors, preferences } = useAppPreferences();
   const styles = makeStyles(colors, preferences.large_text);
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState(() => ({
+    ...INITIAL_FORM,
+    company_name: sessionData?.profile?.company_name || "",
+  }));
   const [saving, setSaving] = useState(false);
 
   const update = (field, value) =>
@@ -149,6 +152,10 @@ export default function CreateVacancyScreen() {
       setSaving(false);
     }
   };
+
+  if (sessionData?.user?.user_type !== "RECRUITER") {
+    return <Redirect href={sessionData?.user ? "/(tabs)/home" : "/"} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
