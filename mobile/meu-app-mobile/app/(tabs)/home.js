@@ -2,9 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext, useEffect, useState } from "react";
 import {
-  AppState,
   ActivityIndicator,
   Alert,
+  AppState,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,6 +24,7 @@ import { apiFetch, clearToken, getAssetUrl } from "../../lib/api";
 import { formatBrasiliaDateTime, parseApiDate } from "../../lib/dateTime";
 
 import JobCard from "../../components/jobs/JobCard";
+import RecruiterHome from "../../components/jobs/RecruiterHome";
 import Header from "../../components/layout/Header";
 import NotificationModal from "../../components/modals/NotificationModal";
 import ProfileMenuModal from "../../components/modals/ProfileMenuModal";
@@ -118,6 +119,13 @@ const normalizeJob = (vacancy, now) => ({
 });
 
 export default function HomeScreen() {
+  const { sessionData } = useContext(SessionContext);
+
+  if (sessionData?.user?.user_type === "RECRUITER") return <RecruiterHome />;
+  return <CandidateHomeScreen />;
+}
+
+function CandidateHomeScreen() {
   const {
     sessionData,
     setSessionData,
@@ -442,7 +450,6 @@ export default function HomeScreen() {
   };
 
   const handleCreateJob = () => {
-    // Redireciona para a tela de criação de vagas (ajuste a rota se necessário)
     router.push("/criar-vaga");
   };
 

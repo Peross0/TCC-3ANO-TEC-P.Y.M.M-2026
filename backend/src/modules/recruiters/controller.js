@@ -1,4 +1,4 @@
-import * as recruiterService from './service.js';
+import * as recruiterService from "./service.js";
 
 export async function getProfile(req, res) {
   const result = await recruiterService.getProfile(req.user.id);
@@ -11,33 +11,64 @@ export async function getDashboard(req, res) {
 }
 
 export async function updateProfile(req, res) {
-  const result = await recruiterService.updateProfile(req.user.id, req.validated.body);
+  const result = await recruiterService.updateProfile(
+    req.user.id,
+    req.validated.body,
+  );
   res.json(result);
 }
 
 export async function updateCompany(req, res) {
-  const result = await recruiterService.updateCompany(req.user.id, req.validated.body);
+  const result = await recruiterService.updateCompany(
+    req.user.id,
+    req.validated.body,
+  );
   res.json(result);
 }
 
 export async function uploadCompanyLogo(req, res) {
   if (!req.file) {
-    const err = new Error('Nenhum arquivo enviado');
+    const err = new Error("Nenhum arquivo enviado");
     err.statusCode = 400;
     throw err;
   }
 
-  const result = await recruiterService.updateCompanyLogo(req.user.id, req.file.filename);
+  const result = await recruiterService.updateCompanyLogo(
+    req.user.id,
+    req.file.filename,
+  );
   res.json(result);
 }
 
 export async function createVacancy(req, res) {
-  const result = await recruiterService.createVacancy(req.user.id, req.validated.body);
+  const result = await recruiterService.createVacancy(
+    req.user.id,
+    req.validated.body,
+  );
   res.status(201).json(result);
 }
 
+export async function listOtherVacancies(req, res) {
+  const result = await recruiterService.listOtherVacancies(
+    req.user.id,
+    req.validated.query,
+  );
+  res.json(result);
+}
+
+export async function getOtherVacancy(req, res) {
+  const result = await recruiterService.getOtherVacancy(
+    req.user.id,
+    req.validated.params.id,
+  );
+  res.json(result);
+}
+
 export async function listMyVacancies(req, res) {
-  const result = await recruiterService.listMyVacancies(req.user.id, req.validated.query);
+  const result = await recruiterService.listMyVacancies(
+    req.user.id,
+    req.validated.query,
+  );
   res.json(result);
 }
 
@@ -49,7 +80,11 @@ export async function getMyVacancy(req, res) {
 
 export async function updateVacancy(req, res) {
   const { id } = req.params;
-  const result = await recruiterService.updateVacancy(req.user.id, Number(id), req.validated.body);
+  const result = await recruiterService.updateVacancy(
+    req.user.id,
+    Number(id),
+    req.validated.body,
+  );
   res.json(result);
 }
 
@@ -61,19 +96,31 @@ export async function deleteVacancy(req, res) {
 
 export async function listCandidatesForVacancy(req, res) {
   const { id } = req.params;
-  const result = await recruiterService.listCandidatesForVacancy(req.user.id, Number(id), req.validated.query);
+  const result = await recruiterService.listCandidatesForVacancy(
+    req.user.id,
+    Number(id),
+    req.validated.query,
+  );
   res.json(result);
 }
 
 export async function updateCandidateStatus(req, res) {
   const { id, userId } = req.params;
   const { status } = req.validated.body;
-  const result = await recruiterService.updateCandidateStatus(req.user.id, Number(id), Number(userId), status);
+  const result = await recruiterService.updateCandidateStatus(
+    req.user.id,
+    Number(id),
+    Number(userId),
+    status,
+  );
   res.json(result);
 }
 
 export async function getCandidateProfile(req, res) {
   const { id } = req.params;
-  const result = await recruiterService.getCandidateProfile(req.user.id, Number(id));
+  const result = await recruiterService.getCandidateProfile(
+    req.user.id,
+    Number(id),
+  );
   res.json(result);
 }

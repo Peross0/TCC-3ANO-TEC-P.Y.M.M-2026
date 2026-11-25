@@ -16,6 +16,7 @@ export default function TabLayout() {
   const { colors } = useAppPreferences();
   const { sessionData } = useContext(SessionContext);
   const insets = useSafeAreaInsets();
+  const isRecruiter = sessionData?.user?.user_type === "RECRUITER";
 
   if (!sessionData?.user) return <Redirect href="/" />;
 
@@ -28,7 +29,6 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.muted,
-        // Remove os rótulos de texto de todas as abas globalmente
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -56,6 +56,19 @@ export default function TabLayout() {
           tabBarAccessibilityLabel: "Mensagens e conversas",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="mail" size={26} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="gerenciar-vagas"
+        options={{
+          title: "Gerenciar vagas",
+          href: isRecruiter ? undefined : null,
+          tabBarShowLabel: isRecruiter,
+          tabBarLabelStyle: { fontSize: 9, fontWeight: "700" },
+          tabBarAccessibilityLabel: "Gerenciar vagas da empresa",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="work-outline" size={25} color={color} />
           ),
         }}
       />

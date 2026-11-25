@@ -279,6 +279,173 @@ export async function createVacancy(userId, data) {
   return { vacancy: { ...vacancy, contract_type: data.contract_type } };
 }
 
+const publicVacancyFields = [
+  "vacancies.id",
+  "vacancies.job_title",
+  "vacancies.company_name",
+  "vacancies.company_description",
+  "vacancies.company_sector",
+  "vacancies.job_description",
+  "vacancies.requirements",
+  "vacancies.benefits",
+  "vacancies.location",
+  "vacancies.work_model",
+  "vacancies.contract_type",
+  "vacancies.contract_type_override",
+  "vacancies.experience_level",
+  "vacancies.work_schedule",
+  "vacancies.salary_min",
+  "vacancies.salary_max",
+  "vacancies.created_at",
+  "recruiters.company_logo_url as company_logo_url",
+];
+
+export async function listOtherVacancies(userId, filters) {
+  const knex = getKnex();
+  const {
+    q,
+    company_sector,
+    salary_min,
+    salary_max,
+    city,
+    state,
+    work_models,
+    contract_types,
+    experience_levels,
+    work_schedules,
+    work_model,
+    contract_type,
+    page = 1,
+    limit = 10,
+  } = filters;
+
+  let query = knex("vacancies")
+    .join("users as recruiters", "vacancies.user_id", "recruiters.id")
+    .whereNot("vacancies.user_id", userId)
+    .where({ "vacancies.status": "OPEN" })
+    .whereNull("vacancies.deleted_at")
+    .whereNull("recruiters.deleted_at")
+    .select(publicVacancyFields);
+
+  if (q) {
+    const term = `%${q}%`;
+    query = query.where((builder) =>
+      builder
+        .where("vacancies.job_title", "like", term)
+        .orWhere("vacancies.company_name", "like", term)
+        .orWhere("vacancies.company_sector", "like", term)
+        .orWhere("vacancies.location", "like", term)
+        .orWhere("vacancies.job_description", "like", term)
+        .orWhere("vacancies.requirements", "like", term)
+        .orWhere("vacancies.benefits", "like", term),
+    );
+  }
+  if (company_sector) {
+    query = query.where(
+      "vacancies.company_sector",
+      "like",
+      `%${company_sector}%`,
+    );
+  }
+  if (city) query = query.where("vacancies.location", "like", `%${city}%`);
+  if (state) {
+    query = query.where(
+      "vacancies.location",
+      "like",
+      `% - ${state.toUpperCase()}`,
+    );
+  }
+  if (salary_min !== undefined) {
+    query = query.where("vacancies.salary_max", ">=", salary_min);
+  }
+  if (salary_max !== undefined) {
+    query = query.where("vacancies.salary_min", "<=", salary_max);
+  }
+  if (work_model) query = query.where("vacancies.work_model", work_model);
+  if (work_models?.length) {
+    query = query.whereIn("vacancies.work_model", work_models);
+  }
+  if (contract_type) {
+    if (["APPRENTICE", "TEMPORARY"].includes(contract_type)) {
+      query = query.where("vacancies.contract_type_override", contract_type);
+    } else {
+      query = query
+        .where("vacancies.contract_type", contract_type)
+        .whereNull("vacancies.contract_type_override");
+    }
+  }
+  if (contract_types?.length) {
+    const storedTypes = contract_types.filter(
+      (type) => !["APPRENTICE", "TEMPORARY"].includes(type),
+    );
+    const overrideTypes = contract_types.filter((type) =>
+      ["APPRENTICE", "TEMPORARY"].includes(type),
+    );
+    query = query.where((builder) => {
+      if (storedTypes.length) {
+        builder.whereIn("vacancies.contract_type", storedTypes);
+      }
+      if (overrideTypes.length) {
+        const method = storedTypes.length ? "orWhereIn" : "whereIn";
+        builder[method]("vacancies.contract_type_override", overrideTypes);
+      }
+    });
+  }
+  if (experience_levels?.length) {
+    query = query.whereIn("vacancies.experience_level", experience_levels);
+  }
+  if (work_schedules?.length) {
+    query = query.whereIn("vacancies.work_schedule", work_schedules);
+  }
+
+  const [{ total }] = await query
+    .clone()
+    .clearSelect()
+    .clearOrder()
+    .count("* as total");
+  const vacancies = await query
+    .orderBy("vacancies.created_at", "desc")
+    .limit(limit)
+    .offset((page - 1) * limit);
+
+  return {
+    vacancies: vacancies.map((vacancy) => ({
+      ...vacancy,
+      contract_type: vacancy.contract_type_override || vacancy.contract_type,
+    })),
+    pagination: {
+      page,
+      limit,
+      total: Number(total),
+      totalPages: Math.ceil(Number(total) / limit),
+    },
+  };
+}
+
+export async function getOtherVacancy(userId, vacancyId) {
+  const vacancy = await getKnex()("vacancies")
+    .join("users as recruiters", "vacancies.user_id", "recruiters.id")
+    .where({ "vacancies.id": vacancyId, "vacancies.status": "OPEN" })
+    .whereNot("vacancies.user_id", userId)
+    .whereNull("vacancies.deleted_at")
+    .whereNull("recruiters.deleted_at")
+    .select(publicVacancyFields)
+    .first();
+
+  if (!vacancy) {
+    const err = new Error("Vaga não encontrada ou indisponível");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return {
+    vacancy: {
+      ...vacancy,
+      contract_type: vacancy.contract_type_override || vacancy.contract_type,
+    },
+  };
+}
+
 export async function listMyVacancies(userId, filters) {
   const knex = getKnex();
 
@@ -301,6 +468,12 @@ export async function listMyVacancies(userId, filters) {
 
   const offset = (page - 1) * limit;
   const vacancies = await query
+    .select(
+      "vacancies.*",
+      knex.raw(
+        "(SELECT COUNT(*) FROM interests WHERE interests.vacancy_id = vacancies.id) AS applicant_count",
+      ),
+    )
     .orderBy("created_at", "desc")
     .limit(limit)
     .offset(offset);

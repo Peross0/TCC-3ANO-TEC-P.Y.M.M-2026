@@ -55,6 +55,8 @@ export default function MessagesScreen() {
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const isPollingMessages = useRef(false);
+  const messagesListRef = useRef(null);
+  const isNearLatestMessage = useRef(true);
   const isRecruiter = sessionData?.user?.user_type === "RECRUITER";
 
   useEffect(() => {
@@ -87,6 +89,13 @@ export default function MessagesScreen() {
             companyLogoUri: isRecruiter
               ? null
               : getAssetUrl(conversation.company_logo_url),
+            contactType: isRecruiter ? "Candidato" : null,
+            candidateInitial: isRecruiter
+              ? (conversation.candidate_name || "C")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase()
+              : null,
             jobTitle: conversation.job_title,
             messages: [],
           },
@@ -160,15 +169,25 @@ export default function MessagesScreen() {
 
     setIsSending(true);
     try {
-      await apiFetch("/messages", {
+      const response = await apiFetch("/messages", {
         method: "POST",
         body: JSON.stringify({
           application_id: activeChat.applicationId,
           body,
         }),
       });
-      await loadMessages();
+      if (response.message) {
+        setMessagesData((current) =>
+          current.some(
+            (message) => String(message.id) === String(response.message.id),
+          )
+            ? current
+            : [...current, response.message],
+        );
+      }
       setInputText("");
+      isNearLatestMessage.current = true;
+      loadMessages();
     } catch (error) {
       Alert.alert(
         "Mensagem não enviada",
@@ -191,6 +210,7 @@ export default function MessagesScreen() {
           />
           <MessageHeader
             activeChat={activeChat}
+            onRefresh={() => loadMessages(true, true)}
             onBack={() => {
               setActiveApplicationId(null);
               setDismissedRequestedApplicationId(
@@ -203,9 +223,25 @@ export default function MessagesScreen() {
             style={styles.chatBody}
           >
             <FlatList
+              ref={messagesListRef}
               data={activeChat.messages}
               keyExtractor={(item) => String(item.id)}
               contentContainerStyle={styles.messagesList}
+              onContentSizeChange={() => {
+                if (isNearLatestMessage.current) {
+                  requestAnimationFrame(() =>
+                    messagesListRef.current?.scrollToEnd({ animated: true }),
+                  );
+                }
+              }}
+              onScroll={({ nativeEvent }) => {
+                const distanceFromEnd =
+                  nativeEvent.contentSize.height -
+                  nativeEvent.layoutMeasurement.height -
+                  nativeEvent.contentOffset.y;
+                isNearLatestMessage.current = distanceFromEnd < 96;
+              }}
+              scrollEventThrottle={100}
               renderItem={({ item }) => {
                 const isUser =
                   currentUserId != null &&
@@ -251,6 +287,8 @@ export default function MessagesScreen() {
               value={inputText}
               onChangeText={setInputText}
               onSend={handleSendMessage}
+              disabled={!inputText.trim() || isSending}
+              isSending={isSending}
             />
             {isSending && (
               <Text style={styles.sendingText}>Enviando mensagem...</Text>
@@ -300,6 +338,10 @@ export default function MessagesScreen() {
                     style={styles.companyLogoImage}
                     resizeMode="cover"
                   />
+                ) : item.candidateInitial ? (
+                  <Text style={styles.candidateInitial}>
+                    {item.candidateInitial}
+                  </Text>
                 ) : (
                   <Feather name="briefcase" size={19} color={colors.tint} />
                 )}
@@ -327,9 +369,11 @@ export default function MessagesScreen() {
               <Text style={styles.emptySubText}>
                 {isLoading
                   ? "Buscando mensagens do servidor."
-                  : "As conversas aparecem depois que você se candidata a uma vaga."}
+                  : isRecruiter
+                    ? "As conversas aparecem quando um candidato se interessa por uma das suas vagas."
+                    : "As conversas aparecem depois que você se candidata a uma vaga."}
               </Text>
-              {!isLoading && (
+              {!isLoading && !isRecruiter && (
                 <TouchableOpacity
                   style={styles.jobsButton}
                   onPress={() => router.navigate("/(tabs)/home")}
@@ -392,6 +436,11 @@ function makeStyles(colors, largeText) {
       overflow: "hidden",
     },
     companyLogoImage: { width: "100%", height: "100%" },
+    candidateInitial: {
+      color: colors.primaryDark,
+      fontSize: 18 * scale,
+      fontWeight: "800",
+    },
     conversationContent: { flex: 1, marginLeft: 12 },
     conversationHeader: {
       flexDirection: "row",

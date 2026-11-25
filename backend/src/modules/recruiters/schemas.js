@@ -92,8 +92,8 @@ export const updateVacancySchema = z.object({
         .enum(["PART_TIME", "FULL_TIME", "FLEXIBLE"])
         .nullable()
         .optional(),
-      salary_min: z.coerce.number().positive().optional(),
-      salary_max: z.coerce.number().positive().optional(),
+      salary_min: z.union([z.coerce.number().positive(), z.null()]).optional(),
+      salary_max: z.union([z.coerce.number().positive(), z.null()]).optional(),
       status: z.enum(["OPEN", "CLOSED"]).optional(),
     })
     .refine(
@@ -132,4 +132,63 @@ export const listCandidatesSchema = z.object({
     limit: z.coerce.number().int().positive().max(50).default(10),
     status: z.enum(["ALL", "OPEN", "CLOSED"]).default("ALL"),
   }),
+});
+
+export const publicVacancyFiltersSchema = z.object({
+  query: z
+    .object({
+      q: z.string().trim().optional(),
+      company_sector: z.string().trim().max(100).optional(),
+      salary_min: z.coerce.number().optional(),
+      salary_max: z.coerce.number().optional(),
+      city: z.string().trim().max(120).optional(),
+      state: z.string().trim().max(100).optional(),
+      work_models: z.preprocess(
+        (value) =>
+          typeof value === "string" ? value.split(",").filter(Boolean) : value,
+        z.array(z.enum(["REMOTE", "HYBRID", "ONSITE"])).optional(),
+      ),
+      contract_types: z.preprocess(
+        (value) =>
+          typeof value === "string" ? value.split(",").filter(Boolean) : value,
+        z
+          .array(
+            z.enum([
+              "CLT",
+              "PJ",
+              "INTERNSHIP",
+              "APPRENTICE",
+              "FREELANCE",
+              "TEMPORARY",
+            ]),
+          )
+          .optional(),
+      ),
+      experience_levels: z.preprocess(
+        (value) =>
+          typeof value === "string" ? value.split(",").filter(Boolean) : value,
+        z
+          .array(z.enum(["FIRST_JOB", "NO_EXPERIENCE", "EXPERIENCED"]))
+          .optional(),
+      ),
+      work_schedules: z.preprocess(
+        (value) =>
+          typeof value === "string" ? value.split(",").filter(Boolean) : value,
+        z.array(z.enum(["PART_TIME", "FULL_TIME", "FLEXIBLE"])).optional(),
+      ),
+      work_model: z.enum(["REMOTE", "HYBRID", "ONSITE"]).optional(),
+      contract_type: z
+        .enum([
+          "CLT",
+          "PJ",
+          "INTERNSHIP",
+          "APPRENTICE",
+          "FREELANCE",
+          "TEMPORARY",
+        ])
+        .optional(),
+      page: z.coerce.number().int().positive().default(1),
+      limit: z.coerce.number().int().positive().max(50).default(10),
+    })
+    .optional(),
 });
