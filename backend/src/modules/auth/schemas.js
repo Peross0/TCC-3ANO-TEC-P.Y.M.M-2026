@@ -12,8 +12,8 @@ export const registerSchema = z.object({
         .min(2, "Nome deve ter pelo menos 2 caracteres")
         .max(255),
       user_type: z.enum(["CANDIDATE", "RECRUITER"]),
-      document_type: z.enum(["CPF", "CNPJ"]),
-      document_number: z.string().min(11, "Documento inválido").max(18),
+      document_type: z.enum(["CPF", "CNPJ"]).optional(),
+      document_number: z.string().min(11, "Documento inválido").max(18).optional(),
       phone: z.string().max(20).optional(),
       course: z.string().trim().max(255).optional(),
       company_name: z.string().trim().min(2).max(255).optional(),
@@ -21,6 +21,10 @@ export const registerSchema = z.object({
     .refine(
       (data) => {
         // Validate document based on user_type and document_type
+        if (data.document_number === undefined) {
+          return data.user_type === "RECRUITER" && data.document_type === undefined;
+        }
+        if (!data.document_type) return false;
         if (data.user_type === "CANDIDATE" && data.document_type !== "CPF") {
           return false;
         }

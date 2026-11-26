@@ -174,7 +174,7 @@ export default function SavedVacanciesScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar
           barStyle={
-            colors.background === "#101822" || colors.background === "#000000"
+            colors.background === "#0D1117" || colors.background === "#000000"
               ? "light-content"
               : "dark-content"
           }

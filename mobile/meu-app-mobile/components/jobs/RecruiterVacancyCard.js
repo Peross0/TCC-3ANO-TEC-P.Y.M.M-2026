@@ -36,6 +36,7 @@ function formatDate(value) {
 export default function RecruiterVacancyCard({
   vacancy,
   onPress,
+  onCandidates,
   onEdit,
   onToggleStatus,
   canEdit = vacancy.status !== "OPEN",
@@ -144,6 +145,17 @@ export default function RecruiterVacancyCard({
           </View>
           {onEdit || onToggleStatus ? (
             <View style={styles.manageActions}>
+              {onCandidates ? (
+                <TouchableOpacity
+                  onPress={onCandidates}
+                  style={styles.manageButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ver candidatos da vaga ${vacancy.job_title || ''}`}
+                >
+                  <Feather name="users" size={14} color={colors.tint} />
+                  <Text style={styles.manageButtonText}>Candidatos</Text>
+                </TouchableOpacity>
+              ) : null}
               {onEdit ? (
                 <TouchableOpacity
                   onPress={onEdit}

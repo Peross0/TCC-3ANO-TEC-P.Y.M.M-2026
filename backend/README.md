@@ -22,7 +22,11 @@ Os endpoints autenticados `GET/POST /api/users/me/documents` e `GET/DELETE /api/
 
 ## Cadastro
 
-O cadastro cria a conta e inicia a sessão imediatamente. Usuários autenticados podem alterar a senha nas configurações.
+O cadastro cria a conta e inicia a sessão imediatamente. Web e mobile usam os mesmos endpoints e os papéis `CANDIDATE` e `RECRUITER`. O CPF continua obrigatório para candidato; CNPJ é opcional para recrutador, e, quando informado, é validado no servidor. Usuários autenticados podem alterar a senha nas configurações.
+
+O perfil empresarial canônico é mantido em `users` (`company_name`, descrição, segmento e localização). A migration `20261126000020_add_recruiter_company_profile.js` adiciona os campos que faltavam, preenche valores a partir da vaga mais recente sem substituir valores existentes e permite empresas sem documento fiscal. Ela reconstrói `users` no SQLite preservando as linhas, índices, trigger e referências; seu rollback recusa a operação enquanto houver empresas sem documento fiscal.
+
+A migration `20261126000021_make_recruiter_tax_id_optional.js` atualiza bancos que já haviam aplicado a migration anterior, mas ainda exigiam documento fiscal para recrutadores. Ela preserva os dados existentes e também recusa o rollback enquanto houver empresas sem documento fiscal.
 
 A recuperação sem sessão está disponível somente fora de produção (`NODE_ENV=development` ou `test`). **É insegura:** qualquer pessoa que conheça um e-mail cadastrado pode assumir a conta. Não use dados reais nem exponha esse backend a redes não confiáveis. Em produção a rota não existe. A redefinição revoga as sessões anteriores. A alteração nas configurações continua exigindo sessão válida.
 
@@ -30,7 +34,10 @@ A recuperação sem sessão está disponível somente fora de produção (`NODE_
 
 ```powershell
 npm run test:smoke
+npm run test:migration:company-profile
 ```
+
+O teste de migration cria e remove uma base SQLite temporária; não usa o banco de desenvolvimento.
 
 ## Rotas principais
 
@@ -40,7 +47,7 @@ npm run test:smoke
 - `GET /api/auth/me`
 - `GET/POST /api/messages` (mensagens vinculadas a candidaturas)
 - `GET/PUT /api/recruiters/profile`
-- `PUT /api/recruiters/company` (atualiza nome, segmento e localização em todas as vagas não removidas do recrutador)
+- `PUT /api/recruiters/company` (atualiza o perfil empresarial e sincroniza nome, descrição, segmento e localização nas vagas não removidas)
 - `POST /api/recruiters/company/logo` (envia `company_logo` em multipart/form-data)
 - `GET/POST/PUT/DELETE /api/recruiters/vacancies`
 - `GET/POST /api/candidates/vacancies`

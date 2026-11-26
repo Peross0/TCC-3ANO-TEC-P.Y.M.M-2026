@@ -63,7 +63,7 @@ function SplashScreen({ colors }) {
   return (
     <View style={styles.splash}>
       <StatusBar
-        barStyle={colors.background === '#101822' || colors.background === '#000000' ? 'light-content' : 'dark-content'}
+        barStyle={colors.background === '#0D1117' || colors.background === '#000000' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
       <Image
@@ -80,7 +80,7 @@ function SplashScreen({ colors }) {
 function OnboardingScreen({ onFinish, colors }) {
   const BRAND = makeBrand(colors);
   const styles = makeStyles(colors);
-  const isDark = colors.background === '#101822' || colors.background === '#000000';
+  const isDark = colors.background === '#0D1117' || colors.background === '#000000';
   const [step, setStep] = useState(0);
   const slide = onboardingSlides[step];
   const lastStep = step === onboardingSlides.length - 1;

@@ -67,6 +67,43 @@ const recruiterToken = recruiterLogin.data.token;
 const adminToken = adminLogin.data.token;
 const candidateId = candidateLogin.data.user.id;
 
+const recruiterWithoutTaxIdEmail = `recruiter-no-tax-${Date.now()}@smoke.test`;
+const recruiterWithoutTaxId = await request("/api/auth/register", {
+  method: "POST",
+  body: {
+    email: recruiterWithoutTaxIdEmail,
+    password: "Senha123!",
+    full_name: "Responsável sem CNPJ",
+    user_type: "RECRUITER",
+    phone: "11999990000",
+  },
+});
+expectStatus(recruiterWithoutTaxId, 201, "recruiter can register without a tax id");
+assert.equal(recruiterWithoutTaxId.data.user.user_type, "RECRUITER");
+const candidateWithoutCpf = await request("/api/auth/register", {
+  method: "POST",
+  body: {
+    email: `candidate-no-cpf-${Date.now()}@smoke.test`,
+    password: "Senha123!",
+    full_name: "Candidato sem CPF",
+    user_type: "CANDIDATE",
+  },
+});
+expectStatus(candidateWithoutCpf, 400, "candidate CPF remains required");
+
+const candidateUserList = await request("/api/users", {
+  token: candidateToken,
+});
+expectStatus(candidateUserList, 403, "candidate cannot list users");
+const adminUserList = await request("/api/users", { token: adminToken });
+expectStatus(adminUserList, 200, "admin can list users");
+assert.ok(
+  adminUserList.data.every(
+    (user) => !("password_hash" in user) && !("token_version" in user),
+  ),
+  "user list does not expose authentication secrets",
+);
+
 const registeredEmail = `candidate-${Date.now()}@smoke.test`;
 const registered = await request("/api/auth/register", {
   method: "POST",
@@ -80,6 +117,20 @@ const registered = await request("/api/auth/register", {
   },
 });
 expectStatus(registered, 201, "registration without code verification");
+expectStatus(
+  await request(`/api/recruiters/candidates/${registered.data.user.id}`, {
+    token: recruiterLogin.data.token,
+  }),
+  404,
+  "recruiter cannot view an unrelated candidate profile",
+);
+expectStatus(
+  await request(`/api/recruiters/candidates/${candidateId}`, {
+    token: recruiterLogin.data.token,
+  }),
+  200,
+  "recruiter can view an applicant profile linked to their vacancy",
+);
 expectStatus(
   await request("/api/auth/me", { token: registered.data.token }),
   200,
@@ -219,7 +270,26 @@ const secondRecruiterLogin = await request("/api/auth/login", {
 });
 expectStatus(secondRecruiterLogin, 200, "second recruiter login");
 const secondRecruiterToken = secondRecruiterLogin.data.token;
-
+const secondRecruiterCompany = await request("/api/recruiters/company", {
+  method: "PUT",
+  token: secondRecruiterToken,
+  body: {
+    company_name: "Empresa sem vagas Smoke",
+    company_description: "Perfil empresarial inicial.",
+    company_sector: "Tecnologia",
+    location: "Remoto",
+  },
+});
+expectStatus(secondRecruiterCompany, 200, "new recruiter can save company profile before publishing vacancies");
+assert.equal(secondRecruiterCompany.data.updated_vacancies, 0);
+const secondRecruiterProfile = await request("/api/recruiters/profile", {
+  token: secondRecruiterToken,
+});
+expectStatus(secondRecruiterProfile, 200, "recruiter profile after company update");
+assert.equal(secondRecruiterProfile.data.recruiter.company_name, "Empresa sem vagas Smoke");
+assert.equal(secondRecruiterProfile.data.recruiter.company_description, "Perfil empresarial inicial.");
+assert.equal(secondRecruiterProfile.data.recruiter.company_sector, "Tecnologia");
+assert.equal(secondRecruiterProfile.data.recruiter.company_location, "Remoto");
 const testVacancy = await request("/api/recruiters/vacancies", {
   method: "POST",
   token: recruiterToken,
@@ -639,6 +709,12 @@ assert.ok(
 const application = applications.data.applications.find(
   (item) => item.vacancy_id === vacancyId,
 );
+const originDb = new DatabaseSync(databasePath);
+const applicationOrigin = originDb
+  .prepare("SELECT origin FROM interests WHERE id = ?")
+  .get(application.id)?.origin;
+originDb.close();
+assert.equal(applicationOrigin, "PLATFORM", "shared clients persist applications with a platform origin");
 const candidateMessage = await request("/api/messages", {
   method: "POST",
   token: candidateToken,
@@ -648,6 +724,17 @@ const candidateMessage = await request("/api/messages", {
   },
 });
 expectStatus(candidateMessage, 201, "candidate sends message");
+
+const candidateMessages = await request("/api/messages", {
+  token: candidateToken,
+});
+expectStatus(candidateMessages, 200, "candidate reads shared messages");
+assert.ok(
+  candidateMessages.data.conversations.some(
+    (conversation) => conversation.application_id === application.id && conversation.recruiter_name,
+  ),
+  "candidate can see the employer side of the shared conversation",
+);
 
 const recruiterMessages = await request("/api/messages", {
   token: recruiterToken,

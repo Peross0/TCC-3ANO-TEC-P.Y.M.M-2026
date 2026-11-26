@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SessionContext } from '../../context/SessionContext';
 import { useAppPreferences } from '../../context/PreferencesContext';
-import { apiFetch, getAssetUrl } from '../../lib/api';
+import { apiFetch, clearToken, getAssetUrl } from '../../lib/api';
 import AnimatedScreen from '../../components/layout/AnimatedScreen';
 
 const accountType = {
@@ -69,11 +69,26 @@ export default function AccountScreen() {
     }
   };
 
+  const signOut = () => {
+    Alert.alert('Sair da conta?', 'Sua sessão será encerrada neste dispositivo.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          await clearToken();
+          setSessionData(null);
+          router.replace('/');
+        },
+      },
+    ]);
+  };
+
   return (
     <AnimatedScreen>
       <SafeAreaView style={styles.container}>
         <StatusBar
-          barStyle={colors.background === '#101822' || colors.background === '#000000' ? 'light-content' : 'dark-content'}
+          barStyle={colors.background === '#0D1117' || colors.background === '#000000' ? 'light-content' : 'dark-content'}
           backgroundColor={colors.background}
         />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -117,6 +132,13 @@ export default function AccountScreen() {
                   icon="edit-2"
                   title="Editar perfil"
                   onPress={() => router.push('/perfil')}
+                />
+                <ActionButton
+                  styles={styles}
+                  colors={colors}
+                  icon="log-out"
+                  title="Sair da conta"
+                  onPress={signOut}
                 />
               </>
             ) : (

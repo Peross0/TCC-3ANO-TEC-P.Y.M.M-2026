@@ -12,7 +12,8 @@
     "migrate:make": "knex migrate:make --knexfile knexfile.js",
     "seed": "knex seed:run --knexfile knexfile.js",
     "seed:make": "knex seed:make --knexfile knexfile.js",
-    "test:smoke": "node scripts/smoke-test.js"
+    "test:smoke": "node scripts/smoke-test.js",
+    "test:migration:company-profile": "node scripts/company-profile-migration-test.js"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",

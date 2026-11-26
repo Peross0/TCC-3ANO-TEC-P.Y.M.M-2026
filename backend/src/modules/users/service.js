@@ -166,7 +166,21 @@ export async function deleteDocument(userId, documentId) {
 
 export async function getUsers() {
   const knex = getKnex();
-  return await knex('users').whereNull('deleted_at')
+  return await knex('users')
+    .whereNull('deleted_at')
+    .select(
+      'id',
+      'email',
+      'full_name',
+      'user_type',
+      'document_type',
+      'document_number',
+      'phone',
+      'avatar_url',
+      'active_notification',
+      'created_at',
+      'updated_at',
+    );
 }
 
 const DEFAULT_PREFERENCES = {

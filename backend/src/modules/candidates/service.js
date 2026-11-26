@@ -260,6 +260,7 @@ export async function listCompanies(userId) {
     .join("vacancies", "interests.vacancy_id", "vacancies.id")
     .join("users as recruiters", "vacancies.user_id", "recruiters.id")
     .where("interests.user_id", userId)
+    .whereNot("interests.origin", "DEMO")
     .whereNull("vacancies.deleted_at")
     .whereNull("recruiters.deleted_at")
     .select(
@@ -399,7 +400,7 @@ export async function applyToVacancy(userId, vacancyId) {
       .insert({
         user_id: userId,
         vacancy_id: vacancyId,
-        origin: "MOBILE",
+        origin: "PLATFORM",
         status: "PENDING",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

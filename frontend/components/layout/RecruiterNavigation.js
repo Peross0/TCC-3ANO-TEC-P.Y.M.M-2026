@@ -4,12 +4,21 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, theme } from '../../lib/theme';
 
-const navigationItems = [
+const recruiterNavigationItems = [
   { path: '/home', label: 'Início', icon: 'home' },
   { path: '/candidaturas', label: 'Candidaturas', icon: 'file-text' },
+  { path: '/candidatos', label: 'Candidatos', icon: 'users' },
   { path: '/vagas', label: 'Vagas', icon: 'briefcase' },
   { path: '/mensagens', label: 'Mensagens', icon: 'message-circle' },
   { path: '/perfil', label: 'Meu perfil', icon: 'user' },
+];
+
+const candidateNavigationItems = [
+  { path: '/candidato', label: 'Painel do candidato', icon: 'grid' },
+  { path: '/candidato?secao=jobs', label: 'Encontrar vagas', icon: 'search' },
+  { path: '/candidato?secao=applications', label: 'Minhas candidaturas', icon: 'file-text' },
+  { path: '/mensagens', label: 'Mensagens', icon: 'message-circle' },
+  { path: '/candidato?secao=profile', label: 'Meu perfil', icon: 'user' },
 ];
 
 function getInitials(name = '') {
@@ -63,6 +72,9 @@ export default function RecruiterNavigation({
   onClose,
   drawer = false,
 }) {
+  const isCandidate = user?.user_type === 'CANDIDATE';
+  const navigationItems = isCandidate ? candidateNavigationItems : recruiterNavigationItems;
+
   return (
     <View style={[styles.sidebar, drawer && styles.drawer]}>
       <View style={styles.sidebarHeader}>

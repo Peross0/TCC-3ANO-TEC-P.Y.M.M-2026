@@ -16,13 +16,15 @@ export async function registerUser(data) {
   }
 
   // Check if document already exists
-  const existingDoc = await knex("users")
-    .where({ document_number: data.document_number })
-    .first();
-  if (existingDoc) {
-    const err = new Error("Documento já cadastrado");
-    err.code = "SQLITE_CONSTRAINT_UNIQUE";
-    throw err;
+  if (data.document_number) {
+    const existingDoc = await knex("users")
+      .where({ document_number: data.document_number })
+      .first();
+    if (existingDoc) {
+      const err = new Error("Documento já cadastrado");
+      err.code = "SQLITE_CONSTRAINT_UNIQUE";
+      throw err;
+    }
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12);
@@ -33,8 +35,8 @@ export async function registerUser(data) {
       password_hash: passwordHash,
       full_name: data.full_name,
       user_type: data.user_type,
-      document_type: data.document_type,
-      document_number: data.document_number,
+      document_type: data.document_type || null,
+      document_number: data.document_number || null,
       phone: data.phone || null,
       course: data.course || null,
       company_name: data.user_type === 'RECRUITER' ? data.company_name || null : null,

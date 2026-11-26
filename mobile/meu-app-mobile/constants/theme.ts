@@ -5,7 +5,7 @@
 
 import { Platform } from 'react-native';
 
-const paletteBlue = '#4FB3E6';
+const paletteBlue = '#48BCEB';
 const paletteGray = '#BFBFBF';
 const paletteBlack = '#000000';
 const paletteWhite = '#FFFFFF';
@@ -40,32 +40,32 @@ export const Colors = {
     errorBorder: '#FECDCA',
   },
   dark: {
-    text: '#F3F7FC',
-    background: '#101822',
-    surface: '#182433',
-    line: '#344253',
-    muted: '#B7C5D4',
+    text: '#E5EAF0',
+    background: '#0D1117',
+    surface: '#171E29',
+    line: '#293544',
+    muted: '#A0ACB9',
     tint: paletteBlue,
-    primaryDark: '#D8F3FF',
+    primaryDark: '#E5EAF0',
     accent: paletteBlue,
-    accentWash: '#213C4B',
+    accentWash: '#1D2D3C',
     lime: paletteBlue,
-    limeDark: '#101822',
-    limeWash: '#213C4B',
-    primaryWash: '#213C4B',
-    icon: '#F3F7FC',
-    tabIconDefault: '#B7C5D4',
+    limeDark: '#0D1117',
+    limeWash: '#1D2D3C',
+    primaryWash: '#1D2D3C',
+    icon: '#E5EAF0',
+    tabIconDefault: '#A0ACB9',
     tabIconSelected: paletteBlue,
     error: '#FF867A',
     notification: '#FF6B81',
-    messageBubble: '#147BA3',
+    messageBubble: '#176A8A',
     messageBubbleText: '#FFFFFF',
-    messageBubbleTime: '#EAF7FD',
-    buttonText: '#101822',
-    placeholder: '#B7C5D4',
+    messageBubbleTime: '#D9F3FE',
+    buttonText: '#08202D',
+    placeholder: '#A0ACB9',
     warning: '#FFD166',
-    errorWash: '#4A2528',
-    errorBorder: '#7A343A',
+    errorWash: '#321E24',
+    errorBorder: '#75404A',
   },
 };
 

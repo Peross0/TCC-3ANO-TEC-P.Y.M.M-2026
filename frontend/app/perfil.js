@@ -176,10 +176,10 @@ export default function PerfilScreen() {
     () => vacancies.filter((vacancy) => vacancy.status === 'OPEN').length,
     [vacancies]
   );
-  const companyName = latestVacancy?.company_name || '';
-  const companyDescription = latestVacancy?.company_description || '';
-  const companySector = latestVacancy?.company_sector || '';
-  const companyLocation = latestVacancy?.location || '';
+  const companyName = latestVacancy?.company_name || recruiter?.company_name || '';
+  const companyDescription = latestVacancy?.company_description || recruiter?.company_description || '';
+  const companySector = latestVacancy?.company_sector || recruiter?.company_sector || '';
+  const companyLocation = latestVacancy?.location || recruiter?.company_location || '';
   const beginCompanyEditing = () => {
     setCompanyDraft({
       company_name: companyName,
@@ -229,6 +229,13 @@ export default function PerfilScreen() {
         company_sector: companyDraft.company_sector.trim() || null,
         location: companyDraft.location.trim() || null,
       })));
+      setRecruiter((current) => ({
+        ...current,
+        company_name: companyDraft.company_name.trim(),
+        company_description: companyDraft.company_description.trim() || null,
+        company_sector: companyDraft.company_sector.trim() || null,
+        company_location: companyDraft.location.trim() || null,
+      }));
       setCompanyEditing(false);
       setFeedback({
         type: 'success',

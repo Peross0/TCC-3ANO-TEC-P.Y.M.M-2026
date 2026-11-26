@@ -268,6 +268,7 @@ export default function MyVacanciesScreen({ inTab = false } = {}) {
           renderItem={({ item }) => (
             <RecruiterVacancyCard
               vacancy={item}
+              onCandidates={() => router.push({ pathname: "/candidatos-vaga", params: { vacancyId: String(item.id) } })}
               onEdit={() => editVacancy(item)}
               onToggleStatus={() => changeStatus(item)}
               isUpdating={updatingVacancyId === String(item.id)}

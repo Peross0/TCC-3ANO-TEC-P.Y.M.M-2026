@@ -3,7 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,26 +23,37 @@ export default function LoginScreen() {
   const width = useHydratedWidth();
   const isWide = width >= 860;
   const [isRegistering, setIsRegistering] = useState(false);
+  const [accountType, setAccountType] = useState('RECRUITER');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [course, setCourse] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
+  const [formError, setFormError] = useState('');
+  const isCandidate = accountType === 'CANDIDATE';
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setIsRegistering(params.cadastro === '1');
+      setAccountType(params.tipo === 'CANDIDATE' ? 'CANDIDATE' : 'RECRUITER');
     });
     return () => cancelAnimationFrame(frame);
-  }, [params.cadastro]);
+  }, [params.cadastro, params.tipo]);
 
   const clearFields = () => {
     setName('');
     setEmail('');
+    setCompanyName('');
+    setPhone('');
+    setCourse('');
     setPassword('');
     setDocumentNumber('');
     setShowPassword(false);
+    setFormError('');
   };
 
   const isValidCnpj = (value) => {
@@ -54,29 +64,43 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     const normalizedEmail = email.trim().toLowerCase();
+    const isCandidate = accountType === 'CANDIDATE';
+    setFormError('');
 
     if (isRegistering && !name.trim()) {
-      Alert.alert('Nome obrigatório', 'Digite seu nome completo para continuar.');
+      setFormError('Informe o nome completo do responsável.');
       return;
     }
-    if (isRegistering && !isValidCnpj(documentNumber)) {
-      Alert.alert('CNPJ inválido', 'Digite um CNPJ válido com 14 números.');
+    if (isRegistering && !isCandidate && !companyName.trim()) {
+      setFormError('Informe o nome da empresa.');
+      return;
+    }
+    if (isRegistering && !isCandidate && !phone.trim()) {
+      setFormError('Informe um telefone para contato.');
+      return;
+    }
+    if (isRegistering && isCandidate && documentNumber.replace(/\D/g, '').length !== 11) {
+      setFormError('Informe um CPF com 11 números.');
+      return;
+    }
+    if (isRegistering && !isCandidate && documentNumber.trim() && !isValidCnpj(documentNumber)) {
+      setFormError('Informe um CNPJ válido ou deixe o campo em branco.');
       return;
     }
     if (!normalizedEmail) {
-      Alert.alert('E-mail obrigatório', 'Digite seu e-mail para continuar.');
+      setFormError('Informe seu e-mail.');
       return;
     }
     if (!normalizedEmail.includes('@')) {
-      Alert.alert('E-mail inválido', 'Digite um e-mail válido para continuar.');
+      setFormError('Informe um e-mail válido.');
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Senha obrigatória', 'Digite sua senha para continuar.');
+      setFormError('Informe sua senha.');
       return;
     }
     if (password.trim().length < 8) {
-      Alert.alert('Senha inválida', 'A senha deve ter pelo menos 8 caracteres.');
+      setFormError('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
 
@@ -88,20 +112,22 @@ export default function LoginScreen() {
           method: 'POST',
           body: JSON.stringify({
             full_name: name.trim(),
+            company_name: isCandidate ? undefined : companyName.trim(),
             email: normalizedEmail,
             password,
-            user_type: 'RECRUITER',
-            document_type: 'CNPJ',
-            document_number: documentNumber.replace(/\D/g, ''),
+            phone: phone.trim() || undefined,
+            course: course.trim() || undefined,
+            user_type: accountType,
+            ...(isCandidate || documentNumber.replace(/\D/g, '')
+              ? {
+                  document_type: isCandidate ? 'CPF' : 'CNPJ',
+                  document_number: documentNumber.replace(/\D/g, ''),
+                }
+              : {}),
           }),
         });
-
-        Alert.alert('Cadastro realizado', data.message || 'Seu cadastro foi concluído com sucesso.');
-        setIsRegistering(false);
-        setName('');
-        setPassword('');
-        setDocumentNumber('');
-        setEmail(normalizedEmail);
+        await saveSession(data.token, data.user);
+        router.replace(isCandidate ? '/candidato' : '/home');
         return;
       }
 
@@ -109,14 +135,13 @@ export default function LoginScreen() {
         method: 'POST',
         body: JSON.stringify({ email: normalizedEmail, password }),
       });
-      if (data.user.user_type !== 'RECRUITER') throw new Error('Esta conta não possui acesso de recrutador.');
       await saveSession(data.token, data.user);
-      router.replace('/home');
+      router.replace(data.user.user_type === 'CANDIDATE' ? '/candidato' : '/home');
     } catch (error) {
       const message = error instanceof TypeError
         ? 'Não foi possível conectar ao servidor. Inicie o backend na porta 3000.'
         : error.message;
-      Alert.alert(isRegistering ? 'Não foi possível cadastrar' : 'Não foi possível entrar', message);
+      setFormError(message || (isRegistering ? 'Não foi possível criar sua conta.' : 'Não foi possível entrar.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +150,15 @@ export default function LoginScreen() {
   const toggleMode = () => {
     setIsRegistering((currentMode) => !currentMode);
     clearFields();
+  };
+
+  const selectAccountType = (type) => {
+    setAccountType(type);
+    setFormError('');
+    setDocumentNumber('');
+    setCourse('');
+    setCompanyName('');
+    setPhone('');
   };
 
   const renderField = (label, icon, value, onChangeText, props = {}) => (
@@ -156,9 +190,9 @@ export default function LoginScreen() {
                 <Text style={styles.brandName}>Conecta Fácil</Text>
               </Pressable>
               <View style={styles.introCopy}>
-                <Text style={styles.eyebrow}>ACESSO PARA EMPRESAS</Text>
-                <Text style={styles.introTitle}>Boas conexões começam com uma boa oportunidade.</Text>
-                <Text style={styles.introText}>Entre na sua conta para cuidar do perfil da empresa e das vagas publicadas.</Text>
+                <Text style={styles.eyebrow}>CONECTA FÁCIL</Text>
+                <Text style={styles.introTitle}>Uma plataforma. Novas possibilidades.</Text>
+                <Text style={styles.introText}>Acesse oportunidades como candidato ou encontre profissionais para sua empresa.</Text>
               </View>
               <View style={styles.securityNote}>
                 <Feather name="shield" size={17} color={colors.primaryDark} />
@@ -172,17 +206,57 @@ export default function LoginScreen() {
                 <Text style={styles.backLinkText}>Voltar ao início</Text>
               </Pressable>
               <View style={styles.formCard}>
-                <Text style={styles.formEyebrow}>{isRegistering ? 'PRIMEIRO ACESSO' : 'SUA CONTA'}</Text>
-                <Text style={styles.title}>{isRegistering ? 'Crie seu acesso' : 'Que bom ter você de volta'}</Text>
+                <Text style={styles.formEyebrow}>{isRegistering ? 'PRIMEIRO ACESSO' : 'CONTA CONECTA FÁCIL'}</Text>
+                <Text style={styles.title}>{isRegistering ? 'Crie sua conta' : 'Que bom ter você de volta'}</Text>
                 <Text style={styles.subtitle}>
-                  {isRegistering ? 'Informe os dados da pessoa responsável e da empresa.' : 'Entre para acompanhar e administrar suas oportunidades.'}
+                  {isRegistering ? 'Como você deseja utilizar o Conecta Fácil?' : 'Entre para continuar de onde parou.'}
                 </Text>
+                {formError ? (
+                  <View style={styles.formError} accessibilityRole="alert" accessibilityLiveRegion="polite">
+                    <Feather name="alert-circle" size={16} color={colors.danger} />
+                    <Text style={styles.formErrorText}>{formError}</Text>
+                  </View>
+                ) : null}
 
-                {isRegistering && renderField('Nome do responsável', 'user', name, setName, {
+                {isRegistering && (
+                  <View style={styles.accountChoices}>
+                    <Pressable
+                      style={[styles.accountChoice, accountType === 'CANDIDATE' && styles.accountChoiceActive]}
+                      onPress={() => selectAccountType('CANDIDATE')}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: accountType === 'CANDIDATE' }}
+                    >
+                      <View style={styles.accountChoiceIcon}><Feather name="user" size={18} color={colors.primary} /></View>
+                      <Text style={styles.accountChoiceTitle}>Candidato</Text>
+                      <Text style={styles.accountChoiceDescription}>Procuro oportunidades de emprego, estágio ou primeiro trabalho.</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.accountChoice, accountType === 'RECRUITER' && styles.accountChoiceActive]}
+                      onPress={() => selectAccountType('RECRUITER')}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: accountType === 'RECRUITER' }}
+                    >
+                      <View style={styles.accountChoiceIcon}><Feather name="briefcase" size={18} color={colors.primary} /></View>
+                      <Text style={styles.accountChoiceTitle}>Empresário</Text>
+                      <Text style={styles.accountChoiceDescription}>Quero divulgar oportunidades e encontrar profissionais.</Text>
+                    </Pressable>
+                  </View>
+                )}
+
+                {isRegistering && !isCandidate && renderField('Nome da empresa', 'briefcase', companyName, setCompanyName, {
+                  placeholder: 'Razão ou nome da empresa', autoCapitalize: 'words',
+                })}
+                {isRegistering && renderField(isCandidate ? 'Nome completo' : 'Nome do responsável', 'user', name, setName, {
                   placeholder: 'Como podemos chamar você?', autoCapitalize: 'words',
                 })}
-                {isRegistering && renderField('CNPJ da empresa', 'briefcase', documentNumber, setDocumentNumber, {
-                  placeholder: '00.000.000/0000-00', keyboardType: 'number-pad',
+                {isRegistering && renderField(isCandidate ? 'CPF' : 'CNPJ (opcional)', 'credit-card', documentNumber, setDocumentNumber, {
+                  placeholder: isCandidate ? '000.000.000-00' : '00.000.000/0000-00', keyboardType: 'number-pad',
+                })}
+                {isRegistering && renderField(isCandidate ? 'Telefone (opcional)' : 'Telefone', 'phone', phone, setPhone, {
+                  placeholder: '(00) 00000-0000', keyboardType: 'phone-pad',
+                })}
+                {isRegistering && isCandidate && renderField('Formação principal (opcional)', 'book-open', course, setCourse, {
+                  placeholder: 'Curso ou área de formação', autoCapitalize: 'words',
                 })}
                 {renderField('E-mail', 'mail', email, setEmail, {
                   placeholder: 'voce@empresa.com.br', keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false,
@@ -212,7 +286,7 @@ export default function LoginScreen() {
                   {!isSubmitting && <Feather name="arrow-right" size={18} color={colors.onPrimary} />}
                 </Pressable>
                 <View style={styles.switchRow}>
-                  <Text style={styles.switchText}>{isRegistering ? 'Já tem acesso?' : 'Sua empresa ainda não tem acesso?'}</Text>
+                  <Text style={styles.switchText}>{isRegistering ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}</Text>
                   <Pressable onPress={toggleMode} accessibilityRole="button">
                     <Text style={styles.switchLink}>{isRegistering ? 'Entrar' : 'Criar conta'}</Text>
                   </Pressable>
@@ -251,6 +325,14 @@ const styles = StyleSheet.create({
   formEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 9 },
   title: { color: colors.ink, fontSize: 27, lineHeight: 34, fontWeight: '700', letterSpacing: -0.6 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 21 },
+  accountChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 18 },
+  accountChoice: { flex: 1, minWidth: 190, minHeight: 132, padding: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 13, backgroundColor: colors.surface },
+  accountChoiceActive: { borderColor: colors.primary, backgroundColor: colors.surfaceSoft },
+  accountChoiceIcon: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.surfaceSoft, marginBottom: 9 },
+  accountChoiceTitle: { color: colors.ink, fontSize: 13, fontWeight: '800', marginBottom: 5 },
+  accountChoiceDescription: { color: colors.muted, fontSize: 10, lineHeight: 15 },
+  formError: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 11, marginBottom: 13, borderWidth: 1, borderColor: colors.danger, borderRadius: 10, backgroundColor: colors.dangerSurface },
+  formErrorText: { flex: 1, color: colors.danger, fontSize: 12, lineHeight: 17 },
   fieldGroup: { marginBottom: 15 },
   labelLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 },
   label: { color: colors.ink, fontSize: 13, fontWeight: '700', marginBottom: 7 },

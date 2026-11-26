@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,9 +26,11 @@ function formatTime(value) {
 }
 
 export default function MensagensScreen() {
+  const routeParams = useLocalSearchParams();
   const width = useHydratedWidth();
   const isWide = width >= 760;
   const [userId, setUserId] = useState(null);
+  const [userType, setUserType] = useState(null);
   const [conversationsData, setConversationsData] = useState([]);
   const [messagesData, setMessagesData] = useState([]);
   const [activeApplicationId, setActiveApplicationId] = useState(null);
@@ -42,16 +44,20 @@ export default function MensagensScreen() {
       const [session, response] = await Promise.all([getSession(), apiFetch('/messages')]);
       const nextConversations = response.conversations || [];
       setUserId(session.user?.id ?? null);
+      setUserType(session.user?.user_type ?? null);
       setConversationsData(nextConversations);
       setMessagesData(response.messages || []);
       setError('');
-      setActiveApplicationId((current) => current || nextConversations[0]?.application_id || null);
+      const requestedApplicationId = Array.isArray(routeParams.application_id)
+        ? routeParams.application_id[0]
+        : routeParams.application_id;
+      setActiveApplicationId((current) => requestedApplicationId || current || nextConversations[0]?.application_id || null);
     } catch (loadError) {
       setError(loadError.message || 'Não foi possível carregar as mensagens.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [routeParams.application_id]);
 
   useFocusEffect(useCallback(() => {
     setIsLoading(true);
@@ -66,7 +72,9 @@ export default function MensagensScreen() {
       return [id, {
         id,
         applicationId: conversation.application_id,
-        candidate: conversation.candidate_name || 'Candidato',
+        candidate: userType === 'CANDIDATE'
+          ? conversation.recruiter_name || conversation.company_name || 'Empresa'
+          : conversation.candidate_name || 'Candidato',
         jobTitle: conversation.job_title || 'Vaga',
         messages: [],
       }];
@@ -81,7 +89,7 @@ export default function MensagensScreen() {
       lastMessage: conversation.messages.at(-1)?.body || 'Conversa iniciada pela candidatura',
       lastTime: formatTime(conversation.messages.at(-1)?.created_at),
     }));
-  }, [conversationsData, messagesData]);
+  }, [userType, conversationsData, messagesData]);
 
   const activeChat = conversations.find((item) => item.id === String(activeApplicationId)) || null;
 
@@ -113,7 +121,7 @@ export default function MensagensScreen() {
       <View style={styles.page}>
         <View style={styles.heading}>
           <View style={styles.headingCopy}>
-            <Text style={styles.eyebrow}>ÁREA EMPRESARIAL</Text>
+            <Text style={styles.eyebrow}>{userType === 'CANDIDATE' ? 'ÁREA DO CANDIDATO' : 'ÁREA EMPRESARIAL'}</Text>
           </View>
           <Pressable onPress={() => loadMessages()} style={styles.refreshButton} accessibilityRole="button" accessibilityLabel="Atualizar mensagens" title="Atualizar mensagens">
             <Feather name="refresh-cw" size={17} color={colors.primaryDark} />
@@ -142,7 +150,7 @@ export default function MensagensScreen() {
                 <View style={styles.center}>
                   <Feather name="message-circle" size={30} color={colors.muted} />
                   <Text style={styles.emptyTitle}>Nenhuma conversa ainda</Text>
-                  <Text style={styles.mutedText}>As candidaturas feitas no mobile aparecerão aqui.</Text>
+                  <Text style={styles.mutedText}>{userType === 'CANDIDATE' ? 'As conversas sobre suas candidaturas aparecerão aqui.' : 'As candidaturas e conversas com candidatos aparecerão aqui.'}</Text>
                 </View>
               ) : (
                 <ScrollView contentContainerStyle={styles.conversationList}>

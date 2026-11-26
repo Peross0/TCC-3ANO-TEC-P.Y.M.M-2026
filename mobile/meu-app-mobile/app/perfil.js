@@ -34,7 +34,14 @@ export default function PerfilScreen() {
   const [nome, setNome] = useState(profile?.full_name || user?.full_name || "");
   const [telefone, setTelefone] = useState(profile?.phone || user?.phone || "");
   const [curso, setCurso] = useState(profile?.course || user?.course || "");
+  const [companyName, setCompanyName] = useState(profile?.company_name || user?.company_name || "");
+  const [companyDescription, setCompanyDescription] = useState(profile?.company_description || "");
+  const [companySector, setCompanySector] = useState(profile?.company_sector || "");
+  const [companyLocation, setCompanyLocation] = useState(profile?.company_location || "");
+  const [companyLogoUri, setCompanyLogoUri] = useState(getAssetUrl(profile?.company_logo_url || user?.company_logo_url));
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingCompany, setIsSavingCompany] = useState(false);
+  const [isUploadingCompanyLogo, setIsUploadingCompanyLogo] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [documentsLoadedForUser, setDocumentsLoadedForUser] = useState(null);
@@ -47,6 +54,7 @@ export default function PerfilScreen() {
   );
   const router = useRouter();
   const isCandidate = user?.user_type === "CANDIDATE";
+  const isRecruiter = user?.user_type === "RECRUITER";
   const loadingDocuments = Boolean(
     user?.id && documentsLoadedForUser !== user.id,
   );
@@ -127,6 +135,79 @@ export default function PerfilScreen() {
       );
     } finally {
       setIsUploadingAvatar(false);
+    }
+  };
+
+  const changeCompanyLogo = async () => {
+    if (isUploadingCompanyLogo) return;
+    try {
+      const selection = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (selection.canceled || !selection.assets?.length) return;
+      const asset = selection.assets[0];
+      const formData = new FormData();
+      if (Platform.OS === "web" && asset.file) {
+        formData.append("company_logo", asset.file, asset.fileName || "company-logo.jpg");
+      } else {
+        formData.append("company_logo", {
+          uri: asset.uri,
+          name: asset.fileName || "company-logo.jpg",
+          type: asset.mimeType || "image/jpeg",
+        });
+      }
+      setIsUploadingCompanyLogo(true);
+      const result = await apiFetch("/recruiters/company/logo", { method: "POST", body: formData });
+      const logoUrl = result.company_logo_url;
+      setCompanyLogoUri(getAssetUrl(logoUrl));
+      setSessionData((current) => ({
+        ...current,
+        user: { ...current.user, company_logo_url: logoUrl },
+        profile: { ...current.profile, company_logo_url: logoUrl },
+      }));
+      Alert.alert("Logo atualizado", result.message || "A imagem da empresa foi atualizada.");
+    } catch (error) {
+      Alert.alert("Não foi possível atualizar o logo", error.message || "Tente novamente.");
+    } finally {
+      setIsUploadingCompanyLogo(false);
+    }
+  };
+
+  const saveCompanyProfile = async () => {
+    if (companyName.trim().length < 2) {
+      Alert.alert("Nome da empresa obrigatório", "Informe o nome da empresa.");
+      return;
+    }
+    setIsSavingCompany(true);
+    try {
+      const result = await apiFetch("/recruiters/company", {
+        method: "PUT",
+        body: JSON.stringify({
+          company_name: companyName.trim(),
+          company_description: companyDescription.trim(),
+          company_sector: companySector.trim(),
+          location: companyLocation.trim(),
+        }),
+      });
+      const nextCompany = {
+        company_name: companyName.trim(),
+        company_description: companyDescription.trim() || null,
+        company_sector: companySector.trim() || null,
+        company_location: companyLocation.trim() || null,
+      };
+      setSessionData((current) => ({
+        ...current,
+        user: { ...current.user, ...nextCompany },
+        profile: { ...current.profile, ...nextCompany },
+      }));
+      Alert.alert("Empresa atualizada", `${result.message} ${result.updated_vacancies} vaga(s) sincronizada(s).`);
+    } catch (error) {
+      Alert.alert("Não foi possível salvar", error.message || "Tente novamente.");
+    } finally {
+      setIsSavingCompany(false);
     }
   };
 
@@ -365,7 +446,7 @@ export default function PerfilScreen() {
         <SafeAreaView style={styles.container}>
           <StatusBar
             barStyle={
-              colors.background === "#101822" || colors.background === "#000000"
+              colors.background === "#0D1117" || colors.background === "#000000"
                 ? "light-content"
                 : "dark-content"
             }
@@ -473,6 +554,30 @@ export default function PerfilScreen() {
                 />
               ) : null}
             </View>
+
+            {isRecruiter ? (
+              <View style={styles.formCard}>
+                <Text style={styles.sectionTitle}>Perfil empresarial</Text>
+                <Text style={styles.documentHint}>Os dados ficam vinculados à sua conta e são refletidos nas vagas existentes.</Text>
+                <View style={styles.companyLogoRow}>
+                  <View style={styles.companyLogoPreview}>
+                    {companyLogoUri ? <Image source={{ uri: companyLogoUri }} style={styles.companyLogoImage} /> : <Feather name="briefcase" size={24} color={colors.tint} />}
+                  </View>
+                  <TouchableOpacity style={styles.photoButton} onPress={changeCompanyLogo} disabled={isUploadingCompanyLogo} accessibilityRole="button" accessibilityLabel="Alterar logo da empresa">
+                    {isUploadingCompanyLogo ? <ActivityIndicator size="small" color={colors.surface} /> : <Feather name="image" size={15} color={colors.surface} />}
+                    <Text style={styles.photoButtonText}>{isUploadingCompanyLogo ? "Enviando…" : "Alterar logo"}</Text>
+                  </TouchableOpacity>
+                </View>
+                <Field colors={colors} styles={styles} label="Nome da empresa" value={companyName} onChangeText={setCompanyName} placeholder="Nome da empresa" editable={!isSavingCompany} />
+                <Field colors={colors} styles={styles} label="Segmento" value={companySector} onChangeText={setCompanySector} placeholder="Ex.: Tecnologia" editable={!isSavingCompany} />
+                <Field colors={colors} styles={styles} label="Localização" value={companyLocation} onChangeText={setCompanyLocation} placeholder="Cidade ou região" editable={!isSavingCompany} />
+                <Field colors={colors} styles={styles} label="Descrição" value={companyDescription} onChangeText={setCompanyDescription} placeholder="Apresente brevemente a empresa" multiline editable={!isSavingCompany} />
+                <TouchableOpacity style={[styles.saveButton, isSavingCompany && styles.disabledButton]} onPress={saveCompanyProfile} disabled={isSavingCompany} accessibilityRole="button">
+                  {isSavingCompany ? <ActivityIndicator color={colors.buttonText} /> : <Feather name="save" size={16} color={colors.buttonText} />}
+                  <Text style={styles.saveButtonText}>{isSavingCompany ? "Salvando…" : "Salvar perfil empresarial"}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
 
             <View style={styles.formCard}>
               <View style={styles.documentHeading}>
@@ -683,6 +788,19 @@ function makeStyles(colors, largeText) {
       fontSize: 12 * scale,
       fontWeight: "700",
     },
+    companyLogoRow: { alignItems: "center", flexDirection: "row", gap: 12, marginBottom: 4 },
+    companyLogoPreview: {
+      alignItems: "center",
+      backgroundColor: colors.primaryWash,
+      borderColor: colors.line,
+      borderRadius: 14,
+      borderWidth: 1,
+      height: 58,
+      justifyContent: "center",
+      overflow: "hidden",
+      width: 58,
+    },
+    companyLogoImage: { height: "100%", width: "100%" },
     formCard: {
       backgroundColor: colors.surface,
       borderColor: colors.line,
@@ -775,5 +893,6 @@ function makeStyles(colors, largeText) {
       fontSize: 14 * scale,
       fontWeight: "800",
     },
+    saveButtonText: { color: colors.buttonText, fontSize: 13 * scale, fontWeight: "800" },
   });
 }

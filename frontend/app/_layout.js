@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { Stack, router, usePathname } from 'expo-router';
+import { Stack, router, useGlobalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
@@ -10,10 +10,11 @@ import { clearSession, getSession } from '../lib/api';
 import { colors, theme } from '../lib/theme';
 import { useHydratedWidth } from '../lib/useHydratedWidth';
 
-const privateRoutes = ['/home', '/candidaturas', '/vagas', '/mensagens', '/perfil'];
+const privateRoutes = ['/home', '/candidaturas', '/candidatos', '/vagas', '/mensagens', '/perfil'];
 const routeTitles = {
   '/home': 'Início',
   '/candidaturas': 'Candidaturas',
+  '/candidatos': 'Candidatos',
   '/vagas': 'Vagas',
   '/mensagens': 'Mensagens',
   '/perfil': 'Meu perfil',
@@ -30,9 +31,14 @@ function getInitials(name = '') {
 
 export default function RootLayout() {
   const pathname = usePathname();
+  const searchParams = useGlobalSearchParams();
   const width = useHydratedWidth();
   const isDesktop = width >= 1024;
   const isRecruiterRoute = privateRoutes.includes(pathname);
+  const candidateSection = Array.isArray(searchParams.secao) ? searchParams.secao[0] : searchParams.secao;
+  const navigationPath = pathname === '/candidato' && candidateSection
+    ? `${pathname}?secao=${candidateSection}`
+    : pathname;
   const [user, setUser] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -67,7 +73,7 @@ export default function RootLayout() {
       <StatusBar style="light" backgroundColor={colors.background} />
       {isRecruiterRoute && isDesktop ? (
         <RecruiterNavigation
-          pathname={pathname}
+          pathname={navigationPath}
           user={user}
           onNavigate={navigate}
           onSignOut={signOut}
@@ -123,7 +129,7 @@ export default function RootLayout() {
             accessibilityLabel="Fechar menu de navegação"
           />
           <RecruiterNavigation
-            pathname={pathname}
+            pathname={navigationPath}
             user={user}
             onNavigate={navigate}
             onSignOut={signOut}
@@ -154,7 +160,7 @@ export default function RootLayout() {
               style={styles.profileAction}
               onPress={() => {
                 setProfileMenuOpen(false);
-                navigate('/perfil');
+                navigate(user?.user_type === 'CANDIDATE' ? '/candidato?secao=profile' : '/perfil');
               }}
               accessibilityRole="button"
               accessibilityLabel="Abrir meu perfil"

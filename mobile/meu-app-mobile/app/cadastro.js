@@ -51,7 +51,8 @@ function formatCpf(value) {
 
 export default function RegisterScreen() {
   const { tipo } = useLocalSearchParams();
-  const isRecruiter = tipo === 'recrutador';
+  const [accountType, setAccountType] = useState(() => (tipo === 'recrutador' ? 'RECRUITER' : 'CANDIDATE'));
+  const isRecruiter = accountType === 'RECRUITER';
   const { colors, isDark } = useAppPreferences();
   const BRAND = makeBrand(colors);
   const styles = makeStyles(colors);
@@ -67,6 +68,15 @@ export default function RegisterScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
+
+  const selectAccountType = (type) => {
+    setAccountType(type);
+    setCpf('');
+    setEmpresa('');
+    setTelefone('');
+    setCurso('');
+    setErrorMessage('');
+  };
 
   const handleRegister = async () => {
     if (isSubmitting) return;
@@ -96,12 +106,12 @@ export default function RegisterScreen() {
       setErrorMessage('As senhas não coincidem.');
       return;
     }
-    if (isRecruiter && !isValidCnpj(cpf)) {
-      setErrorMessage('Informe um CNPJ válido.');
-      return;
-    }
     if (isRecruiter && !telefone.trim()) {
       setErrorMessage('Informe o telefone.');
+      return;
+    }
+    if (isRecruiter && cpf.trim() && !isValidCnpj(cpf)) {
+      setErrorMessage('Informe um CNPJ válido ou deixe o campo em branco.');
       return;
     }
     if (!isRecruiter && documento.length !== 11) {
@@ -121,8 +131,9 @@ export default function RegisterScreen() {
           course: curso.trim() || undefined,
           company_name: isRecruiter ? empresa.trim() : undefined,
           user_type: isRecruiter ? 'RECRUITER' : 'CANDIDATE',
-          document_type: isRecruiter ? 'CNPJ' : 'CPF',
-          document_number: documento,
+          ...(isRecruiter && !documento
+            ? {}
+            : { document_type: isRecruiter ? 'CNPJ' : 'CPF', document_number: documento }),
         }),
         token: null,
       });
@@ -174,6 +185,19 @@ export default function RegisterScreen() {
           <Text style={styles.subtitle}>{isRecruiter ? 'Crie seu acesso para gerenciar oportunidades.' : 'Preencha seus dados para encontrar sua próxima oportunidade.'}</Text>
 
           <View style={styles.formCard}>
+            <Text style={styles.sectionTitle}>Como você deseja utilizar o Conecta Fácil?</Text>
+            <View style={styles.accountChoices}>
+              <TouchableOpacity style={[styles.accountChoice, accountType === 'CANDIDATE' && styles.accountChoiceActive]} onPress={() => selectAccountType('CANDIDATE')} accessibilityRole="radio" accessibilityState={{ selected: accountType === 'CANDIDATE' }}>
+                <View style={styles.accountChoiceIcon}><Feather name="user" size={17} color={colors.tint} /></View>
+                <Text style={styles.accountChoiceTitle}>Candidato</Text>
+                <Text style={styles.accountChoiceDescription}>Estou procurando oportunidades de emprego, estágio ou primeiro trabalho.</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.accountChoice, accountType === 'RECRUITER' && styles.accountChoiceActive]} onPress={() => selectAccountType('RECRUITER')} accessibilityRole="radio" accessibilityState={{ selected: accountType === 'RECRUITER' }}>
+                <View style={styles.accountChoiceIcon}><Feather name="briefcase" size={17} color={colors.tint} /></View>
+                <Text style={styles.accountChoiceTitle}>Empresário</Text>
+                <Text style={styles.accountChoiceDescription}>Quero divulgar oportunidades e encontrar profissionais.</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.sectionTitle}>Seus dados</Text>
             <Text style={styles.sectionSubtitle}>Os campos com * são obrigatórios.</Text>
             {isRecruiter && <FormField label="Nome da empresa *" icon="briefcase">
@@ -227,7 +251,7 @@ export default function RegisterScreen() {
             {isRecruiter && <FormField label="Confirmar senha *" icon="lock">
               <TextInput style={styles.input} placeholder="Digite a senha novamente" placeholderTextColor={colors.placeholder} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
             </FormField>}
-            <FormField label={isRecruiter ? 'CNPJ *' : 'CPF *'} icon="credit-card">
+            <FormField label={isRecruiter ? 'CNPJ (opcional)' : 'CPF *'} icon="credit-card">
               <TextInput
                 style={styles.input}
                 placeholder={isRecruiter ? '00.000.000/0000-00' : '000.000.000-00'}
@@ -313,6 +337,12 @@ const makeStyles = (colors) => StyleSheet.create({
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
   formCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.line },
   sectionTitle: { color: colors.text, fontSize: 19, fontWeight: '800' },
+  accountChoices: { gap: 9, marginTop: 13, marginBottom: 19 },
+  accountChoice: { minHeight: 82, position: 'relative', paddingLeft: 52, paddingRight: 12, paddingVertical: 11, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.surface },
+  accountChoiceActive: { borderColor: colors.tint, backgroundColor: colors.accentWash },
+  accountChoiceIcon: { position: 'absolute', left: 12, top: 13, width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.primaryWash },
+  accountChoiceTitle: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  accountChoiceDescription: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
   sectionSubtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5, marginBottom: 14 },
   fieldGroup: { marginBottom: 12 },
   fieldLabel: { color: colors.text, fontSize: 13, fontWeight: '700', marginBottom: 7 },

@@ -8,7 +8,7 @@ export async function listMessages(userId) {
     .join('users as candidates', 'interests.user_id', 'candidates.id')
     .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
     .whereNull('vacancies.deleted_at')
-    .where('interests.origin', 'MOBILE')
+    .whereNot('interests.origin', 'DEMO')
     .where((query) => query
       .where('interests.user_id', userId)
       .orWhere('vacancies.user_id', userId))
@@ -30,7 +30,7 @@ export async function listMessages(userId) {
     .join('users as candidates', 'interests.user_id', 'candidates.id')
     .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
     .whereNull('vacancies.deleted_at')
-    .where('interests.origin', 'MOBILE')
+    .whereNot('interests.origin', 'DEMO')
     .where((query) => query
       .where('interests.user_id', userId)
       .orWhere('vacancies.user_id', userId))

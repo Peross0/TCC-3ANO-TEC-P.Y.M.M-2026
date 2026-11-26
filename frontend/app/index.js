@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -11,135 +12,348 @@ import {
   View,
 } from 'react-native';
 
-import { colors } from '../lib/theme';
 import { useHydratedWidth } from '../lib/useHydratedWidth';
+
+const palette = {
+  background: '#0D1117',
+  surface: '#171E29',
+  surfaceRaised: '#1D2734',
+  border: '#293544',
+  blue: '#48BCEB',
+  blueSoft: '#143044',
+  text: '#E5EAF0',
+  secondary: '#A0ACB9',
+  muted: '#7E8B99',
+  darkText: '#08202D',
+  green: '#68D5AE',
+};
 
 const benefits = [
   {
+    number: '01',
     icon: 'briefcase',
     title: 'Oportunidades mais claras',
-    text: 'Apresente vagas com informações objetivas para que cada pessoa entenda o que a empresa procura.',
+    text: 'Vagas bem apresentadas ajudam cada pessoa a entender o que a empresa procura.',
   },
   {
+    number: '02',
     icon: 'users',
     title: 'Conexões com propósito',
-    text: 'Organize a presença da sua empresa e facilite o encontro com profissionais em busca do próximo passo.',
+    text: 'Aproxime empresas e profissionais que compartilham objetivos e vontade de crescer.',
   },
   {
-    icon: 'compass',
+    number: '03',
+    icon: 'layers',
     title: 'Gestão sem complicação',
-    text: 'Cuide do perfil e das oportunidades em um só lugar, com um fluxo simples para o dia a dia.',
+    text: 'Organize o perfil e acompanhe suas oportunidades em um só lugar.',
   },
 ];
+
+const webFont = Platform.select({
+  web: 'Inter, Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  default: undefined,
+});
+
+function navigateFromPress(callback, event) {
+  if (Platform.OS === 'web') event?.currentTarget?.blur?.();
+  callback();
+}
+
+function Brand({ onPress, footer = false }) {
+  return (
+    <Pressable
+      style={[styles.brand, footer && styles.footerBrand]}
+      onPress={(event) => navigateFromPress(onPress, event)}
+      accessibilityRole="button"
+      accessibilityLabel="Conecta Fácil, voltar ao início"
+    >
+      <View style={[styles.brandMark, footer && styles.footerBrandMark]}>
+        <Feather name="link-2" size={footer ? 15 : 18} color={palette.darkText} />
+      </View>
+      <Text style={[styles.brandName, footer && styles.footerBrandName]}>Conecta Fácil</Text>
+    </Pressable>
+  );
+}
+
+function NavigationAction({ label, onPress, compact = false }) {
+  return (
+    <Pressable
+      style={({ hovered, pressed }) => [
+        styles.navAction,
+        compact && styles.navActionCompact,
+        hovered && styles.navActionHovered,
+        pressed && styles.navActionPressed,
+      ]}
+      onPress={(event) => navigateFromPress(onPress, event)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={[styles.navActionText, compact && styles.navActionTextCompact]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ActionButton({ label, icon, onPress, secondary = false, wide = false, accessibilityHint }) {
+  return (
+    <Pressable
+      style={({ hovered, pressed }) => [
+        styles.actionButton,
+        secondary ? styles.secondaryButton : styles.primaryButton,
+        wide && styles.actionButtonWide,
+        hovered && (secondary ? styles.secondaryButtonHovered : styles.primaryButtonHovered),
+        pressed && styles.buttonPressed,
+      ]}
+      onPress={(event) => navigateFromPress(onPress, event)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+    >
+      <Text style={[styles.actionButtonText, secondary && styles.secondaryButtonText]}>{label}</Text>
+      <Feather
+        name={icon}
+        size={17}
+        color={secondary ? palette.blue : palette.darkText}
+      />
+    </Pressable>
+  );
+}
+
+function FlowStep({ icon, label, index, last }) {
+  return (
+    <View style={styles.flowStep}>
+      <View style={styles.flowStepTop}>
+        <View style={[styles.flowIcon, index === 1 && styles.flowIconMiddle]}>
+          <Feather name={icon} size={19} color={index === 1 ? palette.darkText : palette.blue} />
+        </View>
+        {!last && (
+          <View style={styles.flowConnector}>
+            <View style={styles.flowConnectorLine} />
+            <Feather name="arrow-right" size={14} color={palette.blue} />
+          </View>
+        )}
+      </View>
+      <Text style={styles.flowLabel}>{label}</Text>
+      <Text style={styles.flowCaption}>{index === 0 ? 'Perfil da empresa' : index === 1 ? 'Vaga bem definida' : 'Pessoas conectadas'}</Text>
+    </View>
+  );
+}
+
+function BenefitCard({ benefit }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <View
+      style={[styles.benefitCard, hovered && styles.benefitCardHovered]}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      <View style={styles.benefitCardTop}>
+        <View style={styles.benefitIcon}>
+          <Feather name={benefit.icon} size={19} color={palette.blue} />
+        </View>
+        <Text style={styles.benefitNumber}>{benefit.number}</Text>
+      </View>
+      <Text style={styles.benefitTitle} accessibilityRole="header" aria-level={3}>{benefit.title}</Text>
+      <Text style={styles.benefitText}>{benefit.text}</Text>
+    </View>
+  );
+}
 
 export default function LandingPage() {
   const width = useHydratedWidth();
   const scrollRef = useRef(null);
   const [benefitsY, setBenefitsY] = useState(0);
-  const isWide = width >= 760;
+  const isWide = width >= 880;
+  const isCompact = width < 760;
 
+  const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
   const scrollToBenefits = () => scrollRef.current?.scrollTo({ y: benefitsY, animated: true });
   const goToRegister = () => router.push({ pathname: '/login', params: { cadastro: '1' } });
+  const goToCandidates = () => router.push('/candidato');
+  const goToLogin = () => router.push('/login');
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Pressable style={styles.brand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button" accessibilityLabel="Conecta Fácil, início">
-            <View style={styles.brandMark}><Feather name="link-2" size={19} color={colors.onPrimary} /></View>
-            <Text style={styles.brandName}>Conecta Fácil</Text>
-          </Pressable>
-          {isWide && (
-            <View style={styles.navLinks}>
-              <Pressable style={styles.navLink} onPress={scrollToBenefits} accessibilityRole="button"><Text style={styles.navText}>A plataforma</Text></Pressable>
-              <Pressable style={styles.navLink} onPress={() => router.push('/login')} accessibilityRole="button"><Text style={styles.navText}>Para empresas</Text></Pressable>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerOuter}>
+          <View style={[styles.header, isCompact && styles.headerCompact]}>
+            <View style={styles.headerMain}>
+              <Brand onPress={scrollToTop} />
+              {!isCompact && (
+                <View style={styles.navigation}>
+                  <NavigationAction label="Início" onPress={scrollToTop} />
+                  <NavigationAction label="Para candidatos" onPress={goToCandidates} />
+                  <NavigationAction label="Para empresas" onPress={goToRegister} />
+                </View>
+              )}
+              <Pressable
+                style={({ hovered, pressed }) => [
+                  styles.loginButton,
+                  hovered && styles.loginButtonHovered,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={(event) => navigateFromPress(goToLogin, event)}
+                accessibilityRole="button"
+                accessibilityLabel="Entrar na conta de recrutador"
+              >
+                <Text style={styles.loginButtonText}>Entrar</Text>
+                <Feather name="arrow-up-right" size={16} color={palette.text} />
+              </Pressable>
             </View>
-          )}
-          <Pressable style={styles.loginButton} onPress={() => router.push('/login')} accessibilityRole="button">
-            <Text style={styles.loginButtonText}>Entrar</Text>
-            <Feather name="arrow-up-right" size={16} color={colors.primaryDark} />
-          </Pressable>
+            {isCompact && (
+              <View style={styles.compactNavigation}>
+                <NavigationAction compact label="Início" onPress={scrollToTop} />
+                <NavigationAction compact label="Para candidatos" onPress={goToCandidates} />
+                <NavigationAction compact label="Para empresas" onPress={goToRegister} />
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={[styles.hero, isWide && styles.heroWide]}>
           <View style={styles.heroCopy}>
-            <View style={styles.kicker}><View style={styles.kickerDot} /><Text style={styles.kickerText}>TALENTOS E EMPRESAS, MAIS PERTO</Text></View>
-            <Text style={styles.heroTitle}>O próximo bom encontro profissional pode começar aqui.</Text>
-            <Text style={styles.heroDescription}>O Conecta Fácil ajuda empresas a apresentar oportunidades e a encontrar pessoas prontas para crescer junto.</Text>
-            <View style={styles.heroActions}>
-              <Pressable style={styles.primaryButton} onPress={goToRegister} accessibilityRole="button">
-                <Text style={styles.primaryButtonText}>Cadastrar minha empresa</Text>
-                <Feather name="arrow-right" size={17} color={colors.onPrimary} />
-              </Pressable>
-              <Pressable style={styles.secondaryButton} onPress={scrollToBenefits} accessibilityRole="button">
-                <Text style={styles.secondaryButtonText}>Conhecer a plataforma</Text>
-              </Pressable>
+            <View style={styles.eyebrowRow}>
+              <View style={styles.eyebrowLine} />
+              <Text style={styles.eyebrow}>TALENTOS E EMPRESAS, MAIS PERTO</Text>
             </View>
-            <View style={styles.trustNote}><Feather name="check-circle" size={15} color={colors.success} /><Text style={styles.trustText}>Um espaço simples para criar conexões de trabalho.</Text></View>
+            <Text
+              style={[styles.heroTitle, { fontSize: width < 400 ? 37 : isWide ? 50 : 43, lineHeight: width < 400 ? 45 : isWide ? 59 : 52 }]}
+              accessibilityRole="header"
+              aria-level={1}
+            >
+              O próximo bom encontro profissional pode começar aqui.
+            </Text>
+            <Text style={styles.heroDescription}>
+              O Conecta Fácil ajuda empresas a encontrar oportunidades e pessoas prontas para crescer junto.
+            </Text>
+            <View style={[styles.heroActions, !isWide && styles.heroActionsStacked]}>
+              <ActionButton
+                label="Encontrar oportunidades"
+                icon="arrow-right"
+                onPress={goToCandidates}
+                wide={!isWide}
+                accessibilityHint="Abre a área de candidaturas disponível no portal"
+              />
+              <ActionButton
+                label="Sou uma empresa"
+                icon="briefcase"
+                onPress={goToRegister}
+                secondary
+                wide={!isWide}
+                accessibilityHint="Abre o cadastro empresarial"
+              />
+            </View>
+            <View style={styles.trustNote}>
+              <View style={styles.trustIcon}><Feather name="shield" size={14} color={palette.green} /></View>
+              <Text style={styles.trustText}>Um espaço claro para criar conexões de trabalho.</Text>
+            </View>
           </View>
 
-          <View style={styles.visualWrap} accessible accessibilityLabel="Ilustração das etapas para conectar uma empresa a profissionais">
+          <View
+            style={[styles.visualWrap, isWide && styles.visualWrapWide]}
+            accessible
+            accessibilityLabel="Ilustração do fluxo entre empresa, oportunidade e talento"
+          >
+            <View style={styles.visualGlow} />
             <View style={styles.visualCard}>
-              <View style={styles.visualTopline}><Text style={styles.visualEyebrow}>CONEXÕES QUE MOVEM</Text><Feather name="more-horizontal" size={19} color={colors.muted} /></View>
-              <Text style={styles.visualTitle}>Da oportunidade à conversa</Text>
-              <Text style={styles.visualSubtitle}>Um caminho direto, sem etapas desnecessárias.</Text>
-              <View style={styles.flowLine}>
-                <View style={styles.flowItem}>
-                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="briefcase" size={17} color={colors.onPrimary} /></View>
-                  <Text style={styles.flowLabel}>Empresa</Text>
+              <View style={styles.visualHeader}>
+                <View>
+                  <Text style={styles.visualEyebrow}>CONEXÕES QUE MOVEM</Text>
+                  <Text style={styles.visualTitle}>Da oportunidade à conversa</Text>
                 </View>
-                <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.primaryDark} /></View>
-                <View style={styles.flowItem}>
-                  <View style={[styles.flowIcon, styles.flowIconAccent]}><Feather name="file-text" size={17} color={colors.primaryDark} /></View>
-                  <Text style={styles.flowLabel}>Oportunidade</Text>
-                </View>
-                <View style={styles.flowConnector}><View style={styles.flowDash} /><Feather name="arrow-right" size={15} color={colors.primaryDark} /></View>
-                <View style={styles.flowItem}>
-                  <View style={[styles.flowIcon, styles.flowIconPrimary]}><Feather name="users" size={17} color={colors.onPrimary} /></View>
-                  <Text style={styles.flowLabel}>Talento</Text>
+                <View style={styles.statusBadge}>
+                  <View style={styles.statusDot} />
+                  <Text style={styles.statusText}>Conectando</Text>
                 </View>
               </View>
-              <View style={styles.visualFooter}><View style={styles.visualFooterIcon}><Feather name="heart" size={14} color={colors.primaryDark} /></View><Text style={styles.visualFooterText}>Mais clareza para os dois lados.</Text></View>
+              <Text style={styles.visualSubtitle}>Um caminho direto, sem etapas desnecessárias.</Text>
+              <View style={styles.flowPanel}>
+                <View style={styles.flowLine}>
+                  <FlowStep icon="briefcase" label="Empresa" index={0} />
+                  <FlowStep icon="file-text" label="Oportunidade" index={1} />
+                  <FlowStep icon="user" label="Talento" index={2} last />
+                </View>
+              </View>
+              <View style={styles.visualFooter}>
+                <View style={styles.visualFooterIcon}><Feather name="check" size={14} color={palette.darkText} /></View>
+                <Text style={styles.visualFooterText}>Mais clareza para os dois lados.</Text>
+                <Feather name="arrow-up-right" size={16} color={palette.muted} />
+              </View>
             </View>
-            <View style={styles.visualNote}><Feather name="message-circle" size={17} color={colors.onPrimary} /><Text style={styles.visualNoteText}>O trabalho começa com uma boa conexão.</Text></View>
+            <View style={styles.visualNote}>
+              <View style={styles.visualNoteIcon}><Feather name="message-circle" size={16} color={palette.blue} /></View>
+              <View style={styles.visualNoteCopy}>
+                <Text style={styles.visualNoteTitle}>Uma boa conexão começa com clareza.</Text>
+                <Text style={styles.visualNoteText}>Da vaga publicada ao primeiro contato.</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         <View style={styles.benefitSection} onLayout={(event) => setBenefitsY(event.nativeEvent.layout.y)}>
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionEyebrow}>FEITO PARA O DIA A DIA</Text>
-            <Text style={styles.sectionTitle}>Menos ruído. Mais boas conexões.</Text>
-            <Text style={styles.sectionDescription}>Uma experiência pensada para aproximar quem oferece uma oportunidade de quem pode fazer parte dela.</Text>
+            <View style={styles.sectionEyebrowWrap}>
+              <Feather name="star" size={14} color={palette.blue} />
+              <Text style={styles.sectionEyebrow}>FEITO PARA O DIA A DIA</Text>
+            </View>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>Menos ruído. Mais boas conexões.</Text>
+            <Text style={styles.sectionDescription}>
+              Uma experiência pensada para aproximar quem oferece uma oportunidade de quem pode fazer parte dela.
+            </Text>
           </View>
           <View style={[styles.benefitGrid, isWide && styles.benefitGridWide]}>
-            {benefits.map((benefit, index) => (
-              <View key={benefit.title} style={[styles.benefitItem, isWide && styles.benefitItemWide, index === 0 && styles.firstBenefit]}>
-                <View style={[styles.benefitIcon, index === 1 && styles.benefitIconAccent]}><Feather name={benefit.icon} size={19} color={colors.primaryDark} /></View>
-                <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                <Text style={styles.benefitText}>{benefit.text}</Text>
+            {benefits.map((benefit) => <BenefitCard key={benefit.number} benefit={benefit} />)}
+          </View>
+        </View>
+
+        <View style={styles.ctaOuter}>
+          <View style={[styles.cta, isWide && styles.ctaWide]}>
+            <View style={styles.ctaDecoration} />
+            <View style={styles.ctaCopy}>
+              <Text style={styles.ctaEyebrow}>CONECTA FÁCIL</Text>
+              <Text style={styles.ctaTitle} accessibilityRole="header" aria-level={2}>Sua próxima oportunidade começa aqui.</Text>
+              <Text style={styles.ctaDescription}>
+                Crie sua conta e descubra novas possibilidades com o Conecta Fácil.
+              </Text>
+            </View>
+            <ActionButton label="Começar agora" icon="arrow-right" onPress={goToRegister} wide={!isWide} />
+          </View>
+        </View>
+
+        <View style={styles.footerOuter}>
+          <View style={styles.footer}>
+            <View style={[styles.footerMain, isWide && styles.footerMainWide]}>
+              <View style={styles.footerIdentity}>
+                <Brand onPress={scrollToTop} footer />
+                <Text style={styles.footerDescription}>
+                  Conexões profissionais começam com proximidade, confiança e boas oportunidades.
+                </Text>
               </View>
-            ))}
+              <View style={styles.footerLinksGroup}>
+                <Text style={styles.footerHeading}>INSTITUCIONAL</Text>
+                <NavigationAction label="Início" onPress={scrollToTop} />
+                <NavigationAction label="A plataforma" onPress={scrollToBenefits} />
+              </View>
+              <View style={styles.footerLinksGroup}>
+                <Text style={styles.footerHeading}>PARA CANDIDATOS</Text>
+                <NavigationAction label="Para candidatos" onPress={goToCandidates} />
+              </View>
+              <View style={styles.footerLinksGroup}>
+                <Text style={styles.footerHeading}>PARA EMPRESAS</Text>
+                <NavigationAction label="Criar uma conta" onPress={goToRegister} />
+                <NavigationAction label="Entrar" onPress={goToLogin} />
+              </View>
+            </View>
+            <View style={styles.footerBottom}>
+              <Text style={styles.copyright}>© 2026 Conecta Fácil. Todos os direitos reservados.</Text>
+              <Text style={styles.footerTagline}>Talentos e empresas, mais perto.</Text>
+            </View>
           </View>
-        </View>
-
-        <View style={[styles.closing, isWide && styles.closingWide]}>
-          <View style={styles.closingCopy}>
-            <Text style={styles.closingEyebrow}>SUA PRÓXIMA OPORTUNIDADE COMEÇA COM UM PASSO</Text>
-            <Text style={styles.closingTitle}>Vamos criar conexões que fazem sentido?</Text>
-            <Text style={styles.closingText}>Crie o acesso da sua empresa e comece a organizar suas oportunidades.</Text>
-          </View>
-          <Pressable style={styles.closingButton} onPress={goToRegister} accessibilityRole="button">
-            <Text style={styles.closingButtonText}>Começar agora</Text><Feather name="arrow-right" size={17} color={colors.ink} />
-          </Pressable>
-        </View>
-
-        <View style={styles.footer}>
-          <Pressable style={styles.footerBrand} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} accessibilityRole="button">
-            <View style={styles.footerMark}><Feather name="link-2" size={14} color={colors.onPrimary} /></View><Text style={styles.footerName}>Conecta Fácil</Text>
-          </Pressable>
-          <Text style={styles.footerText}>Conexões profissionais começam com proximidade.</Text>
-          <Text style={styles.copyright}>© 2026 Conecta Fácil</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -147,77 +361,112 @@ export default function LandingPage() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.paper },
-  scrollContent: { flexGrow: 1, alignItems: 'center' },
-  header: { width: '100%', maxWidth: 1180, minHeight: 76, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.line },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandMark: { width: 37, height: 37, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  brandName: { color: colors.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
-  navLinks: { flexDirection: 'row', alignItems: 'center', gap: 32 },
-  navLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
-  navText: { color: colors.inkSoft, fontSize: 13, fontWeight: '600' },
-  loginButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 10, backgroundColor: colors.surface },
-  loginButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
-  hero: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingTop: 45, paddingBottom: 56 },
-  heroWide: { minHeight: 560, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 46, paddingTop: 68, paddingBottom: 74 },
-  heroCopy: { flex: 1, maxWidth: 590 },
-  kicker: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 19 },
-  kickerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
-  kickerText: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
-  heroTitle: { color: colors.ink, fontSize: 43, lineHeight: 51, fontWeight: '700', letterSpacing: -1.25 },
-  heroDescription: { maxWidth: 520, color: colors.inkSoft, fontSize: 16, lineHeight: 25, marginTop: 17 },
-  heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 25 },
-  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 18, borderRadius: 10, backgroundColor: colors.primary },
-  primaryButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '800' },
-  secondaryButton: { minHeight: 45, justifyContent: 'center', paddingHorizontal: 8 },
-  secondaryButtonText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
-  trustNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25 },
-  trustText: { color: colors.muted, fontSize: 12 },
-  visualWrap: { flex: 0.9, alignItems: 'center', justifyContent: 'center', minHeight: 330, marginTop: 28 },
-  visualCard: { width: '100%', maxWidth: 470, padding: 24, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 20 },
-  visualTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  visualEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
-  visualTitle: { color: colors.ink, fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: 19 },
-  visualSubtitle: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 5 },
-  flowLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 25 },
-  flowItem: { alignItems: 'center', gap: 8 },
-  flowIcon: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  flowIconPrimary: { backgroundColor: colors.primary },
-  flowIconAccent: { backgroundColor: colors.accentWash },
-  flowLabel: { color: colors.inkSoft, fontSize: 10, fontWeight: '700' },
+  safeArea: { flex: 1, backgroundColor: palette.background },
+  scrollContent: { flexGrow: 1, alignItems: 'center', backgroundColor: palette.background },
+  headerOuter: { width: '100%', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: palette.border },
+  header: { width: '100%', maxWidth: 1240, minHeight: 76, justifyContent: 'center', paddingHorizontal: 28 },
+  headerCompact: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 },
+  headerMain: { minHeight: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 44 },
+  brandMark: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: palette.blue },
+  brandName: { color: palette.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.5, fontFamily: webFont },
+  navigation: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  navAction: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 9 },
+  navActionCompact: { minHeight: 38, paddingHorizontal: 10 },
+  navActionHovered: { backgroundColor: palette.surface },
+  navActionPressed: { opacity: 0.74 },
+  navActionText: { color: palette.secondary, fontSize: 13, fontWeight: '500', fontFamily: webFont },
+  navActionTextCompact: { fontSize: 11 },
+  compactNavigation: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: palette.border },
+  loginButton: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 15, borderWidth: 1, borderColor: palette.border, borderRadius: 10, backgroundColor: palette.surface },
+  loginButtonHovered: { borderColor: palette.blue, backgroundColor: palette.surfaceRaised },
+  loginButtonText: { color: palette.text, fontSize: 13, fontWeight: '600', fontFamily: webFont },
+  buttonPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
+  hero: { width: '100%', maxWidth: 1240, paddingHorizontal: 28, paddingTop: 58, paddingBottom: 66 },
+  heroWide: { minHeight: 620, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 64, paddingTop: 74, paddingBottom: 82 },
+  heroCopy: { flex: 1, maxWidth: 575, alignItems: 'flex-start' },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 21 },
+  eyebrowLine: { width: 25, height: 2, borderRadius: 1, backgroundColor: palette.blue },
+  eyebrow: { color: palette.blue, fontSize: 10, fontWeight: '700', letterSpacing: 1.65, fontFamily: webFont },
+  heroTitle: { color: palette.text, maxWidth: 570, fontWeight: '700', letterSpacing: -1.65, fontFamily: webFont },
+  heroDescription: { maxWidth: 490, color: palette.secondary, fontSize: 16, lineHeight: 26, marginTop: 18, fontFamily: webFont },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 28 },
+  heroActionsStacked: { width: '100%', alignItems: 'stretch' },
+  actionButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 19, borderRadius: 10 },
+  actionButtonWide: { width: '100%' },
+  primaryButton: { backgroundColor: palette.blue },
+  primaryButtonHovered: { backgroundColor: '#67C9F0' },
+  secondaryButton: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface },
+  secondaryButtonHovered: { borderColor: palette.blue, backgroundColor: palette.surfaceRaised },
+  actionButtonText: { color: palette.darkText, fontSize: 13, fontWeight: '700', fontFamily: webFont },
+  secondaryButtonText: { color: palette.text },
+  trustNote: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 25 },
+  trustIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#173029' },
+  trustText: { color: palette.muted, fontSize: 12, fontFamily: webFont },
+  visualWrap: { width: '100%', maxWidth: 540, alignSelf: 'center', marginTop: 49, position: 'relative' },
+  visualWrapWide: { flex: 0.95, maxWidth: 550, marginTop: 0 },
+  visualGlow: { position: 'absolute', top: '14%', left: '12%', right: '12%', bottom: '20%', borderRadius: 120, backgroundColor: '#10293A', opacity: 0.72 },
+  visualCard: { padding: 27, borderWidth: 1, borderColor: '#304153', borderRadius: 19, backgroundColor: palette.surface },
+  visualHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  visualEyebrow: { color: palette.blue, fontSize: 9, fontWeight: '700', letterSpacing: 1.6, fontFamily: webFont },
+  visualTitle: { color: palette.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4, marginTop: 9, fontFamily: webFont },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 9, paddingVertical: 6, borderWidth: 1, borderColor: '#2D4B4A', borderRadius: 20, backgroundColor: '#172D30' },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.green },
+  statusText: { color: '#A6D8C8', fontSize: 9, fontWeight: '600', fontFamily: webFont },
+  visualSubtitle: { color: palette.muted, fontSize: 12, lineHeight: 19, marginTop: 7, fontFamily: webFont },
+  flowPanel: { marginTop: 25, paddingHorizontal: 14, paddingVertical: 20, borderWidth: 1, borderColor: palette.border, borderRadius: 13, backgroundColor: palette.background },
+  flowLine: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  flowStep: { flex: 1, minWidth: 0, alignItems: 'center' },
+  flowStepTop: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  flowIcon: { width: 46, height: 46, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2C5266', borderRadius: 14, backgroundColor: '#152A38' },
+  flowIconMiddle: { borderColor: '#397F9D', backgroundColor: palette.blue },
   flowConnector: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 6 },
-  flowDash: { flex: 1, height: 1, backgroundColor: colors.line },
-  visualFooter: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 22, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.line },
-  visualFooterIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: colors.primaryWash },
-  visualFooterText: { color: colors.inkSoft, fontSize: 12, fontWeight: '600' },
-  visualNote: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 11, marginTop: 13 },
-  visualNoteText: { color: colors.onPrimary, fontSize: 11, fontWeight: '600' },
-  benefitSection: { width: '100%', maxWidth: 1180, paddingHorizontal: 24, paddingVertical: 52, borderTopWidth: 1, borderTopColor: colors.line },
-  sectionHeading: { maxWidth: 650 },
-  sectionEyebrow: { color: colors.primaryDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },
-  sectionTitle: { color: colors.ink, fontSize: 31, lineHeight: 39, fontWeight: '700', letterSpacing: -0.7 },
-  sectionDescription: { color: colors.inkSoft, fontSize: 14, lineHeight: 22, marginTop: 10 },
-  benefitGrid: { marginTop: 25 },
-  benefitGridWide: { flexDirection: 'row', gap: 0 },
-  benefitItem: { paddingVertical: 20, borderTopWidth: 1, borderTopColor: colors.line },
-  benefitItemWide: { flex: 1, paddingHorizontal: 22, paddingVertical: 22, borderTopWidth: 1 },
-  firstBenefit: { borderTopColor: colors.primary },
-  benefitIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryWash, marginBottom: 15 },
-  benefitIconAccent: { backgroundColor: colors.accentWash },
-  benefitTitle: { color: colors.ink, fontSize: 16, fontWeight: '700', marginBottom: 7 },
-  benefitText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
-  closing: { width: '92%', maxWidth: 1132, padding: 25, backgroundColor: colors.primaryWash, borderRadius: 18, gap: 20 },
-  closingWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 34, paddingVertical: 30 },
-  closingCopy: { maxWidth: 650 },
-  closingEyebrow: { color: colors.primaryDark, fontSize: 9, fontWeight: '800', letterSpacing: 1.35, marginBottom: 9 },
-  closingTitle: { color: colors.ink, fontSize: 22, lineHeight: 29, fontWeight: '700', letterSpacing: -0.4 },
-  closingText: { color: colors.inkSoft, fontSize: 13, lineHeight: 19, marginTop: 6 },
-  closingButton: { minHeight: 45, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 15, borderRadius: 10, backgroundColor: colors.primaryWash },
-  closingButtonText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
-  footer: { width: '100%', maxWidth: 1180, marginTop: 39, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, borderTopWidth: 1, borderTopColor: colors.line, gap: 9 },
-  footerBrand: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
-  footerMark: { width: 25, height: 25, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  footerName: { color: colors.ink, fontSize: 13, fontWeight: '800' },
-  footerText: { color: colors.muted, fontSize: 11 },
-  copyright: { color: colors.muted, fontSize: 10, marginTop: 3 },
+  flowConnectorLine: { flex: 1, height: 1, backgroundColor: '#344453' },
+  flowLabel: { color: palette.text, fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 11, fontFamily: webFont },
+  flowCaption: { color: palette.muted, fontSize: 9, textAlign: 'center', marginTop: 4, fontFamily: webFont },
+  visualFooter: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: palette.border },
+  visualFooterIcon: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: palette.blue },
+  visualFooterText: { flex: 1, color: palette.secondary, fontSize: 11, fontWeight: '500', fontFamily: webFont },
+  visualNote: { flexDirection: 'row', alignItems: 'center', gap: 11, alignSelf: 'flex-end', maxWidth: '92%', marginTop: -18, marginRight: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: '#304153', borderRadius: 12, backgroundColor: palette.surfaceRaised },
+  visualNoteIcon: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: palette.blueSoft },
+  visualNoteCopy: { flex: 1, minWidth: 0 },
+  visualNoteTitle: { color: palette.text, fontSize: 10, fontWeight: '600', fontFamily: webFont },
+  visualNoteText: { color: palette.muted, fontSize: 9, marginTop: 3, fontFamily: webFont },
+  benefitSection: { width: '100%', maxWidth: 1240, paddingHorizontal: 28, paddingTop: 65, paddingBottom: 75, borderTopWidth: 1, borderTopColor: palette.border },
+  sectionHeading: { maxWidth: 680 },
+  sectionEyebrowWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  sectionEyebrow: { color: palette.blue, fontSize: 10, fontWeight: '700', letterSpacing: 1.4, fontFamily: webFont },
+  sectionTitle: { color: palette.text, fontSize: 32, lineHeight: 41, fontWeight: '700', letterSpacing: -0.9, fontFamily: webFont },
+  sectionDescription: { color: palette.secondary, fontSize: 14, lineHeight: 23, marginTop: 11, fontFamily: webFont },
+  benefitGrid: { gap: 13, marginTop: 31 },
+  benefitGridWide: { flexDirection: 'row', alignItems: 'stretch' },
+  benefitCard: { flex: 1, minHeight: 210, padding: 22, borderWidth: 1, borderColor: palette.border, borderRadius: 14, backgroundColor: palette.surface, ...Platform.select({ web: { transitionDuration: '180ms' }, default: {} }) },
+  benefitCardHovered: { borderColor: '#3A718B', backgroundColor: palette.surfaceRaised, transform: [{ translateY: -2 }] },
+  benefitCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
+  benefitIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#29475A', borderRadius: 12, backgroundColor: palette.blueSoft },
+  benefitNumber: { color: '#667484', fontSize: 11, fontWeight: '700', letterSpacing: 1, fontFamily: webFont },
+  benefitTitle: { color: palette.text, fontSize: 16, fontWeight: '700', marginBottom: 9, fontFamily: webFont },
+  benefitText: { color: palette.secondary, fontSize: 12, lineHeight: 20, fontFamily: webFont },
+  ctaOuter: { width: '100%', alignItems: 'center', paddingHorizontal: 20 },
+  cta: { width: '100%', maxWidth: 1184, minHeight: 210, position: 'relative', overflow: 'hidden', justifyContent: 'center', gap: 22, padding: 27, borderWidth: 1, borderColor: '#31556A', borderRadius: 18, backgroundColor: '#142532' },
+  ctaWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 42, paddingVertical: 34 },
+  ctaDecoration: { position: 'absolute', top: -105, right: -40, width: 280, height: 280, borderWidth: 1, borderColor: '#274356', borderRadius: 140, opacity: 0.85 },
+  ctaCopy: { maxWidth: 670, zIndex: 1 },
+  ctaEyebrow: { color: palette.blue, fontSize: 9, fontWeight: '700', letterSpacing: 1.5, marginBottom: 9, fontFamily: webFont },
+  ctaTitle: { color: palette.text, fontSize: 23, lineHeight: 31, fontWeight: '700', letterSpacing: -0.5, fontFamily: webFont },
+  ctaDescription: { color: palette.secondary, fontSize: 13, lineHeight: 20, marginTop: 7, fontFamily: webFont },
+  footerOuter: { width: '100%', alignItems: 'center', marginTop: 62, borderTopWidth: 1, borderTopColor: palette.border },
+  footer: { width: '100%', maxWidth: 1240, paddingHorizontal: 28, paddingTop: 37, paddingBottom: 22 },
+  footerMain: { gap: 30, paddingBottom: 31 },
+  footerMainWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  footerIdentity: { flex: 1, maxWidth: 360 },
+  footerBrand: { alignSelf: 'flex-start' },
+  footerBrandMark: { width: 31, height: 31, borderRadius: 10 },
+  footerBrandName: { fontSize: 14 },
+  footerDescription: { color: palette.muted, fontSize: 12, lineHeight: 19, marginTop: 13, fontFamily: webFont },
+  footerLinksGroup: { minWidth: 130, alignItems: 'flex-start', gap: 3 },
+  footerHeading: { color: palette.text, fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 7, fontFamily: webFont },
+  footerBottom: { minHeight: 46, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 15, borderTopWidth: 1, borderTopColor: palette.border },
+  copyright: { color: palette.muted, fontSize: 10, fontFamily: webFont },
+  footerTagline: { color: palette.muted, fontSize: 10, fontFamily: webFont },
 });

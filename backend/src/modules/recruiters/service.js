@@ -37,6 +37,9 @@ export async function getProfile(userId) {
       "full_name",
       "phone",
       "company_name",
+      "company_description",
+      "company_sector",
+      "company_location",
       "avatar_url",
       "company_logo_url",
       "document_type",
@@ -49,6 +52,20 @@ export async function getProfile(userId) {
     const err = new Error("Perfil de recrutador não encontrado");
     err.statusCode = 404;
     throw err;
+  }
+
+  if (!user.company_name) {
+    const company = await knex("vacancies")
+      .where({ user_id: userId })
+      .whereNull("deleted_at")
+      .orderBy("created_at", "desc")
+      .first("company_name", "company_description", "company_sector", "location");
+    if (company) {
+      user.company_name = company.company_name;
+      user.company_description = company.company_description;
+      user.company_sector = company.company_sector;
+      user.location = company.location;
+    }
   }
 
   return { recruiter: user };
@@ -77,6 +94,7 @@ export async function getDashboard(userId) {
       .join("vacancies", "interests.vacancy_id", "vacancies.id")
       .join("users", "interests.user_id", "users.id")
       .where("vacancies.user_id", userId)
+      .whereNot("interests.origin", "DEMO")
       .whereNull("vacancies.deleted_at")
       .whereNull("users.deleted_at")
       .select("interests.status")
@@ -92,6 +110,7 @@ export async function getDashboard(userId) {
       .join("vacancies", "interests.vacancy_id", "vacancies.id")
       .join("users", "interests.user_id", "users.id")
       .where("vacancies.user_id", userId)
+      .whereNot("interests.origin", "DEMO")
       .whereNull("vacancies.deleted_at")
       .whereNull("users.deleted_at")
       .select("users.full_name", "vacancies.job_title", "interests.created_at")
@@ -174,19 +193,24 @@ export async function updateCompany(userId, data) {
   const updatedAt = new Date().toISOString();
 
   const updatedVacancies = await knex.transaction(async (trx) => {
+    await trx("users")
+      .where({ id: userId, user_type: "RECRUITER" })
+      .whereNull("deleted_at")
+      .update({
+        company_name: data.company_name,
+        company_description: data.company_description?.trim() || null,
+        company_sector: data.company_sector.trim() || null,
+        company_location: data.location.trim() || null,
+        updated_at: updatedAt,
+      });
+
     const vacancies = await trx("vacancies")
       .where({ user_id: userId })
       .whereNull("deleted_at")
       .count("* as total");
     const total = Number(vacancies[0].total);
 
-    if (total === 0) {
-      const err = new Error(
-        "Publique uma vaga antes de editar os dados da empresa.",
-      );
-      err.statusCode = 409;
-      throw err;
-    }
+    if (total === 0) return 0;
 
     const updateData = {
       company_name: data.company_name,
@@ -471,7 +495,7 @@ export async function listMyVacancies(userId, filters) {
     .select(
       "vacancies.*",
       knex.raw(
-        "(SELECT COUNT(*) FROM interests WHERE interests.vacancy_id = vacancies.id) AS applicant_count",
+        "(SELECT COUNT(*) FROM interests WHERE interests.vacancy_id = vacancies.id AND interests.origin <> 'DEMO') AS applicant_count",
       ),
     )
     .orderBy("created_at", "desc")
@@ -602,6 +626,7 @@ export async function listCandidatesForVacancy(userId, vacancyId, filters) {
 
   let query = knex("interests")
     .where({ vacancy_id: vacancyId })
+    .whereNot("interests.origin", "DEMO")
     .join("users", "interests.user_id", "users.id")
     .whereNull("users.deleted_at")
     .select(
@@ -709,6 +734,19 @@ export async function getCandidateProfile(userId, candidateId) {
 
   if (!candidate) {
     const err = new Error("Candidato não encontrado");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const application = await knex("interests")
+    .join("vacancies", "interests.vacancy_id", "vacancies.id")
+    .where("vacancies.user_id", userId)
+    .where("interests.user_id", candidateId)
+    .whereNull("vacancies.deleted_at")
+    .first("interests.id");
+
+  if (!application) {
+    const err = new Error("Candidato não encontrado ou sem candidatura vinculada às suas vagas");
     err.statusCode = 404;
     throw err;
   }
